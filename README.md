@@ -6,8 +6,8 @@
 Excel-выгрузки, чтобы сотрудникам не приходилось искать всё это вручную по
 справочникам.
 
-Сайт статический — весь код в [`site/`](site/), данные читаются из
-[`site/data/catalog_data.json`](site/data/catalog_data.json) через
+Сайт статический — весь код в [`docs/`](docs/), данные читаются из
+[`docs/data/catalog_data.json`](docs/data/catalog_data.json) через
 `fetch()`. Обновление раз в год (или чаще, пока идёт наполнение) не требует
 сервера — только пересборку и коммит.
 
@@ -18,9 +18,9 @@ RZD.md               исходная выгрузка из Excel (первои�
 db/
   schema.sql          DDL — 44 таблицы SQLite
   build_db.py          RZD.md -> rzd.db
-  export_catalog.py    rzd.db -> site/data/catalog_data.json
+  export_catalog.py    rzd.db -> docs/data/catalog_data.json
   rzd.db               собранная база (пересоздаётся build_db.py)
-site/
+docs/
   index.html            сама страница (HTML+CSS+JS, без сборки)
   data/catalog_data.json  выгрузка для сайта (генерируется export_catalog.py)
 ```
@@ -32,11 +32,11 @@ site/
    ```bash
    cd db
    python build_db.py        # RZD.md -> rzd.db
-   python export_catalog.py  # rzd.db -> ../site/data/catalog_data.json
+   python export_catalog.py  # rzd.db -> ../docs/data/catalog_data.json
    ```
 3. Проверить локально:
    ```bash
-   cd ../site
+   cd ../docs
    python -m http.server 8000
    # открыть http://localhost:8000
    ```
@@ -44,17 +44,17 @@ site/
 
 ## Локальный запуск
 
-Открывать `site/index.html` напрямую (`file://`) не получится — браузер
+Открывать `docs/index.html` напрямую (`file://`) не получится — браузер
 блокирует `fetch()` для локальных файлов. Нужен любой веб-сервер:
 
 ```bash
-cd site
+cd docs
 python -m http.server 8000
 ```
 
 ## Аналитика
 
-В `site/index.html` в `<head>` оставлено место под счётчик посещений (искать
+В `docs/index.html` в `<head>` оставлено место под счётчик посещений (искать
 комментарий «Аналитика»). Сайт статический — свой сервер для сбора
 статистики не нужен, подключается сторонний счётчик. Варианты:
 

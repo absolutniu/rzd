@@ -17,7 +17,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 BASE = Path(__file__).parent
 DB_PATH = BASE / "rzd.db"
-OUT_PATH = BASE.parent / "site" / "data" / "catalog_data.json"
+OUT_PATH = BASE.parent / "docs" / "data" / "catalog_data.json"
 
 # таблица характеристик -> её "тип семейства" (T00x), для приоритета при разборе конфликтов
 CHAR_TABLES = {

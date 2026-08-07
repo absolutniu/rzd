@@ -317,12 +317,13 @@
   .dsection h2 { font-size: 15px; margin: 0 0 14px; display: flex; align-items: center; gap: 8px; }
   .dsection h2 .n { color: var(--ink-faint); font-weight: 400; font-size: 12.5px; }
 
-  .spec-table { display: grid; grid-template-columns: 1fr auto; gap: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .spec-table { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
   .spec-table .row { display: contents; }
-  .spec-table dt, .spec-table dd { padding: 9px 14px; border-bottom: 1px solid var(--line); margin: 0; font-size: 13px; }
+  .spec-table dt, .spec-table dd { padding: 9px 14px; border-bottom: 1px solid var(--line); margin: 0; font-size: 13px; overflow-wrap: break-word; word-break: break-word; min-width: 0; }
   .spec-table .row:last-child dt, .spec-table .row:last-child dd { border-bottom: none; }
-  .spec-table dt { color: var(--ink-soft); background: var(--panel-sunken); }
+  .spec-table dt { color: var(--ink-soft); background: var(--panel-sunken); white-space: nowrap; }
   .spec-table dd { font-family: "Cascadia Code",Consolas,monospace; font-variant-numeric: tabular-nums; text-align: right; }
+  .spec-table dd a { word-break: break-word; }
 
   .bogie-card {
     display: flex; justify-content: space-between; align-items: center; background: var(--panel-sunken);
@@ -369,7 +370,7 @@
   .overlay-panel {
     position: fixed; top: 0; right: 0; height: 100%; width: min(380px, 92vw); background: var(--panel);
     z-index: 51; box-shadow: var(--shadow-lg); transform: translateX(100%); transition: transform .25s ease;
-    padding: 22px; overflow-y: auto;
+    padding: 22px; overflow-y: auto; overflow-x: hidden;
   }
   .overlay-mask.show .overlay-panel { transform: translateX(0); }
   .overlay-close { position: absolute; top: 18px; right: 18px; background: none; border: none; color: var(--ink-faint); cursor: pointer; }

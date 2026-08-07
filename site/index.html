@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Каталог вагонов</title>
 <meta name="description" content="Справочник по грузовым вагонам: характеристики, тележки и запчасти, сроки ремонта, депо, поиск по грузу.">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta name="theme-color" content="#b5502a">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Каталог вагонов">
+<meta property="og:description" content="Справочник по грузовым вагонам: характеристики, тележки и запчасти, сроки ремонта, депо, поиск по грузу.">
+<!-- Аналитика: вставьте сюда счётчик (например, Яндекс.Метрика или GoatCounter) —
+     см. README.md, раздел «Аналитика», как выбрать и подключить бесплатный вариант. -->
 <style>
   :root {
     --ink: #1b2228; --ink-soft: #4c5760; --ink-faint: #8b96a0;
@@ -58,6 +65,9 @@
   }
   @media (prefers-reduced-motion: reduce) { * { animation-duration: .001ms !important; transition-duration: .001ms !important; } }
 
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+  [role="button"] { cursor: pointer; }
+
   .display {
     font-family: "Bahnschrift","DIN Alternate","Franklin Gothic Medium","Arial Narrow",sans-serif;
     font-variation-settings: "wght" 620; letter-spacing: .01em;
@@ -73,7 +83,12 @@
     position: sticky; top: 0; z-index: 30; background: var(--paper);
     border-bottom: 1px solid var(--line); backdrop-filter: blur(6px);
   }
-  .top-inner { display: flex; align-items: center; gap: 20px; padding: 14px 24px; }
+  .top-inner { display: flex; align-items: center; gap: 20px; padding: 14px 24px; flex-wrap: wrap; row-gap: 10px; }
+  @media (max-width: 640px) {
+    .brand { flex: 1 1 100%; }
+    .search-wrap { order: 3; flex: 1 1 100%; max-width: 100%; }
+    nav.top-nav { order: 2; flex: 1 1 100%; margin-left: 0; flex-wrap: wrap; }
+  }
   .brand { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
   .brand-mark { width: 26px; height: 26px; color: var(--accent); }
   .brand-text { font-size: 16px; }
@@ -122,6 +137,46 @@
   /* ===== catalog layout ===== */
   .catalog-body { display: grid; grid-template-columns: 216px 1fr; gap: 26px; align-items: start; margin-top: 14px; }
   @media (max-width: 800px) { .catalog-body { grid-template-columns: 1fr; } }
+
+  /* ===== manufacturers page ===== */
+  .mfr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+  .mfr-card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px;
+    display: flex; flex-direction: column; gap: 8px; box-shadow: var(--shadow); cursor: pointer; text-align: left;
+    font: inherit; color: inherit;
+  }
+  .mfr-card:hover { border-color: var(--accent); }
+  .mfr-card .name { font-size: 15px; font-weight: 600; }
+  .mfr-card .full { font-size: 12px; color: var(--ink-soft); min-height: 2.6em; }
+  .mfr-card .meta { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--ink-faint); border-top: 1px solid var(--line); padding-top: 8px; margin-top: 2px; }
+  .mfr-card .n-vagons { font-family: "Cascadia Code",Consolas,monospace; color: var(--accent); font-weight: 600; }
+
+  /* ===== depots page ===== */
+  .depot-page-body { display: grid; grid-template-columns: 216px 1fr; gap: 26px; align-items: start; margin-top: 14px; }
+  @media (max-width: 800px) { .depot-page-body { grid-template-columns: 1fr; } }
+  .depot-map-frame {
+    position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: var(--shadow); overflow: hidden; margin-bottom: 20px;
+  }
+  #depot-map { width: 100%; height: auto; display: block; }
+  #depot-map .grat { stroke: var(--line); stroke-width: 1; }
+  #depot-map .dot { fill: var(--accent); stroke: var(--panel); stroke-width: 1.2; cursor: pointer; transition: r .1s; }
+  #depot-map .dot:hover, #depot-map .dot:focus-visible { fill: var(--ink); r: 5.5; }
+  #depot-map .dot.dim { fill: var(--ink-faint); opacity: .35; }
+  .depot-map-tip {
+    position: absolute; pointer-events: none; background: var(--ink); color: var(--paper); font-size: 12px;
+    padding: 5px 9px; border-radius: 6px; transform: translate(-50%, -130%); white-space: nowrap; opacity: 0;
+    transition: opacity .1s; z-index: 5;
+  }
+  .depot-map-tip.show { opacity: 1; }
+  .depot-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); box-shadow: var(--shadow); }
+  table.depot-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 480px; }
+  table.depot-table th, table.depot-table td { padding: 10px 14px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+  table.depot-table thead th { color: var(--ink-faint); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+  table.depot-table tbody tr { cursor: pointer; }
+  table.depot-table tbody tr:hover { background: var(--panel-sunken); }
+  table.depot-table tbody tr:last-child td { border-bottom: none; }
+  table.depot-table td.name { font-weight: 600; }
 
   .filters { position: sticky; top: 74px; display: flex; flex-direction: column; gap: 20px; }
   .filter-group h4 {
@@ -356,6 +411,8 @@
       </div>
       <nav class="top-nav">
         <button id="nav-catalog" class="active" onclick="go('catalog')">Каталог</button>
+        <button id="nav-manufacturers" onclick="go('manufacturers')">Заводы</button>
+        <button id="nav-depots" onclick="go('depots')">Депо</button>
         <button id="nav-compare" onclick="go('compare')">Сравнение <span class="badge" id="compare-badge">0</span></button>
       </nav>
     </div>
@@ -425,10 +482,53 @@
       <div id="compare-content"></div>
     </section>
 
+    <!-- ===================== MANUFACTURERS ===================== -->
+    <section id="view-manufacturers" class="view">
+      <h1 class="display" style="font-size:26px;margin:20px 0 0;">Вагоностроительные заводы</h1>
+      <p style="color:var(--ink-soft);font-size:13.5px;margin:6px 0 20px;max-width:56ch;">27 предприятий — головные заводы и их филиалы. Клик открывает карточку с мощностью, персоналом и списком выпускаемых типов.</p>
+      <div class="mfr-grid" id="mfr-grid"></div>
+    </section>
+
+    <!-- ===================== DEPOTS ===================== -->
+    <section id="view-depots" class="view">
+      <h1 class="display" style="font-size:26px;margin:20px 0 0;">Ремонтные депо</h1>
+      <p style="color:var(--ink-soft);font-size:13.5px;margin:6px 0 20px;max-width:56ch;">112 депо трёх ремонтных холдингов. На карте — размещение по стране, в списке — дорога и станция примыкания.</p>
+
+      <div class="depot-page-body">
+        <aside class="filters">
+          <div class="filter-group">
+            <h4>Холдинг</h4>
+            <div class="filter-check-list" id="holding-filters"></div>
+          </div>
+          <div class="filter-group">
+            <h4>Дорога</h4>
+            <div class="filter-check-list" id="railway-filters"></div>
+          </div>
+          <button class="filter-clear" onclick="clearDepotFilters()">Сбросить фильтры</button>
+        </aside>
+
+        <div>
+          <div class="result-meta">
+            <div class="count">Найдено: <b id="depot-result-count">0</b></div>
+          </div>
+          <div class="depot-map-frame">
+            <svg id="depot-map" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid meet"></svg>
+            <div class="depot-map-tip" id="depot-map-tip"></div>
+          </div>
+          <div class="depot-table-wrap">
+            <table class="depot-table" id="depot-table">
+              <thead><tr><th>Депо</th><th>Холдинг</th><th>Дорога</th><th>Станция примыкания</th></tr></thead>
+              <tbody id="depot-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <footer class="foot">
-    Прототип: витрина каталога, карточка вагона, сравнение и переходы к депо/заводу. Данные — реальная выборка из <span class="mono">rzd.db</span> (не полная база).
+    Каталог грузовых вагонов: 256 моделей, 27 заводов, 112 депо, 1 870 видов груза. Данные — <span class="mono">rzd.db</span>.
   </footer>
 
   <div class="compare-tray" id="compare-tray">
@@ -439,7 +539,7 @@
 
   <div class="overlay-mask" id="overlay-mask" onclick="if(event.target===this) closeOverlay()">
     <div class="overlay-panel">
-      <button class="overlay-close" onclick="closeOverlay()">
+      <button class="overlay-close" onclick="closeOverlay()" aria-label="Закрыть">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
       <div id="overlay-content"></div>
@@ -547,7 +647,7 @@ function fmtNum(n) {
 }
 function fmtDate(iso) { return iso ? iso.split("-").reverse().join(".") : null; }
 function kindName(v) { return v.kindId ? (KIND_BY_ID.get(v.kindId)?.name || null) : null; }
-function mfrShort(id) { return MFR_BY_ID.get(id)?.short_name || id; }
+function mfrShort(id) { const m = MFR_BY_ID.get(id); return m ? (m.short_name || m.full_name) : id; }
 
 /* ---------- грузы: поиск ---------- */
 let cargoHi = -1;
@@ -729,7 +829,7 @@ function openDetail(id) {
   const CARGO_PAGE = 24;
   const cargoChip = cid => {
     const c = CARGO_BY_ID.get(cid);
-    return `<span class="feature-chip cargo-pick" onclick="jumpToCargo('${cid}')" title="Показать все вагоны, которые перевозят «${c.name}»">${c.name}</span>`;
+    return `<span class="feature-chip cargo-pick" onclick="jumpToCargo('${cid}')" tabindex="0" role="button" title="Показать все вагоны, которые перевозят «${c.name}»">${c.name}</span>`;
   };
   const cargoBlock = !cargoIds.length
     ? `<p class="no-data">${isNoDataStub ? "нет данных о перевозимых грузах — уточняйте у производителя" : "данные о допустимых грузах не внесены"}</p>`
@@ -748,7 +848,7 @@ function openDetail(id) {
     if (!d) return "";
     const holding = d.holding_id ? HOLDING_BY_ID.get(d.holding_id) : null;
     const repairNames = it.repairTypeIds.map(id=>REPAIR_TYPE_BY_ID.get(id)).filter(Boolean).join(", ");
-    return `<div class="depot-row" onclick="openDepot('${d.id}')">
+    return `<div class="depot-row" onclick="openDepot('${d.id}')" tabindex="0" role="button" aria-label="Депо ${d.name}">
         <div><div class="name">${d.name}</div><div class="meta">${holding?holding.short_name+' · ':''}ст. ${d.adjoining_station||'—'}</div></div>
         <div class="go">${repairNames} →</div>
       </div>`;
@@ -769,7 +869,7 @@ function openDetail(id) {
         <h1 class="display">${meta.name} <span class="num">${v.model}</span></h1>
         <div class="detail-tags">
           <span class="tag">${kn || meta.name}</span>
-          <span class="tag link" onclick="openManufacturer('${v.mfrId}')">завод: ${mfrShort(v.mfrId)}</span>
+          <span class="tag link" onclick="openManufacturer('${v.mfrId}')" tabindex="0" role="button">завод: ${mfrShort(v.mfrId)}</span>
           ${v.requiresAuth ? `<span class="pill warn">требуется авторизация</span>` : ""}
           ${cert ? `<span class="pill ${pillClass}">${cert.status}</span>` : ""}
         </div>
@@ -844,7 +944,7 @@ function openManufacturer(mfrId) {
   document.getElementById("overlay-content").innerHTML = `
     <div class="overlay-eyebrow">Производитель</div>
     <h3>${m.short_name || m.full_name}</h3>
-    <div class="overlay-sub">${m.full_name}${parent?` · входит в состав <span class="tag link" onclick="openManufacturer('${parent.id}')" style="display:inline-flex">${parent.short_name}</span>`:""}</div>
+    <div class="overlay-sub">${m.full_name}${parent?` · входит в состав <span class="tag link" onclick="openManufacturer('${parent.id}')" tabindex="0" role="button" style="display:inline-flex">${parent.short_name}</span>`:""}</div>
     <div class="spec-table">
       <div class="row"><dt>Город</dt><dd>${m.city||"—"}</dd></div>
       <div class="row"><dt>Регион</dt><dd>${m.region||"—"}</dd></div>
@@ -932,13 +1032,120 @@ function renderCompare() {
 }
 
 
+/* ---------- заводы: страница ---------- */
+function renderManufacturers() {
+  const counts = new Map();
+  VAGONS.forEach(v => counts.set(v.mfrId, (counts.get(v.mfrId)||0) + 1));
+  const mfrName = m => m.short_name || m.full_name;
+  const mfrs = DATA.manufacturers.slice().sort((a,b) => (counts.get(b.id)||0) - (counts.get(a.id)||0) || mfrName(a).localeCompare(mfrName(b),'ru'));
+  document.getElementById("mfr-grid").innerHTML = mfrs.map(m => `
+    <button class="mfr-card" onclick="openManufacturer('${m.id}')">
+      <div class="name">${mfrName(m)}</div>
+      <div class="full">${m.full_name}${m.city?` · ${m.city}`:""}</div>
+      <div class="meta">
+        <span>${m.enterprise_type || "—"}</span>
+        <span class="n-vagons">${counts.get(m.id)||0} моделей</span>
+      </div>
+    </button>`).join("");
+}
+
+/* ---------- депо: страница со списком и картой ---------- */
+const depotState = { holdings: new Set(), railways: new Set() };
+let depotMapBuilt = false;
+
+function depotFilters() {
+  document.getElementById("holding-filters").innerHTML = DATA.repairHoldings.map(h => `
+    <label class="filter-check"><input type="checkbox" ${depotState.holdings.has(h.id)?'checked':''} onchange="toggleDepotFilter('holdings','${h.id}')" /> ${h.short_name}</label>`).join("");
+  const railwaysUsed = [...new Set(DATA.depots.map(d=>d.railway_id).filter(Boolean))]
+    .map(id => RAILWAY_BY_ID.get(id)).filter(Boolean).sort((a,b)=>a.localeCompare(b,'ru'));
+  const railwayIdByName = new Map(DATA.railways.map(r=>[r.name,r.id]));
+  document.getElementById("railway-filters").innerHTML = railwaysUsed.map(name => {
+    const id = railwayIdByName.get(name);
+    return `<label class="filter-check"><input type="checkbox" ${depotState.railways.has(id)?'checked':''} onchange="toggleDepotFilter('railways','${id}')" /> ${name}</label>`;
+  }).join("");
+}
+function toggleDepotFilter(kind, id) {
+  const s = depotState[kind];
+  s.has(id) ? s.delete(id) : s.add(id);
+  renderDepotsPage();
+}
+function clearDepotFilters() { depotState.holdings.clear(); depotState.railways.clear(); depotFilters(); renderDepotsPage(); }
+function filteredDepots() {
+  return DATA.depots.filter(d => {
+    if (depotState.holdings.size && !depotState.holdings.has(d.holding_id)) return false;
+    if (depotState.railways.size && !depotState.railways.has(d.railway_id)) return false;
+    return true;
+  });
+}
+function buildDepotMap() {
+  const svg = document.getElementById("depot-map");
+  const withCoords = DATA.depots.filter(d => d.latitude != null && d.longitude != null);
+  const lats = withCoords.map(d=>d.latitude), lons = withCoords.map(d=>d.longitude);
+  const latMin = Math.min(...lats), latMax = Math.max(...lats);
+  const lonMin = Math.min(...lons), lonMax = Math.max(...lons);
+  const meanLatRad = (latMin+latMax)/2 * Math.PI/180;
+  const xCorr = Math.cos(meanLatRad); // грубая equirectangular-поправка на широту
+  const W = 640, H = 360, PAD = 24;
+  const xOf = lon => PAD + ((lon-lonMin)*xCorr) / ((lonMax-lonMin)*xCorr || 1) * (W-2*PAD);
+  const yOf = lat => H - PAD - (lat-latMin) / ((latMax-latMin)||1) * (H-2*PAD); // инверсия: выше широта -> выше на экране
+
+  let grat = "";
+  for (let i=1;i<4;i++) { const x=PAD+i*(W-2*PAD)/4; grat += `<line class="grat" x1="${x}" y1="${PAD}" x2="${x}" y2="${H-PAD}"/>`; }
+  for (let i=1;i<3;i++) { const y=PAD+i*(H-2*PAD)/3; grat += `<line class="grat" x1="${PAD}" y1="${y}" x2="${W-PAD}" y2="${y}"/>`; }
+
+  const dots = withCoords.map(d => {
+    const x = xOf(d.longitude).toFixed(1), y = yOf(d.latitude).toFixed(1);
+    return `<circle class="dot" data-id="${d.id}" cx="${x}" cy="${y}" r="3.6" tabindex="0" role="button" aria-label="${d.name}"></circle>`;
+  }).join("");
+
+  svg.innerHTML = `<rect x="0" y="0" width="${W}" height="${H}" fill="none"/>${grat}${dots}`;
+  const tip = document.getElementById("depot-map-tip");
+  svg.querySelectorAll(".dot").forEach(dot => {
+    const show = () => {
+      const d = DEPOT_BY_ID.get(dot.dataset.id);
+      const r = svg.getBoundingClientRect();
+      tip.textContent = d.name;
+      tip.style.left = (r.width * (dot.cx.baseVal.value / W)) + "px";
+      tip.style.top = (r.height * (dot.cy.baseVal.value / H)) + "px";
+      tip.classList.add("show");
+    };
+    dot.addEventListener("mouseenter", show);
+    dot.addEventListener("focus", show);
+    dot.addEventListener("mouseleave", () => tip.classList.remove("show"));
+    dot.addEventListener("blur", () => tip.classList.remove("show"));
+    dot.addEventListener("click", () => openDepot(dot.dataset.id));
+  });
+  depotMapBuilt = true;
+}
+function renderDepotsPage() {
+  if (!depotMapBuilt) buildDepotMap();
+  const list = filteredDepots();
+  const visible = new Set(list.map(d=>d.id));
+  document.querySelectorAll("#depot-map .dot").forEach(dot => dot.classList.toggle("dim", !visible.has(dot.dataset.id)));
+  document.getElementById("depot-result-count").textContent = list.length;
+  document.getElementById("depot-table-body").innerHTML = list.map(d => {
+    const holding = d.holding_id ? HOLDING_BY_ID.get(d.holding_id) : null;
+    const railway = d.railway_id ? RAILWAY_BY_ID.get(d.railway_id) : null;
+    return `<tr onclick="openDepot('${d.id}')">
+      <td class="name">${d.name}</td>
+      <td>${holding?holding.short_name:"—"}</td>
+      <td>${railway||"—"}</td>
+      <td>${d.adjoining_station||"—"}</td>
+    </tr>`;
+  }).join("");
+}
+
 /* ---------- nav / boot ---------- */
 function go(view, fromDetail) {
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
   document.getElementById("view-"+view).classList.add("active");
   document.getElementById("nav-catalog").classList.toggle("active", view==="catalog");
+  document.getElementById("nav-manufacturers").classList.toggle("active", view==="manufacturers");
+  document.getElementById("nav-depots").classList.toggle("active", view==="depots");
   document.getElementById("nav-compare").classList.toggle("active", view==="compare");
   if (view === "compare") renderCompare();
+  if (view === "manufacturers") renderManufacturers();
+  if (view === "depots") renderDepotsPage();
   updateCompareTray();
   if (!fromDetail) window.scrollTo(0,0);
 }
@@ -964,13 +1171,25 @@ document.addEventListener("click", e => {
   if (!e.target.closest(".cargo-search")) document.getElementById("cargo-suggest").classList.remove("show");
 });
 
+// клавиатурная активация элементов, помеченных role="button" (депо/грузы/завод — кликабельные
+// div/span без нативной семантики кнопки)
+document.addEventListener("keydown", e => {
+  if ((e.key === "Enter" || e.key === " ") && e.target.matches('[role="button"]')) {
+    e.preventDefault();
+    e.target.click();
+  }
+  if (e.key === "Escape" && document.getElementById("overlay-mask").classList.contains("show")) {
+    closeOverlay();
+  }
+});
+
 /* ---------- загрузка данных и старт ---------- */
 document.getElementById("catalog-grid").innerHTML = `<div class="empty-state" style="grid-column:1/-1">Загрузка каталога…</div>`;
 fetch("data/catalog_data.json")
   .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
   .then(data => {
     initFromData(data);
-    typeTabs(); mfrFilters(); renderCargoChips(); renderCatalog();
+    typeTabs(); mfrFilters(); renderCargoChips(); renderCatalog(); depotFilters();
   })
   .catch(err => {
     document.getElementById("catalog-grid").innerHTML =

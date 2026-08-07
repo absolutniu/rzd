@@ -1,0 +1,982 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Каталог вагонов</title>
+<meta name="description" content="Справочник по грузовым вагонам: характеристики, тележки и запчасти, сроки ремонта, депо, поиск по грузу.">
+<style>
+  :root {
+    --ink: #1b2228; --ink-soft: #4c5760; --ink-faint: #8b96a0;
+    --paper: #eef1f2; --panel: #ffffff; --panel-sunken: #f3f5f5;
+    --steel: #5b6b73;
+    --line: rgba(27,34,40,.13); --line-strong: rgba(27,34,40,.26);
+    --accent: #b5502a; --accent-ink: #ffffff; --accent-soft: rgba(181,80,42,.11); --accent-soft-strong: rgba(181,80,42,.22);
+    --ok: #2f8f5b; --ok-soft: rgba(47,143,91,.13);
+    --warn: #b9791b; --warn-soft: rgba(185,121,27,.15);
+    --danger: #c1442e; --danger-soft: rgba(193,68,46,.13);
+    --shadow: 0 1px 2px rgba(20,24,28,.06), 0 10px 28px rgba(20,24,28,.08);
+    --shadow-lg: 0 12px 40px rgba(20,24,28,.18);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #e8ecee; --ink-soft: #aab4ba; --ink-faint: #6d7a81;
+      --paper: #14181b; --panel: #1b2124; --panel-sunken: #20272a;
+      --steel: #8a99a1;
+      --line: rgba(232,236,238,.12); --line-strong: rgba(232,236,238,.24);
+      --accent: #e0895a; --accent-ink: #1b1210; --accent-soft: rgba(224,137,90,.15); --accent-soft-strong: rgba(224,137,90,.28);
+      --ok: #4cb37e; --ok-soft: rgba(76,179,126,.15);
+      --warn: #d6a13c; --warn-soft: rgba(214,161,60,.16);
+      --danger: #e0685a; --danger-soft: rgba(224,104,90,.16);
+      --shadow: 0 1px 2px rgba(0,0,0,.35), 0 10px 28px rgba(0,0,0,.4);
+      --shadow-lg: 0 16px 48px rgba(0,0,0,.55);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #e8ecee; --ink-soft: #aab4ba; --ink-faint: #6d7a81; --paper: #14181b; --panel: #1b2124; --panel-sunken: #20272a;
+    --steel: #8a99a1; --line: rgba(232,236,238,.12); --line-strong: rgba(232,236,238,.24);
+    --accent: #e0895a; --accent-ink: #1b1210; --accent-soft: rgba(224,137,90,.15); --accent-soft-strong: rgba(224,137,90,.28);
+    --ok: #4cb37e; --ok-soft: rgba(76,179,126,.15); --warn: #d6a13c; --warn-soft: rgba(214,161,60,.16);
+    --danger: #e0685a; --danger-soft: rgba(224,104,90,.16);
+    --shadow: 0 1px 2px rgba(0,0,0,.35), 0 10px 28px rgba(0,0,0,.4); --shadow-lg: 0 16px 48px rgba(0,0,0,.55);
+  }
+  :root[data-theme="light"] {
+    --ink: #1b2228; --ink-soft: #4c5760; --ink-faint: #8b96a0; --paper: #eef1f2; --panel: #ffffff; --panel-sunken: #f3f5f5;
+    --steel: #5b6b73; --line: rgba(27,34,40,.13); --line-strong: rgba(27,34,40,.26);
+    --accent: #b5502a; --accent-ink: #ffffff; --accent-soft: rgba(181,80,42,.11); --accent-soft-strong: rgba(181,80,42,.22);
+    --ok: #2f8f5b; --ok-soft: rgba(47,143,91,.13); --warn: #b9791b; --warn-soft: rgba(185,121,27,.15);
+    --danger: #c1442e; --danger-soft: rgba(193,68,46,.13);
+    --shadow: 0 1px 2px rgba(20,24,28,.06), 0 10px 28px rgba(20,24,28,.08); --shadow-lg: 0 12px 40px rgba(20,24,28,.18);
+  }
+
+  * { box-sizing: border-box; }
+  html,body { margin:0; padding:0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.5; font-size: 14.5px;
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation-duration: .001ms !important; transition-duration: .001ms !important; } }
+
+  .display {
+    font-family: "Bahnschrift","DIN Alternate","Franklin Gothic Medium","Arial Narrow",sans-serif;
+    font-variation-settings: "wght" 620; letter-spacing: .01em;
+  }
+  .mono, .num { font-family: "Cascadia Code","Cascadia Mono",Consolas,ui-monospace,"SFMono-Regular",Menlo,monospace; font-variant-numeric: tabular-nums; }
+  a { color: inherit; }
+  button { font: inherit; }
+
+  /* ===== app shell ===== */
+  #app { max-width: 1240px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+
+  header.top {
+    position: sticky; top: 0; z-index: 30; background: var(--paper);
+    border-bottom: 1px solid var(--line); backdrop-filter: blur(6px);
+  }
+  .top-inner { display: flex; align-items: center; gap: 20px; padding: 14px 24px; }
+  .brand { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
+  .brand-mark { width: 26px; height: 26px; color: var(--accent); }
+  .brand-text { font-size: 16px; }
+  .brand-text b { font-weight: 620; }
+  .brand-text span { color: var(--ink-soft); font-weight: 400; }
+
+  .search-wrap { position: relative; flex: 1; max-width: 420px; }
+  .search-wrap svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--ink-faint); }
+  .search-wrap input {
+    width: 100%; padding: 8px 12px 8px 34px; border-radius: 8px; border: 1px solid var(--line-strong);
+    background: var(--panel); color: var(--ink); font-size: 13.5px; outline: none;
+  }
+  .search-wrap input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+  nav.top-nav { display: flex; gap: 4px; margin-left: auto; }
+  nav.top-nav button {
+    border: none; background: transparent; color: var(--ink-soft); padding: 8px 13px; border-radius: 7px;
+    cursor: pointer; font-size: 13.5px; display: flex; align-items: center; gap: 7px;
+  }
+  nav.top-nav button:hover { background: var(--panel-sunken); color: var(--ink); }
+  nav.top-nav button.active { background: var(--ink); color: var(--paper); }
+  nav.top-nav .badge {
+    background: var(--accent); color: var(--accent-ink); font-size: 11px; font-weight: 700;
+    border-radius: 999px; min-width: 17px; height: 17px; display: inline-flex; align-items: center; justify-content: center; padding: 0 5px;
+  }
+  nav.top-nav button.active .badge { background: var(--accent); color: var(--accent-ink); }
+
+  main { flex: 1; padding: 0 24px 64px; }
+
+  /* ===== view visibility ===== */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ===== catalog: type tabs ===== */
+  .type-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 18px 0 6px; }
+  .type-tab {
+    flex-shrink: 0; display: flex; align-items: center; gap: 8px; padding: 8px 14px 8px 10px;
+    border-radius: 9px; border: 1px solid var(--line); background: var(--panel); cursor: pointer;
+    color: var(--ink-soft); font-size: 13px; white-space: nowrap;
+  }
+  .type-tab svg { width: 20px; height: 20px; color: var(--steel); }
+  .type-tab.active { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
+  .type-tab.active svg { color: var(--accent); }
+  .type-tab .n { color: var(--ink-faint); font-size: 11.5px; }
+
+  /* ===== catalog layout ===== */
+  .catalog-body { display: grid; grid-template-columns: 216px 1fr; gap: 26px; align-items: start; margin-top: 14px; }
+  @media (max-width: 800px) { .catalog-body { grid-template-columns: 1fr; } }
+
+  .filters { position: sticky; top: 74px; display: flex; flex-direction: column; gap: 20px; }
+  .filter-group h4 {
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint);
+    margin: 0 0 9px; font-weight: 600;
+  }
+  .cargo-filter-group { padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+  .filter-hint { text-transform: none; letter-spacing: 0; color: var(--ink-faint); font-weight: 400; font-size: 11px; }
+  .cargo-search { position: relative; }
+  .cargo-search input {
+    width: 100%; padding: 8px 10px; border-radius: 7px; border: 1px solid var(--line-strong);
+    background: var(--panel); color: var(--ink); font-size: 13px; outline: none;
+  }
+  .cargo-search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .cargo-suggest {
+    display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20;
+    background: var(--panel); border: 1px solid var(--line-strong); border-radius: 9px; box-shadow: var(--shadow-lg);
+    max-height: 300px; overflow-y: auto; padding: 5px;
+  }
+  .cargo-suggest.show { display: block; }
+  .cargo-suggest-item {
+    display: flex; justify-content: space-between; gap: 8px; padding: 7px 9px; border-radius: 6px; cursor: pointer; font-size: 12.5px;
+  }
+  .cargo-suggest-item:hover, .cargo-suggest-item.hi { background: var(--accent-soft); }
+  .cargo-suggest-item .code { color: var(--ink-faint); font-family: "Cascadia Code",Consolas,monospace; font-size: 11px; white-space: nowrap; }
+  .cargo-suggest-empty { padding: 10px 9px; font-size: 12.5px; color: var(--ink-faint); }
+  .cargo-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .cargo-chips:empty { margin-top: 0; }
+  .cargo-chip {
+    display: flex; align-items: center; gap: 6px; background: var(--accent-soft-strong); color: var(--accent);
+    border-radius: 999px; padding: 5px 6px 5px 11px; font-size: 12px; font-weight: 600; max-width: 100%;
+  }
+  .cargo-chip span.t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px; }
+  .cargo-chip button {
+    border: none; background: rgba(0,0,0,.12); color: inherit; width: 16px; height: 16px; border-radius: 999px;
+    cursor: pointer; font-size: 11px; line-height: 1; flex-shrink: 0; display:flex; align-items:center; justify-content:center;
+  }
+  .filter-range { display: flex; align-items: center; gap: 6px; }
+  .filter-range input {
+    width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line-strong);
+    background: var(--panel); color: var(--ink); font-size: 12.5px;
+  }
+  .filter-range span { color: var(--ink-faint); font-size: 12px; }
+  .filter-check-list { display: flex; flex-direction: column; gap: 6px; max-height: 230px; overflow-y: auto; padding-right: 4px; }
+  .filter-check {
+    display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-soft); cursor: pointer;
+  }
+  .filter-check input { accent-color: var(--accent); width: 14px; height: 14px; }
+  .filter-check:hover { color: var(--ink); }
+  .filter-toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; color: var(--ink-soft); }
+  .filter-toggle input { accent-color: var(--accent); width: 14px; height: 14px; }
+  .filter-clear { font-size: 12.5px; color: var(--accent); background: none; border: none; cursor: pointer; padding: 0; text-align: left; }
+
+  .result-meta { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+  .result-meta .count { color: var(--ink-soft); font-size: 13px; }
+  .result-meta .count b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px;
+    display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow); position: relative;
+  }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
+  .card-badge {
+    font-size: 11px; color: var(--ink-soft); background: var(--panel-sunken); border-radius: 999px;
+    padding: 3px 9px; max-width: 78%;
+  }
+  .card-compare { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--ink-faint); cursor: pointer; }
+  .card-compare input { accent-color: var(--accent); width: 14px; height: 14px; }
+  .card-icon { display: flex; justify-content: center; padding: 6px 0; color: var(--steel); }
+  .card-icon svg { width: 78px; height: 52px; }
+  .card-name { display: block; font-size: 15px; font-weight: 600; text-decoration: none; cursor: pointer; }
+  .card-name .num { font-family: "Cascadia Code",Consolas,monospace; color: var(--accent); font-weight: 600; }
+  .card-name:hover { color: var(--accent); }
+  .card-mfr { font-size: 12px; color: var(--ink-soft); margin-top: -4px; }
+  .card-specs { display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--line); padding-top: 9px; margin-top: 2px; }
+  .card-spec { display: flex; justify-content: space-between; font-size: 12.5px; }
+  .card-spec dt { color: var(--ink-faint); }
+  .card-spec dd { margin: 0; font-family: "Cascadia Code",Consolas,monospace; font-variant-numeric: tabular-nums; }
+
+  .empty-state { padding: 60px 20px; text-align: center; color: var(--ink-soft); }
+
+  /* ===== sticky compare tray ===== */
+  .compare-tray {
+    position: fixed; left: 50%; transform: translateX(-50%) translateY(120%); bottom: 20px; z-index: 40;
+    background: var(--ink); color: var(--paper); border-radius: 12px; padding: 12px 14px 12px 18px;
+    display: flex; align-items: center; gap: 16px; box-shadow: var(--shadow-lg); transition: transform .25s ease;
+  }
+  .compare-tray.show { transform: translateX(-50%) translateY(0); }
+  .compare-tray .txt { font-size: 13px; }
+  .compare-tray .txt b { font-variant-numeric: tabular-nums; }
+  .compare-tray button.go {
+    background: var(--accent); color: var(--accent-ink); border: none; border-radius: 8px; padding: 8px 14px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .compare-tray button.clear { background: transparent; border: none; color: var(--paper); opacity: .6; cursor: pointer; font-size: 12.5px; }
+
+  /* ===== detail view ===== */
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 6px; background: none; border: none; color: var(--ink-soft);
+    cursor: pointer; font-size: 13px; padding: 16px 0 6px; margin: 0;
+  }
+  .back-btn:hover { color: var(--accent); }
+  .back-btn svg { width: 14px; height: 14px; }
+
+  .detail-head { display: flex; gap: 20px; align-items: flex-start; padding: 8px 0 24px; border-bottom: 1px solid var(--line); }
+  .detail-icon {
+    flex-shrink: 0; width: 96px; height: 96px; border-radius: 14px; background: var(--panel-sunken);
+    display: flex; align-items: center; justify-content: center; color: var(--steel);
+  }
+  .detail-icon svg { width: 60px; height: 42px; }
+  .detail-title h1 { font-size: 26px; margin: 0 0 6px; text-wrap: balance; }
+  .detail-title h1 .num { color: var(--accent); font-family: "Cascadia Code",Consolas,monospace; }
+  .detail-tags { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+  .tag {
+    font-size: 12px; padding: 4px 10px; border-radius: 999px; background: var(--panel-sunken); color: var(--ink-soft);
+    border: 1px solid var(--line);
+  }
+  .tag.link { cursor: pointer; }
+  .tag.link:hover { border-color: var(--accent); color: var(--accent); }
+  .pill { font-size: 12px; padding: 4px 10px; border-radius: 999px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; }
+  .pill.ok { background: var(--ok-soft); color: var(--ok); }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); }
+  .pill.danger { background: var(--danger-soft); color: var(--danger); }
+  .pill::before { content: ""; width: 6px; height: 6px; border-radius: 999px; background: currentColor; }
+
+  .detail-body { display: grid; grid-template-columns: 176px 1fr; gap: 32px; margin-top: 26px; align-items: start; }
+  @media (max-width: 760px) { .detail-body { grid-template-columns: 1fr; } }
+  .jump-nav { position: sticky; top: 74px; display: flex; flex-direction: column; gap: 2px; }
+  .jump-nav a {
+    text-decoration: none; color: var(--ink-faint); font-size: 12.5px; padding: 6px 0 6px 12px;
+    border-left: 2px solid var(--line); transition: color .15s, border-color .15s;
+  }
+  .jump-nav a:hover, .jump-nav a.on { color: var(--ink); border-color: var(--accent); }
+
+  .dsection { padding: 26px 0; border-bottom: 1px solid var(--line); scroll-margin-top: 84px; }
+  .dsection:last-child { border-bottom: none; }
+  .dsection h2 { font-size: 15px; margin: 0 0 14px; display: flex; align-items: center; gap: 8px; }
+  .dsection h2 .n { color: var(--ink-faint); font-weight: 400; font-size: 12.5px; }
+
+  .spec-table { display: grid; grid-template-columns: 1fr auto; gap: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .spec-table .row { display: contents; }
+  .spec-table dt, .spec-table dd { padding: 9px 14px; border-bottom: 1px solid var(--line); margin: 0; font-size: 13px; }
+  .spec-table .row:last-child dt, .spec-table .row:last-child dd { border-bottom: none; }
+  .spec-table dt { color: var(--ink-soft); background: var(--panel-sunken); }
+  .spec-table dd { font-family: "Cascadia Code",Consolas,monospace; font-variant-numeric: tabular-nums; text-align: right; }
+
+  .bogie-card {
+    display: flex; justify-content: space-between; align-items: center; background: var(--panel-sunken);
+    border-radius: 10px; padding: 14px 16px; gap: 12px; flex-wrap: wrap;
+  }
+  .bogie-card .name { font-weight: 600; }
+  .bogie-card .note { font-size: 12.5px; color: var(--ink-soft); }
+  .bogie-card .load { text-align: right; font-family: "Cascadia Code",Consolas,monospace; }
+  .bogie-card .load b { display: block; font-size: 17px; }
+  .bogie-card .load span { font-size: 11.5px; color: var(--ink-faint); }
+
+  table.overhaul { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.overhaul th, table.overhaul td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: right; }
+  table.overhaul td:first-child, table.overhaul th:first-child { text-align: left; }
+  table.overhaul thead th { color: var(--ink-faint); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+  table.overhaul tbody td { font-family: "Cascadia Code",Consolas,monospace; font-variant-numeric: tabular-nums; }
+  .overhaul-wrap { overflow-x: auto; }
+
+  .feature-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .feature-chip { background: var(--accent-soft); color: var(--accent); border-radius: 8px; padding: 6px 11px; font-size: 12.5px; }
+  .feature-chip.cargo-pick { cursor: pointer; border: 1px solid transparent; }
+  .feature-chip.cargo-pick:hover { border-color: var(--accent); background: var(--accent-soft-strong); }
+
+
+  .depot-list { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .depot-row {
+    display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; border-bottom: 1px solid var(--line);
+    cursor: pointer;
+  }
+  .depot-row:last-child { border-bottom: none; }
+  .depot-row:hover { background: var(--panel-sunken); }
+  .depot-row .name { font-size: 13px; font-weight: 600; }
+  .depot-row .meta { font-size: 12px; color: var(--ink-faint); }
+  .depot-row .go { color: var(--ink-faint); }
+  .depot-more { padding: 10px 14px; font-size: 12.5px; color: var(--ink-soft); }
+
+  .no-data { color: var(--ink-faint); font-size: 13px; font-style: italic; }
+
+  /* ===== overlay panel (manufacturer / depot) ===== */
+  .overlay-mask {
+    position: fixed; inset: 0; background: rgba(10,12,14,.4); z-index: 50; display: none;
+  }
+  .overlay-mask.show { display: block; }
+  .overlay-panel {
+    position: fixed; top: 0; right: 0; height: 100%; width: min(380px, 92vw); background: var(--panel);
+    z-index: 51; box-shadow: var(--shadow-lg); transform: translateX(100%); transition: transform .25s ease;
+    padding: 22px; overflow-y: auto;
+  }
+  .overlay-mask.show .overlay-panel { transform: translateX(0); }
+  .overlay-close { position: absolute; top: 18px; right: 18px; background: none; border: none; color: var(--ink-faint); cursor: pointer; }
+  .overlay-eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: .09em; color: var(--accent); font-weight: 600; margin-bottom: 8px; }
+  .overlay-panel h3 { font-size: 19px; margin: 0 0 4px; text-wrap: balance; }
+  .overlay-sub { color: var(--ink-soft); font-size: 13px; margin-bottom: 18px; }
+  .overlay-panel .spec-table { margin-bottom: 16px; }
+  .overlay-note { font-size: 12px; color: var(--ink-faint); border-top: 1px solid var(--line); padding-top: 12px; margin-top: 16px; }
+
+  /* ===== compare view ===== */
+  .compare-wrap { overflow-x: auto; margin-top: 18px; }
+  table.compare { border-collapse: collapse; width: 100%; min-width: 560px; }
+  table.compare th, table.compare td { padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 13px; white-space: nowrap; }
+  table.compare thead th { text-align: left; vertical-align: bottom; padding-top: 0; }
+  table.compare thead .rm { float: right; background: none; border: none; color: var(--ink-faint); cursor: pointer; }
+  table.compare tbody th { text-align: left; color: var(--ink-soft); font-weight: 500; background: var(--panel-sunken); position: sticky; left: 0; }
+  table.compare td { font-family: "Cascadia Code",Consolas,monospace; font-variant-numeric: tabular-nums; }
+  table.compare td.diff { background: var(--accent-soft); font-weight: 600; color: var(--accent); border-radius: 4px; }
+  .compare-empty { padding: 60px 20px; text-align: center; color: var(--ink-soft); }
+  .compare-toolbar { display: flex; align-items: center; justify-content: space-between; margin-top: 20px; }
+  .diff-toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-soft); cursor: pointer; }
+  .diff-toggle input { accent-color: var(--accent); }
+
+  footer.foot { border-top: 1px solid var(--line); padding: 22px 24px 40px; font-size: 12px; color: var(--ink-faint); }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header class="top">
+    <div class="top-inner">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="7" width="20" height="10" rx="1.4"/><line x1="6" y1="7" x2="6" y2="17"/><line x1="12" y1="7" x2="12" y2="17"/><line x1="18" y1="7" x2="18" y2="17"/><circle cx="7" cy="19.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="17" cy="19.5" r="1.4" fill="currentColor" stroke="none"/></svg>
+        <div class="brand-text"><b>Вагоны</b> <span>· каталог</span></div>
+      </div>
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="search" type="text" placeholder="Модель, завод — например «12-196» или «Алтайвагон»" autocomplete="off" />
+      </div>
+      <nav class="top-nav">
+        <button id="nav-catalog" class="active" onclick="go('catalog')">Каталог</button>
+        <button id="nav-compare" onclick="go('compare')">Сравнение <span class="badge" id="compare-badge">0</span></button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ===================== CATALOG ===================== -->
+    <section id="view-catalog" class="view active">
+      <h1 class="display" style="font-size:26px;margin:20px 0 0;">Грузовые вагоны</h1>
+      <p style="color:var(--ink-soft);font-size:13.5px;margin:6px 0 0;max-width:56ch;">Характеристики, тележка и запчасти, сроки ремонта, допустимые грузы и депо — по каждой модели в одном месте.</p>
+      <div class="type-tabs" id="type-tabs"></div>
+
+      <div class="catalog-body">
+        <aside class="filters">
+          <div class="filter-group cargo-filter-group">
+            <h4>Что нужно перевезти <span class="filter-hint">1 870 видов груза</span></h4>
+            <div class="cargo-search">
+              <input id="cargo-search" type="text" placeholder="например, «бензин» или «зерно»" autocomplete="off" />
+              <div class="cargo-suggest" id="cargo-suggest"></div>
+            </div>
+            <div class="cargo-chips" id="cargo-chips"></div>
+          </div>
+          <div class="filter-group">
+            <h4>Грузоподъёмность, т</h4>
+            <div class="filter-range">
+              <input id="cap-min" type="number" placeholder="от" min="0" />
+              <span>—</span>
+              <input id="cap-max" type="number" placeholder="до" min="0" />
+            </div>
+          </div>
+          <div class="filter-group">
+            <h4>Производитель</h4>
+            <div class="filter-check-list" id="mfr-filters"></div>
+          </div>
+          <div class="filter-group">
+            <label class="filter-toggle"><input id="only-auth" type="checkbox" /> Требуется авторизация</label>
+          </div>
+          <button class="filter-clear" onclick="clearFilters()">Сбросить фильтры</button>
+        </aside>
+
+        <div>
+          <div class="result-meta">
+            <div class="count">Найдено: <b id="result-count">0</b></div>
+          </div>
+          <div class="grid" id="catalog-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== DETAIL ===================== -->
+    <section id="view-detail" class="view">
+      <button class="back-btn" onclick="go('catalog')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        В каталог
+      </button>
+      <div id="detail-content"></div>
+    </section>
+
+    <!-- ===================== COMPARE ===================== -->
+    <section id="view-compare" class="view">
+      <button class="back-btn" onclick="go('catalog')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        В каталог
+      </button>
+      <h1 class="display" style="font-size:24px;margin:4px 0 0;">Сравнение вагонов</h1>
+      <div id="compare-content"></div>
+    </section>
+
+  </main>
+
+  <footer class="foot">
+    Прототип: витрина каталога, карточка вагона, сравнение и переходы к депо/заводу. Данные — реальная выборка из <span class="mono">rzd.db</span> (не полная база).
+  </footer>
+
+  <div class="compare-tray" id="compare-tray">
+    <div class="txt"><b id="tray-count">0</b> вагона выбрано для сравнения</div>
+    <button class="clear" onclick="clearCompare()">Очистить</button>
+    <button class="go" onclick="go('compare')">Сравнить →</button>
+  </div>
+
+  <div class="overlay-mask" id="overlay-mask" onclick="if(event.target===this) closeOverlay()">
+    <div class="overlay-panel">
+      <button class="overlay-close" onclick="closeOverlay()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <div id="overlay-content"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   Данные — реальная выборка из rzd.db (не вся база, для прототипа)
+   ============================================================ */
+
+/* ---------- справочники и индексы ---------- */
+let DATA, KIND_BY_ID, MFR_BY_ID, BOGIE_BY_ID, DEPOT_BY_ID, RAILWAY_BY_ID, REPAIR_TYPE_BY_ID,
+    HOLDING_BY_ID, FEATURE_BY_ID, CONTAINER_BY_ID, CARGO_TYPES, CARGO_BY_ID, DEPOT_COMPETENCIES,
+    DEPOT_AUTHORIZATIONS, VAGONS, VAGON_BY_ID, CARGO_VAGON_IDS;
+
+function initFromData(data) {
+  DATA = data;
+  KIND_BY_ID = new Map(DATA.vagonKinds.map(k => [k.id, k]));
+  MFR_BY_ID = new Map(DATA.manufacturers.map(m => [m.id, m]));
+  BOGIE_BY_ID = new Map(DATA.bogies.map(b => [b.id, b]));
+  DEPOT_BY_ID = new Map(DATA.depots.map(d => [d.id, d]));
+  RAILWAY_BY_ID = new Map(DATA.railways.map(r => [r.id, r.name]));
+  REPAIR_TYPE_BY_ID = new Map(DATA.repairTypes.map(r => [r.id, r.name]));
+  HOLDING_BY_ID = new Map(DATA.repairHoldings.map(h => [h.id, h]));
+  FEATURE_BY_ID = new Map(DATA.features.map(f => [f.id, f.name]));
+  CONTAINER_BY_ID = new Map(DATA.containerSizes.map(c => [c.id, c.name]));
+  CARGO_TYPES = DATA.cargoTypes;
+  CARGO_BY_ID = new Map(CARGO_TYPES.map(c => [c.id, c]));
+  DEPOT_COMPETENCIES = DATA.depotCompetencies;
+  DEPOT_AUTHORIZATIONS = DATA.depotAuthorizations;
+  VAGONS = DATA.vagons;
+  VAGON_BY_ID = new Map(VAGONS.map(v => [v.id, v]));
+  VAGONS.forEach(v => { v.cargoSet = new Set(v.cargoIds || []); });
+
+  CARGO_VAGON_IDS = new Map(); // cargo_id -> Set(vagon_id), для счётчика в автокомплите
+  VAGONS.forEach(v => (v.cargoIds || []).forEach(cid => {
+    if (!CARGO_VAGON_IDS.has(cid)) CARGO_VAGON_IDS.set(cid, new Set());
+    CARGO_VAGON_IDS.get(cid).add(v.id);
+  }));
+}
+
+const ICONS = {
+  T001: `<svg viewBox="0 0 64 44" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 14h52v18H6z"/><path d="M14 14v18M22 14v18M30 14v18M38 14v18M46 14v18" stroke-width="1.3" opacity=".55"/><circle cx="16" cy="36" r="3.4" fill="currentColor" stroke="none"/><circle cx="48" cy="36" r="3.4" fill="currentColor" stroke="none"/></svg>`,
+  T002: `<svg viewBox="0 0 64 44" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="12" width="48" height="18" rx="9"/><rect x="27" y="6" width="10" height="7" rx="1.5"/><circle cx="17" cy="35" r="3.4" fill="currentColor" stroke="none"/><circle cx="47" cy="35" r="3.4" fill="currentColor" stroke="none"/></svg>`,
+  T003: `<svg viewBox="0 0 64 44" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12h44l-4 18H14z"/><path d="M20 30l4 6h16l4-6" stroke-width="1.6"/><path d="M18 12l8-6h12l8 6" stroke-width="1.6"/><circle cx="18" cy="38" r="3" fill="currentColor" stroke="none"/><circle cx="46" cy="38" r="3" fill="currentColor" stroke="none"/></svg>`,
+  T004: `<svg viewBox="0 0 64 44" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h56v5H4z"/><path d="M10 22v-6M20 22v-6M44 22v-6M54 22v-6" stroke-width="1.6"/><circle cx="14" cy="33" r="3.4" fill="currentColor" stroke="none"/><circle cx="50" cy="33" r="3.4" fill="currentColor" stroke="none"/></svg>`,
+  T005: `<svg viewBox="0 0 64 44" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 30V16h52v14z"/><path d="M6 16 16 8h32l10 8" stroke-width="1.6"/><rect x="27" y="16" width="10" height="14" stroke-width="1.4"/><circle cx="16" cy="36" r="3.4" fill="currentColor" stroke="none"/><circle cx="48" cy="36" r="3.4" fill="currentColor" stroke="none"/></svg>`,
+  T006: `<svg viewBox="0 0 64 44" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="10" width="52" height="20" rx="6"/><path d="M6 16h52M6 24h52" stroke-width="1.2" opacity=".5"/><circle cx="16" cy="36" r="3.4" fill="currentColor" stroke="none"/><circle cx="48" cy="36" r="3.4" fill="currentColor" stroke="none"/></svg>`,
+  T007: `<svg viewBox="0 0 64 44" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12h44v12l-6 6H16l-6-6z"/><circle cx="17" cy="36" r="3.4" fill="currentColor" stroke="none"/><circle cx="47" cy="36" r="3.4" fill="currentColor" stroke="none"/></svg>`,
+  T008: `<svg viewBox="0 0 64 44" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="13" width="48" height="16" rx="2"/><path d="M8 21h48" stroke-width="1.3" opacity=".55"/><circle cx="17" cy="35" r="3.4" fill="currentColor" stroke="none"/><circle cx="47" cy="35" r="3.4" fill="currentColor" stroke="none"/></svg>`,
+};
+
+const TYPE_META = {
+  T001: { name: "Полувагон", cardSpecs: [["capacity_t","Грузоподъёмность"," т"],["body_volume_m3","Объём кузова"," м³"],["bogie","Тележка",""]] },
+  T002: { name: "Цистерна", cardSpecs: [["capacity_t","Грузоподъёмность"," т"],["boiler_volume_m3","Объём котла"," м³"],["length_mm","Длина","",true]] },
+  T003: { name: "Хоппер", cardSpecs: [["capacity_t","Грузоподъёмность"," т"],["body_volume_m3","Объём кузова"," м³"],["kind","Род",""]] },
+  T004: { name: "Платформа", cardSpecs: [["capacity_t","Грузоподъёмность"," т"],["length_mm","Длина","",true],["width_mm","Ширина","",true]] },
+  T005: { name: "Крытый", cardSpecs: [["capacity_t","Грузоподъёмность"," т"],["body_volume_m3","Объём кузова"," м³"],["length_mm","Длина","",true]] },
+  T006: { name: "Изотермический", cardSpecs: [["capacity_t","Грузоподъёмность"," т"],["body_volume_m3","Объём кузова"," м³"],["temp_range_c","Диапазон t°",""]] },
+  T007: { name: "Думпкар", cardSpecs: [["capacity_t","Грузоподъёмность"," т"],["body_volume_m3","Объём кузова"," м³"],["axles_count","Осей",""]] },
+  T008: { name: "Прочий", cardSpecs: [["capacity_t","Грузоподъёмность"," т"],["length_mm","Длина","",true],["gauge","Габарит",""]] },
+};
+
+// генерический словарь всех полей характеристик (across 11 таблиц характеристик) -> подпись/единица
+const FIELD_LABELS = {
+  capacity_t: ["Грузоподъёмность", " т"],
+  body_volume_m3: ["Объём кузова", " м³"],
+  boiler_volume_m3: ["Объём котла", " м³"],
+  tare_mass_t: ["Масса тары", " т"],
+  length_mm: ["Длина вагона", " мм"],
+  frame_length_mm: ["Длина по раме", " мм"],
+  base_mm: ["База вагона", " мм"],
+  width_mm: ["Ширина вагона", " мм"],
+  floor_area_m2: ["Площадь пола", " м²"],
+  boiler_inner_diameter_mm: ["Вн. диаметр котла", " мм"],
+  loading_hatches_count: ["Загрузочные люки", " шт."],
+  unloading_hatches_count: ["Разгрузочные люки", " шт."],
+  fittings_total: ["Фитинговые упоры, всего", " шт."],
+  fittings_folding: ["в т.ч. откидные", " шт."],
+  stanchions_count: ["Количество стоек", " шт."],
+  end_walls: ["Торцевые стенки", ""],
+  door_opening_width_mm: ["Ширина дверного проёма", " мм"],
+  door_opening_height_mm: ["Высота дверного проёма", " мм"],
+  inner_length_mm: ["Длина кузова внутр.", " мм"],
+  inner_width_mm: ["Ширина кузова внутр.", " мм"],
+  inner_height_mm: ["Высота кузова внутр.", " мм"],
+  temp_range_c: ["Рабочий диапазон t°", ""],
+  heat_transfer_coef: ["К-т теплопередачи", " Вт/(м²·К)"],
+  transport_duration_days: ["Срок перевозки", " сут."],
+  axles_count: ["Количество осей", ""],
+  service_life_years: ["Срок службы", " лет"],
+  gauge: ["Габарит", ""],
+};
+const FIELD_ORDER = Object.keys(FIELD_LABELS);
+
+/* ---------- состояние ---------- */
+const state = { type: "ALL", search: "", capMin: null, capMax: null, mfrs: new Set(), onlyAuth: false, compare: new Set(), cargo: new Set() };
+
+function fmtNum(n) {
+  if (n === null || n === undefined) return "—";
+  if (typeof n !== "number") return n;
+  return n.toLocaleString("ru-RU");
+}
+function fmtDate(iso) { return iso ? iso.split("-").reverse().join(".") : null; }
+function kindName(v) { return v.kindId ? (KIND_BY_ID.get(v.kindId)?.name || null) : null; }
+function mfrShort(id) { return MFR_BY_ID.get(id)?.short_name || id; }
+
+/* ---------- грузы: поиск ---------- */
+let cargoHi = -1;
+function cargoSuggestions(query) {
+  const q = query.trim().toLowerCase();
+  if (q.length < 2) return [];
+  const starts = [], contains = [];
+  for (const c of CARGO_TYPES) {
+    const name = c.name.toLowerCase();
+    if (name.startsWith(q)) starts.push(c);
+    else if (name.includes(q)) contains.push(c);
+    if (starts.length + contains.length > 400) break;
+  }
+  return starts.concat(contains).slice(0, 12);
+}
+function renderCargoSuggest() {
+  const box = document.getElementById("cargo-suggest");
+  const q = document.getElementById("cargo-search").value;
+  const items = cargoSuggestions(q);
+  cargoHi = items.length ? 0 : -1;
+  if (!q.trim()) { box.classList.remove("show"); box.innerHTML = ""; return; }
+  box.innerHTML = items.length ? items.map((c,i) => `
+      <div class="cargo-suggest-item ${i===0?'hi':''}" data-id="${c.id}" onclick="addCargoFilter('${c.id}')">
+        <span class="t">${c.name}</span>
+        <span class="code">${CARGO_VAGON_IDS.has(c.id) ? (CARGO_VAGON_IDS.get(c.id).size+' ваг.') : (c.etsng_code||'')}</span>
+      </div>`).join("")
+    : `<div class="cargo-suggest-empty">Ничего не нашлось среди ${CARGO_TYPES.length} видов груза</div>`;
+  box.classList.add("show");
+}
+function addCargoFilter(cargoId) {
+  state.cargo.add(cargoId);
+  document.getElementById("cargo-search").value = "";
+  document.getElementById("cargo-suggest").classList.remove("show");
+  renderCargoChips(); renderCatalog();
+}
+function removeCargoFilter(cargoId) { state.cargo.delete(cargoId); renderCargoChips(); renderCatalog(); }
+function renderCargoChips() {
+  document.getElementById("cargo-chips").innerHTML = [...state.cargo].map(cid => {
+    const c = CARGO_BY_ID.get(cid);
+    return `<span class="cargo-chip"><span class="t" title="${c.name}">${c.name}</span><button onclick="removeCargoFilter('${cid}')">✕</button></span>`;
+  }).join("");
+}
+function jumpToCargo(cargoId) {
+  state.type="ALL"; state.search=""; state.capMin=null; state.capMax=null; state.mfrs.clear(); state.onlyAuth=false;
+  state.cargo = new Set([cargoId]);
+  document.getElementById("search").value=""; document.getElementById("cap-min").value=""; document.getElementById("cap-max").value="";
+  document.getElementById("only-auth").checked=false;
+  typeTabs(); mfrFilters(); renderCargoChips(); renderCatalog();
+  go("catalog");
+}
+
+/* ---------- депо: прямая авторизация или компетенция по типу/роду ---------- */
+function depotsForVagon(v) {
+  const direct = DEPOT_AUTHORIZATIONS.filter(a => a.vagon_id === v.id);
+  if (direct.length) {
+    return { mode: "direct", items: direct.map(a => ({ depotId: a.depot_id, repairTypeIds: [a.repair_type_id] })) };
+  }
+  const byDepot = new Map();
+  DEPOT_COMPETENCIES.forEach(c => {
+    if (c.vagon_type_id !== v.typeId) return;
+    if (c.vagon_kind_id != null && c.vagon_kind_id !== v.kindId) return;
+    if (!byDepot.has(c.depot_id)) byDepot.set(c.depot_id, new Set());
+    byDepot.get(c.depot_id).add(c.repair_type_id);
+  });
+  return { mode: "competency", items: [...byDepot.entries()].map(([depotId, set]) => ({ depotId, repairTypeIds: [...set] })) };
+}
+
+/* ---------- фильтры каталога ---------- */
+function typeTabs() {
+  const counts = { ALL: VAGONS.length };
+  Object.keys(TYPE_META).forEach(t => counts[t] = VAGONS.filter(v => v.typeId === t).length);
+  const tabs = [{id:"ALL", name:"Все типы"}].concat(Object.keys(TYPE_META).filter(t=>counts[t]>0).map(t => ({id:t, name:TYPE_META[t].name})));
+  document.getElementById("type-tabs").innerHTML = tabs.map(t => `
+    <button class="type-tab ${state.type===t.id?'active':''}" onclick="setType('${t.id}')">
+      ${t.id!=="ALL" ? ICONS[t.id] : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="7" height="7"/><rect x="14" y="4" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>`}
+      ${t.name} <span class="n">${counts[t.id]}</span>
+    </button>`).join("");
+}
+function mfrFilters() {
+  const ids = new Set(VAGONS.map(v => v.mfrId).filter(Boolean));
+  const mfrs = [...ids].map(id => MFR_BY_ID.get(id)).filter(Boolean).sort((a,b)=>a.short_name.localeCompare(b.short_name,'ru'));
+  document.getElementById("mfr-filters").innerHTML = mfrs.map(m => `
+    <label class="filter-check">
+      <input type="checkbox" ${state.mfrs.has(m.id)?'checked':''} onchange="toggleMfr('${m.id}')" /> ${m.short_name}
+    </label>`).join("");
+}
+function toggleMfr(id) { state.mfrs.has(id) ? state.mfrs.delete(id) : state.mfrs.add(id); renderCatalog(); }
+function setType(t) { state.type = t; renderCatalog(); typeTabs(); }
+function clearFilters() {
+  state.type="ALL"; state.search=""; state.capMin=null; state.capMax=null; state.mfrs.clear(); state.onlyAuth=false; state.cargo.clear();
+  document.getElementById("search").value=""; document.getElementById("cap-min").value=""; document.getElementById("cap-max").value="";
+  document.getElementById("only-auth").checked=false; document.getElementById("cargo-search").value="";
+  typeTabs(); mfrFilters(); renderCargoChips(); renderCatalog();
+}
+function filteredVagons() {
+  return VAGONS.filter(v => {
+    if (state.type !== "ALL" && v.typeId !== state.type) return false;
+    if (state.mfrs.size && !state.mfrs.has(v.mfrId)) return false;
+    if (state.onlyAuth && !v.requiresAuth) return false;
+    if (state.cargo.size && ![...state.cargo].some(cid => v.cargoSet.has(cid))) return false;
+    const cap = v.specs.capacity_t;
+    if (state.capMin != null && (cap == null || cap < state.capMin)) return false;
+    if (state.capMax != null && (cap == null || cap > state.capMax)) return false;
+    if (state.search) {
+      const s = state.search.toLowerCase();
+      const mfrName = mfrShort(v.mfrId).toLowerCase();
+      if (!(v.model.toLowerCase().includes(s) || mfrName.includes(s) || v.id.toLowerCase().includes(s))) return false;
+    }
+    return true;
+  });
+}
+
+function cardHTML(v) {
+  const meta = TYPE_META[v.typeId];
+  const kn = kindName(v);
+  const featureNames = (v.featureIds||[]).map(id=>FEATURE_BY_ID.get(id)).filter(Boolean);
+  const badge = featureNames[0] || kn || meta.name;
+  const specs = meta.cardSpecs.map(([key,label,suffix]) => {
+    let val = key==="bogie" ? (BOGIE_BY_ID.get(v.bogieId)?.model ?? null)
+            : key==="kind" ? kn
+            : (v.specs[key] ?? null);
+    if (val == null) return null;
+    if (typeof val === "number") val = fmtNum(val) + (suffix||"");
+    return `<div class="card-spec"><dt>${label}</dt><dd>${val}</dd></div>`;
+  }).filter(Boolean).join("");
+  return `
+  <div class="card">
+    <div class="card-top">
+      <span class="card-badge">${badge}</span>
+      <label class="card-compare" onclick="event.stopPropagation()">
+        <input type="checkbox" ${state.compare.has(v.id)?'checked':''} onchange="toggleCompare('${v.id}')" /> сравнить
+      </label>
+    </div>
+    <div class="card-icon" onclick="openDetail('${v.id}')">${ICONS[v.typeId]}</div>
+    <a class="card-name" onclick="openDetail('${v.id}')">${meta.name} <span class="num">${v.model}</span></a>
+    <div class="card-mfr">${mfrShort(v.mfrId)}${v.requiresAuth?' · требует авторизации':''}</div>
+    <dl class="card-specs">${specs}</dl>
+  </div>`;
+}
+function renderCatalog() {
+  const list = filteredVagons();
+  document.getElementById("result-count").textContent = list.length;
+  document.getElementById("catalog-grid").innerHTML = list.length
+    ? list.map(cardHTML).join("")
+    : `<div class="empty-state" style="grid-column:1/-1">Ничего не найдено — попробуйте изменить фильтры</div>`;
+}
+
+/* ---------- detail ---------- */
+function openDetail(id) {
+  const v = VAGON_BY_ID.get(id);
+  if (!v) return;
+  const meta = TYPE_META[v.typeId];
+  const kn = kindName(v);
+
+  const specRows = FIELD_ORDER.filter(k => v.specs[k] != null).map(k => {
+    const [label, suffix] = FIELD_LABELS[k];
+    const raw = v.specs[k];
+    return [label, typeof raw === "number" ? fmtNum(raw)+suffix : raw];
+  });
+
+  const cert = v.cert;
+  const pillClass = cert ? (cert.status==="Действует"?"ok":cert.status==="Приостановлен"?"warn":"danger") : null;
+
+  const bogie = v.bogieId ? BOGIE_BY_ID.get(v.bogieId) : null;
+
+  const overhaulRows = (v.overhaul||[]).map(r => `
+    <tr>
+      <td>${r.c}</td>
+      <td>${r.drBuild??"—"}${r.drBuildKm?` <span style="color:var(--ink-faint)">/ ${fmtNum(r.drBuildKm)} тыс.км</span>`:""}</td>
+      <td>${r.drDr??"—"}${r.drDrKm?` <span style="color:var(--ink-faint)">/ ${fmtNum(r.drDrKm)} тыс.км</span>`:""}</td>
+      <td>${r.drKr??"—"}${r.drKrKm?` <span style="color:var(--ink-faint)">/ ${fmtNum(r.drKrKm)} тыс.км</span>`:""}</td>
+      <td>${r.krBuild??"—"}</td>
+    </tr>`).join("");
+
+  // грузы
+  let cargoIds = v.cargoIds || [];
+  const isNoDataStub = cargoIds.length === 1 && CARGO_BY_ID.get(cargoIds[0]).name.startsWith("Нет данных");
+  if (isNoDataStub) cargoIds = [];
+  const CARGO_PAGE = 24;
+  const cargoChip = cid => {
+    const c = CARGO_BY_ID.get(cid);
+    return `<span class="feature-chip cargo-pick" onclick="jumpToCargo('${cid}')" title="Показать все вагоны, которые перевозят «${c.name}»">${c.name}</span>`;
+  };
+  const cargoBlock = !cargoIds.length
+    ? `<p class="no-data">${isNoDataStub ? "нет данных о перевозимых грузах — уточняйте у производителя" : "данные о допустимых грузах не внесены"}</p>`
+    : `<div class="feature-list" id="cargo-list">
+         ${cargoIds.slice(0,CARGO_PAGE).map(cargoChip).join("")}
+         ${cargoIds.length>CARGO_PAGE ? `<span class="cargo-overflow" style="display:none">${cargoIds.slice(CARGO_PAGE).map(cargoChip).join("")}</span>` : ""}
+       </div>
+       ${cargoIds.length>CARGO_PAGE ? `<button class="filter-clear" style="margin-top:10px" onclick="document.querySelector('#cargo-list .cargo-overflow').style.display='contents'; this.remove();">показать все ${cargoIds.length}</button>` : ""}
+       <p style="color:var(--ink-faint);font-size:12px;margin-top:12px;">Клик по грузу — все вагоны каталога, которые его перевозят.</p>`;
+
+  // депо
+  const depotInfo = depotsForVagon(v);
+  const DEPOT_PAGE = 8;
+  const depotRow = it => {
+    const d = DEPOT_BY_ID.get(it.depotId);
+    if (!d) return "";
+    const holding = d.holding_id ? HOLDING_BY_ID.get(d.holding_id) : null;
+    const repairNames = it.repairTypeIds.map(id=>REPAIR_TYPE_BY_ID.get(id)).filter(Boolean).join(", ");
+    return `<div class="depot-row" onclick="openDepot('${d.id}')">
+        <div><div class="name">${d.name}</div><div class="meta">${holding?holding.short_name+' · ':''}ст. ${d.adjoining_station||'—'}</div></div>
+        <div class="go">${repairNames} →</div>
+      </div>`;
+  };
+  const depotsHTML = !depotInfo.items.length
+    ? `<p class="no-data">данные по авторизованным депо пока не внесены в источник</p>`
+    : `${depotInfo.mode==="competency" ? `<p style="color:var(--ink-faint);font-size:12px;margin-bottom:8px;">Точечной авторизации на эту модель в источнике нет — показаны депо, компетентные по роду «${kn||meta.name}».</p>` : ""}
+       <div class="depot-list" id="depot-list">
+         ${depotInfo.items.slice(0,DEPOT_PAGE).map(depotRow).join("")}
+         <span class="depot-overflow" style="display:none">${depotInfo.items.slice(DEPOT_PAGE).map(depotRow).join("")}</span>
+       </div>
+       ${depotInfo.items.length>DEPOT_PAGE ? `<button class="filter-clear" style="margin-top:10px" onclick="document.querySelector('#depot-list .depot-overflow').style.display='contents'; this.remove();">показать все ${depotInfo.items.length}</button>` : ""}`;
+
+  document.getElementById("detail-content").innerHTML = `
+    <div class="detail-head">
+      <div class="detail-icon">${ICONS[v.typeId]}</div>
+      <div class="detail-title">
+        <h1 class="display">${meta.name} <span class="num">${v.model}</span></h1>
+        <div class="detail-tags">
+          <span class="tag">${kn || meta.name}</span>
+          <span class="tag link" onclick="openManufacturer('${v.mfrId}')">завод: ${mfrShort(v.mfrId)}</span>
+          ${v.requiresAuth ? `<span class="pill warn">требуется авторизация</span>` : ""}
+          ${cert ? `<span class="pill ${pillClass}">${cert.status}</span>` : ""}
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-body">
+      <nav class="jump-nav">
+        <a href="#s-char">Характеристики</a>
+        <a href="#s-bogie">Тележка</a>
+        <a href="#s-overhaul">Сроки ремонта</a>
+        <a href="#s-features">Особенности</a>
+        <a href="#s-cargo">Грузы</a>
+        <a href="#s-depots">Депо для ремонта</a>
+      </nav>
+
+      <div>
+        <div class="dsection" id="s-char">
+          <h2>Характеристики</h2>
+          <div class="spec-table">
+            ${specRows.map(([k,val]) => `<div class="row"><dt>${k}</dt><dd>${val}</dd></div>`).join("")}
+          </div>
+        </div>
+
+        <div class="dsection" id="s-bogie">
+          <h2>Тележка ${bogie?`<span class="n">— запчасти и чертежи по этой модели тележки</span>`:""}</h2>
+          ${bogie ? `
+            <div class="bogie-card">
+              <div><div class="name">Модель ${bogie.model}</div><div class="note">${bogie.model_note || "типовая"}</div></div>
+              <div class="load"><b>${bogie.axle_load_tf} тс</b><span>осевая нагрузка</span></div>
+            </div>` : `<p class="no-data">тележка не указана в источнике</p>`}
+        </div>
+
+        <div class="dsection" id="s-overhaul">
+          <h2>Межремонтные сроки</h2>
+          ${overhaulRows ? `
+          <div class="overhaul-wrap">
+            <table class="overhaul">
+              <thead><tr><th>Критерий</th><th>ДР после постройки</th><th>ДР после ДР</th><th>ДР после КР</th><th>КР после постройки, лет</th></tr></thead>
+              <tbody>${overhaulRows}</tbody>
+            </table>
+          </div>` : `<p class="no-data">данные по срокам обслуживания не внесены для этой модели</p>`}
+        </div>
+
+        <div class="dsection" id="s-features">
+          <h2>Особенности конструкции</h2>
+          ${(v.featureIds||[]).length ? `<div class="feature-list">${v.featureIds.map(id=>`<span class="feature-chip">${FEATURE_BY_ID.get(id)}</span>`).join("")}</div>` : `<p class="no-data">особенностей не отмечено</p>`}
+        </div>
+
+        <div class="dsection" id="s-cargo">
+          <h2>Грузы ${cargoIds.length ? `<span class="n">— ${cargoIds.length}</span>` : ""}</h2>
+          ${cargoBlock}
+        </div>
+
+        <div class="dsection" id="s-depots">
+          <h2>Депо, авторизованные на ремонт ${depotInfo.items.length?`<span class="n">— ${depotInfo.items.length}</span>`:""}</h2>
+          ${depotsHTML}
+        </div>
+      </div>
+    </div>
+  `;
+  go("detail", true);
+  window.scrollTo(0,0);
+}
+
+/* ---------- manufacturer / depot overlays ---------- */
+function openManufacturer(mfrId) {
+  const m = MFR_BY_ID.get(mfrId);
+  const mask = document.getElementById("overlay-mask");
+  if (!m) { closeOverlay(); return; }
+  const parent = m.parent_id ? MFR_BY_ID.get(m.parent_id) : null;
+  document.getElementById("overlay-content").innerHTML = `
+    <div class="overlay-eyebrow">Производитель</div>
+    <h3>${m.short_name || m.full_name}</h3>
+    <div class="overlay-sub">${m.full_name}${parent?` · входит в состав <span class="tag link" onclick="openManufacturer('${parent.id}')" style="display:inline-flex">${parent.short_name}</span>`:""}</div>
+    <div class="spec-table">
+      <div class="row"><dt>Город</dt><dd>${m.city||"—"}</dd></div>
+      <div class="row"><dt>Регион</dt><dd>${m.region||"—"}</dd></div>
+      <div class="row"><dt>Тип</dt><dd>${m.enterprise_type||"—"}</dd></div>
+      ${m.capacity?`<div class="row"><dt>Мощность</dt><dd>${fmtNum(m.capacity)} тыс. ваг/год</dd></div>`:""}
+      ${m.staff?`<div class="row"><dt>Персонал</dt><dd>${fmtNum(m.staff)} тыс. чел.</dd></div>`:""}
+      <div class="row"><dt>Вагоны 25 тс</dt><dd>${m.produces_25tf_vagons||"н/д"}</dd></div>
+      <div class="row"><dt>Сайт</dt><dd>${m.website||"—"}</dd></div>
+    </div>
+    ${m.vagonTypes&&m.vagonTypes.length?`<h4 style="font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);margin:0 0 9px;">Выпускает</h4><div class="feature-list">${m.vagonTypes.map(t=>`<span class="feature-chip">${t}</span>`).join("")}</div>`:""}
+    <div class="overlay-note">Клик по заводу в карточке вагона открывает эту панель.</div>
+  `;
+  mask.classList.add("show");
+}
+function openDepot(depotId) {
+  const d = DEPOT_BY_ID.get(depotId);
+  const mask = document.getElementById("overlay-mask");
+  if (!d) return;
+  const holding = d.holding_id ? HOLDING_BY_ID.get(d.holding_id) : null;
+  const railway = d.railway_id ? RAILWAY_BY_ID.get(d.railway_id) : null;
+  const mapLink = (d.latitude && d.longitude) ? `<a href="https://yandex.ru/maps/?pt=${d.longitude},${d.latitude}&z=13" target="_blank" rel="noopener">${d.latitude.toFixed(4)}, ${d.longitude.toFixed(4)} — открыть на карте</a>` : "—";
+  document.getElementById("overlay-content").innerHTML = `
+    <div class="overlay-eyebrow">Депо</div>
+    <h3>${d.name}</h3>
+    <div class="overlay-sub">${holding?`Ремонтный холдинг «${holding.short_name}»`:"Холдинг не указан"}</div>
+    <div class="spec-table">
+      <div class="row"><dt>Дорога</dt><dd>${railway||"—"}</dd></div>
+      <div class="row"><dt>Станция примыкания</dt><dd>${d.adjoining_station||"—"}</dd></div>
+      <div class="row"><dt>Код станции</dt><dd>${d.station_code||"—"}</dd></div>
+      <div class="row"><dt>Клеймо депо</dt><dd>${d.stamp_code||"—"}</dd></div>
+      <div class="row"><dt>Координаты</dt><dd>${mapLink}</dd></div>
+      <div class="row"><dt>Сайт</dt><dd>${d.website||"—"}</dd></div>
+    </div>
+    <div class="overlay-note">Полная карточка депо — список компетенций по всем типам вагонов и контакты — следующий экран.</div>
+  `;
+  mask.classList.add("show");
+}
+function closeOverlay() { document.getElementById("overlay-mask").classList.remove("show"); }
+
+/* ---------- compare ---------- */
+function toggleCompare(id) {
+  if (state.compare.has(id)) state.compare.delete(id);
+  else { if (state.compare.size >= 4) { state.compare.delete([...state.compare][0]); } state.compare.add(id); }
+  updateCompareTray(); renderCatalog();
+}
+function clearCompare() { state.compare.clear(); updateCompareTray(); renderCatalog(); renderCompare(); }
+function updateCompareTray() {
+  const n = state.compare.size;
+  document.getElementById("tray-count").textContent = n;
+  document.getElementById("compare-badge").textContent = n;
+  document.getElementById("compare-tray").classList.toggle("show", n >= 1 && document.getElementById("view-catalog").classList.contains("active"));
+}
+function renderCompare() {
+  const items = [...state.compare].map(id => VAGON_BY_ID.get(id)).filter(Boolean);
+  const el = document.getElementById("compare-content");
+  if (!items.length) { el.innerHTML = `<div class="compare-empty">Отметьте «сравнить» на карточках в каталоге — до 4 моделей одновременно.</div>`; return; }
+
+  const rows = FIELD_ORDER.filter(key => items.some(v => v.specs[key] != null));
+  el.innerHTML = `
+    <div class="compare-wrap">
+      <table class="compare">
+        <thead><tr>
+          <th></th>
+          ${items.map(v => `<th>${TYPE_META[v.typeId].name}<br><span class="num" style="color:var(--accent)">${v.model}</span>
+            <button class="rm" onclick="toggleCompare('${v.id}');renderCompare()">убрать ✕</button></th>`).join("")}
+        </tr></thead>
+        <tbody>
+          <tr><th>Производитель</th>${items.map(v=>`<td>${mfrShort(v.mfrId)}</td>`).join("")}</tr>
+          <tr><th>Тележка</th>${items.map(v=>`<td>${BOGIE_BY_ID.get(v.bogieId)?.model || '—'}</td>`).join("")}</tr>
+          ${rows.map(key => {
+            const label = FIELD_LABELS[key][0];
+            const vals = items.map(v => v.specs[key]);
+            const distinct = new Set(vals.map(String)).size;
+            return `<tr><th>${label}</th>${items.map((v,i)=>{
+              const val = vals[i];
+              const cls = distinct>1 && val!=null ? "diff" : "";
+              return `<td class="${cls}">${val!=null?fmtNum(val):'—'}</td>`;
+            }).join("")}</tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>
+    <p style="color:var(--ink-faint);font-size:12px;margin-top:14px;">Ячейки с отличающимся значением подсвечены — быстро видно, чем модели различаются.</p>
+  `;
+}
+
+
+/* ---------- nav / boot ---------- */
+function go(view, fromDetail) {
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  document.getElementById("view-"+view).classList.add("active");
+  document.getElementById("nav-catalog").classList.toggle("active", view==="catalog");
+  document.getElementById("nav-compare").classList.toggle("active", view==="compare");
+  if (view === "compare") renderCompare();
+  updateCompareTray();
+  if (!fromDetail) window.scrollTo(0,0);
+}
+
+document.getElementById("search").addEventListener("input", e => { state.search = e.target.value; renderCatalog(); });
+document.getElementById("cap-min").addEventListener("input", e => { state.capMin = e.target.value? +e.target.value : null; renderCatalog(); });
+document.getElementById("cap-max").addEventListener("input", e => { state.capMax = e.target.value? +e.target.value : null; renderCatalog(); });
+document.getElementById("only-auth").addEventListener("change", e => { state.onlyAuth = e.target.checked; renderCatalog(); });
+
+const cargoInput = document.getElementById("cargo-search");
+cargoInput.addEventListener("input", renderCargoSuggest);
+cargoInput.addEventListener("focus", renderCargoSuggest);
+cargoInput.addEventListener("keydown", e => {
+  const box = document.getElementById("cargo-suggest");
+  const items = [...box.querySelectorAll(".cargo-suggest-item")];
+  if (!items.length) return;
+  if (e.key === "ArrowDown") { e.preventDefault(); cargoHi = Math.min(cargoHi+1, items.length-1); items.forEach((el,i)=>el.classList.toggle("hi", i===cargoHi)); items[cargoHi].scrollIntoView({block:"nearest"}); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); cargoHi = Math.max(cargoHi-1, 0); items.forEach((el,i)=>el.classList.toggle("hi", i===cargoHi)); items[cargoHi].scrollIntoView({block:"nearest"}); }
+  else if (e.key === "Enter") { e.preventDefault(); const el = items[cargoHi] || items[0]; if (el) addCargoFilter(el.dataset.id); }
+  else if (e.key === "Escape") { box.classList.remove("show"); }
+});
+document.addEventListener("click", e => {
+  if (!e.target.closest(".cargo-search")) document.getElementById("cargo-suggest").classList.remove("show");
+});
+
+/* ---------- загрузка данных и старт ---------- */
+document.getElementById("catalog-grid").innerHTML = `<div class="empty-state" style="grid-column:1/-1">Загрузка каталога…</div>`;
+fetch("data/catalog_data.json")
+  .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+  .then(data => {
+    initFromData(data);
+    typeTabs(); mfrFilters(); renderCargoChips(); renderCatalog();
+  })
+  .catch(err => {
+    document.getElementById("catalog-grid").innerHTML =
+      `<div class="empty-state" style="grid-column:1/-1">Не удалось загрузить data/catalog_data.json (${err.message}).<br>Откройте страницу через веб-сервер (не как file://) — например через GitHub Pages или <code>python -m http.server</code>.</div>`;
+  });
+</script>
+</body>
+</html>
+

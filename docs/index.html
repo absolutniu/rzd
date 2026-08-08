@@ -323,7 +323,8 @@
   .spec-table .row:last-child dt, .spec-table .row:last-child dd { border-bottom: none; }
   .spec-table dt { color: var(--ink-soft); background: var(--panel-sunken); white-space: nowrap; }
   .spec-table dd { font-family: "Cascadia Code",Consolas,monospace; font-variant-numeric: tabular-nums; text-align: right; }
-  .spec-table dd a { word-break: break-word; }
+  .spec-table dd a { word-break: break-word; color: var(--accent); text-decoration: none; }
+  .spec-table dd a:hover { text-decoration: underline; }
 
   .bogie-card {
     display: flex; justify-content: space-between; align-items: center; background: var(--panel-sunken);
@@ -647,6 +648,11 @@ function fmtNum(n) {
   return n.toLocaleString("ru-RU");
 }
 function fmtDate(iso) { return iso ? iso.split("-").reverse().join(".") : null; }
+function siteLink(url) {
+  if (!url) return "—";
+  const label = url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  return `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+}
 function kindName(v) { return v.kindId ? (KIND_BY_ID.get(v.kindId)?.name || null) : null; }
 function mfrShort(id) { const m = MFR_BY_ID.get(id); return m ? (m.short_name || m.full_name) : id; }
 
@@ -953,7 +959,7 @@ function openManufacturer(mfrId) {
       ${m.capacity?`<div class="row"><dt>Мощность</dt><dd>${fmtNum(m.capacity)} тыс. ваг/год</dd></div>`:""}
       ${m.staff?`<div class="row"><dt>Персонал</dt><dd>${fmtNum(m.staff)} тыс. чел.</dd></div>`:""}
       <div class="row"><dt>Вагоны 25 тс</dt><dd>${m.produces_25tf_vagons||"н/д"}</dd></div>
-      <div class="row"><dt>Сайт</dt><dd>${m.website||"—"}</dd></div>
+      <div class="row"><dt>Сайт</dt><dd>${siteLink(m.website)}</dd></div>
     </div>
     ${m.vagonTypes&&m.vagonTypes.length?`<h4 style="font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);margin:0 0 9px;">Выпускает</h4><div class="feature-list">${m.vagonTypes.map(t=>`<span class="feature-chip">${t}</span>`).join("")}</div>`:""}
     <div class="overlay-note">Клик по заводу в карточке вагона открывает эту панель.</div>
@@ -977,7 +983,7 @@ function openDepot(depotId) {
       <div class="row"><dt>Код станции</dt><dd>${d.station_code||"—"}</dd></div>
       <div class="row"><dt>Клеймо депо</dt><dd>${d.stamp_code||"—"}</dd></div>
       <div class="row"><dt>Координаты</dt><dd>${mapLink}</dd></div>
-      <div class="row"><dt>Сайт</dt><dd>${d.website||"—"}</dd></div>
+      <div class="row"><dt>Сайт</dt><dd>${siteLink(d.website)}</dd></div>
     </div>
     <div class="overlay-note">Полная карточка депо — список компетенций по всем типам вагонов и контакты — следующий экран.</div>
   `;

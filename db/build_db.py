@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Парсит D:\\Projects\\claude\\RZD\\RZD.md (markdown-таблицы, экспорт из Excel)
-и загружает данные в SQLite по схеме schema.sql.
+Парсит D:\\Projects\\claude\\RZD\\RZD.md (markdown-таблицы, экспорт из Excel) плюс
+sources/prilozhenie_e_telezhki.md (Прил.Е РД 32 ЦВ 052-2009 про чертежи тележек тип 2
+по ГОСТ 9246 при производстве/ремонте) и загружает всё в SQLite по схеме schema.sql.
 
 Запуск:  python build_db.py
 Результат: D:\\Projects\\claude\\RZD\\db\\rzd.db
@@ -18,6 +19,23 @@ BASE = Path(__file__).parent
 MD_PATH = BASE.parent / "RZD.md"
 SCHEMA_PATH = BASE / "schema.sql"
 DB_PATH = BASE / "rzd.db"
+PRILOZHENIE_E_PATH = BASE / "sources" / "prilozhenie_e_telezhki.md"
+
+# Заголовки блоков Прил.Е -> component_types.id ("BOGIE" - особый случай, весь чертёж
+# тележки в сборе, идёт в bogie_drawings, а не в component_repair_drawings)
+PRILOZHENIE_E_COMPONENT_MAP = [
+    ("Чертеж тележки", "BOGIE"),
+    ("боковой рамы", "Z002"),
+    ("надрессорной балки", "Z003"),
+    ("триангеля", "Z006"),
+    ("Колесная пара", "Z001"),
+    ("Пружина наружная", "Z004"),
+    ("Пружина внутренняя", "Z005"),
+]
+# уверенные сопоставления сокращённого завода из РД с нашим справочником manufacturers;
+# остальные сокращения ("Промтрактор", "КВСЗ", "ГСКБВ", "Казахстан" и т.п.) неоднозначны
+# или это предприятия вне нашего справочника - оставляем как сырой текст без FK
+PRILOZHENIE_E_KNOWN_MANUFACTURERS = {"ТВСЗ": "M710"}
 
 
 # ---------------------------------------------------------------------------
@@ -88,6 +106,120 @@ def i(v):
 def d(v):
     v = c(v)
     return v[:10] if v is not None else None
+
+
+def parse_prilozhenie_e_table(path):
+    """Разбирает markdown-таблицу Прил.Е (одна большая pandas-экспортная таблица,
+    не набор ## Sheet-секций как в RZD.md) в список строк-списков ячеек."""
+    lines = [ln.rstrip("\n") for ln in path.read_text(encoding="utf-8").splitlines()
+             if ln.strip().startswith("|")]
+    rows = []
+    for ln in lines:
+        cells = [c(cell.strip()) for cell in ln.strip().strip("|").split("|")]
+        if all(cell is None or set(cell) <= {"-"} for cell in cells):
+            continue  # разделительная строка "| --- | --- |"
+        rows.append(cells)
+    return rows
+
+
+def load_prilozhenie_e(conn, cur):
+    """Прил.Е (обязательное) РД 32 ЦВ 052-2009 "Ремонт тележек грузовых вагонов тип 2
+    по ГОСТ 9246 с боковыми скользунами зазорного типа" - см. sources/prilozhenie_e_telezhki.md.
+    Даёт по каждому из 6 типов компонентов: чертежи ПРИ ПРОИЗВОДСТВЕ (по модели тележки,
+    -> bogie_components) и чертежи, ДОПУСТИМЫЕ ПРИ РЕМОНТЕ (общие для типа компонента,
+    не привязаны к модели -> component_repair_drawings), плюс чертежи тележки в сборе
+    (-> bogie_drawings)."""
+    if not PRILOZHENIE_E_PATH.exists():
+        print("Прил.Е РД 32 ЦВ 052-2009: файл-источник не найден, пропускаю")
+        return
+
+    rows = parse_prilozhenie_e_table(PRILOZHENIE_E_PATH)
+    # rows[0] = заголовок (не используется), rows[1] = модели тележек, rows[2] = заводы,
+    # rows[3] = номера столбцов 1..21 (не используется), rows[4:] = данные
+    models = rows[1][1:20]
+    mfr_labels = rows[2][1:20]
+    data_rows = rows[4:]
+
+    cur.execute("SELECT id, model FROM bogies")
+    bogie_by_model = {model: bid for bid, model in cur.fetchall()}
+    existing_nums = [int(bid[1:]) for bid in bogie_by_model.values() if bid[1:].isdigit()]
+    next_bogie_num = max(existing_nums, default=0) + 1
+
+    model_to_bogie = {}
+    new_bogies = 0
+    for model, mfr_label in zip(models, mfr_labels):
+        bid = bogie_by_model.get(model)
+        if bid:
+            cur.execute("UPDATE bogies SET rd9246_manufacturer_label=? WHERE id=?", (mfr_label, bid))
+        else:
+            bid = f"B{next_bogie_num:03d}"
+            next_bogie_num += 1
+            new_bogies += 1
+            mfr_id = PRILOZHENIE_E_KNOWN_MANUFACTURERS.get(mfr_label)
+            cur.execute("""INSERT INTO bogies (id, model, manufacturer_id, rd9246_manufacturer_label)
+                           VALUES (?, ?, ?, ?)""", (bid, model, mfr_id, mfr_label))
+        model_to_bogie[model] = bid
+
+    # источник авторитетен для этих 19 моделей - убираем более ранние частичные записи
+    # (в т.ч. исходный ручной сэмпл для B001 из "Тележ-Комплект"/"Тележка-чертеж"), чтобы
+    # при повторной сборке не задваивалось
+    covered_ids = list(model_to_bogie.values())
+    qs = ",".join("?" * len(covered_ids))
+    cur.execute(f"DELETE FROM bogie_components WHERE bogie_id IN ({qs})", covered_ids)
+    cur.execute(f"DELETE FROM bogie_drawings WHERE bogie_id IN ({qs})", covered_ids)
+    cur.execute(f"DELETE FROM component_repair_drawings WHERE 1=1")  # источник один на всю таблицу
+
+    x_num = 1
+    bogie_drawing_n = 0
+    production_n = 0
+    repair_n = 0
+    repair_sort = {}  # component_type_id -> следующий sort_order
+    prod_sort = {}    # (bogie_id, component_type_id) -> следующий sort_order
+    component = None
+    for row in data_rows:
+        label = row[0]
+        if label:
+            match = next((ct for kw, ct in PRILOZHENIE_E_COMPONENT_MAP if kw.lower() in label.lower()), None)
+            component = match  # None, если строка-заголовок не распознана - блок пропускаем
+            if match is None:
+                continue
+        if component is None:
+            continue
+
+        values = row[1:20]
+        repair_val = row[20] if len(row) > 20 else None
+
+        if component == "BOGIE":
+            for model, val in zip(models, values):
+                if val:
+                    bid = model_to_bogie[model]
+                    cur.execute("INSERT INTO bogie_drawings (bogie_id, drawing_number) VALUES (?, ?)", (bid, val))
+                    bogie_drawing_n += 1
+            continue
+
+        for model, val in zip(models, values):
+            if not val:
+                continue
+            bid = model_to_bogie[model]
+            key = (bid, component)
+            order = prod_sort.get(key, 0)
+            prod_sort[key] = order + 1
+            xid = f"X{x_num:03d}"
+            x_num += 1
+            cur.execute("""INSERT INTO bogie_components (id, bogie_id, component_type_id, drawing_number, sort_order)
+                           VALUES (?, ?, ?, ?, ?)""", (xid, bid, component, val, order))
+            production_n += 1
+
+        if repair_val:
+            order = repair_sort.get(component, 0)
+            repair_sort[component] = order + 1
+            cur.execute("""INSERT INTO component_repair_drawings (component_type_id, drawing_number, sort_order)
+                           VALUES (?, ?, ?)""", (component, repair_val, order))
+            repair_n += 1
+
+    print(f"  Прил.Е РД 32 ЦВ 052-2009            -> {len(models):3d} моделей тележек "
+          f"({new_bogies} новых), {production_n:4d} чертежей произв., "
+          f"{repair_n:4d} чертежей ремонт., {bogie_drawing_n} чертежей тележки в сборе")
 
 
 # ---------------------------------------------------------------------------
@@ -401,6 +533,8 @@ def main():
          "INSERT INTO bogie_drawings (bogie_id, drawing_number) VALUES (?, ?)",
          lambda r: (r["ID тележки"], r["№ чертежа"]),
          skip_if=lambda r: not c(r.get("ID тележки")) or not c(r.get("№ чертежа")))
+
+    load_prilozhenie_e(conn, cur)
 
     conn.commit()
 

@@ -103,13 +103,16 @@ CREATE TABLE vagons ( -- ID вагоны_общ
   requires_authorization       TEXT   -- да/нет
 );
 
-CREATE TABLE bogies ( -- ID тележки_общ
+CREATE TABLE bogies ( -- ID тележки_общ (+ модели, добавленные из Прил.Е РД 32 ЦВ 052-2009, см. sources/)
   id              TEXT PRIMARY KEY,  -- B001
   model           TEXT NOT NULL,
   model_note      TEXT,
   manufacturer_id TEXT REFERENCES manufacturers(id),
   axle_load_tf    REAL,
-  axle_load_kn    REAL
+  axle_load_kn    REAL,
+  rd9246_manufacturer_label TEXT  -- завод как указан в РД 32 ЦВ 052-2009 (может не совпадать 1:1
+                                  -- с manufacturer_id — сокращения из документа не всегда однозначно
+                                  -- сопоставляются с нашим справочником заводов, оставлено как есть)
 );
 
 CREATE TABLE vagon_bogies ( -- Вагон-Тележка
@@ -421,18 +424,32 @@ CREATE TABLE component_types ( -- ID комплект (тип)
   name TEXT NOT NULL
 );
 
-CREATE TABLE bogie_components ( -- Тележ-Комплект
+CREATE TABLE bogie_components ( -- Тележ-Комплект (+ чертежи детали ПРИ ПРОИЗВОДСТВЕ конкретной модели
+                                 -- тележки из Прил.Е РД 32 ЦВ 052-2009 — см. sources/prilozhenie_e_telezhki.md)
   id                 TEXT PRIMARY KEY,  -- X001
   bogie_id           TEXT NOT NULL REFERENCES bogies(id),
   component_type_id  TEXT NOT NULL REFERENCES component_types(id),
   name               TEXT,
-  drawing_number     TEXT
+  drawing_number     TEXT,
+  sort_order         INTEGER  -- порядок чертежа в источнике (последовательные модификации по времени)
 );
 
-CREATE TABLE bogie_drawings ( -- Тележка-чертеж
+CREATE TABLE bogie_drawings ( -- Тележка-чертеж (+ из Прил.Е РД 32 ЦВ 052-2009, раздел "Чертеж тележки")
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
   bogie_id       TEXT NOT NULL REFERENCES bogies(id),
   drawing_number TEXT NOT NULL
+);
+
+CREATE TABLE component_repair_drawings ( -- Прил.Е (обязательное) РД 32 ЦВ 052-2009 "Ремонт тележек грузовых
+  -- вагонов тип 2 по ГОСТ 9246 с боковыми скользунами зазорного типа", столбец 21 "Применение комплектующих
+  -- при ремонте тележек тип 2 по ГОСТ 9246 с боковыми скользунами зазорного типа".
+  -- Список чертежей ПО ТИПУ КОМПОНЕНТА (не привязан к конкретной модели тележки) — все эти чертежи
+  -- взаимозаменяемы и допустимы при ремонте ЛЮБОЙ тележки тип 2 по ГОСТ 9246 данной конструкции скользунов,
+  -- независимо от того, для какой модели тележки чертёж изначально разрабатывался при производстве.
+  id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+  component_type_id  TEXT NOT NULL REFERENCES component_types(id),
+  drawing_number     TEXT NOT NULL,
+  sort_order         INTEGER
 );
 
 -- ========================================================================

@@ -102,10 +102,39 @@ def main():
         m["capYear"] = cap["data_year"] if cap else None
         m["vagonTypes"] = mfr_types.get(m["id"], [])
 
-    bogies = rows("SELECT id, model, model_note, manufacturer_id, axle_load_tf, axle_load_kn FROM bogies")
+    bogies = rows("""SELECT id, model, model_note, manufacturer_id, axle_load_tf, axle_load_kn,
+                             rd9246_manufacturer_label FROM bogies""")
     vagon_bogie = {}
     for r in rows("SELECT vagon_id, bogie_id FROM vagon_bogies"):
         vagon_bogie.setdefault(r["vagon_id"], []).append(r["bogie_id"])
+
+    # ---- чертежи тележек: производство/ремонт (Прил.Е РД 32 ЦВ 052-2009) ----
+    component_types = rows("SELECT id, name FROM component_types")
+
+    bogie_assembly_drawings = {}
+    for r in rows("SELECT bogie_id, drawing_number FROM bogie_drawings ORDER BY bogie_id, id"):
+        bogie_assembly_drawings.setdefault(r["bogie_id"], []).append(r["drawing_number"])
+
+    bogie_component_drawings = {}  # bogie_id -> [{componentTypeId, drawingNumber}]
+    for r in rows("""SELECT bogie_id, component_type_id, drawing_number FROM bogie_components
+                      ORDER BY bogie_id, component_type_id, sort_order"""):
+        bogie_component_drawings.setdefault(r["bogie_id"], []).append({
+            "componentTypeId": r["component_type_id"], "drawingNumber": r["drawing_number"],
+        })
+
+    # для каждого чертежа, допустимого при ремонте, находим, у какой модели тележки (и какого
+    # завода) он значится как производственный - чтобы показать "этот чертёж делает завод X"
+    prod_by_component = {}  # component_type_id -> {drawing_number: [bogie_id,...]}
+    for r in rows("SELECT bogie_id, component_type_id, drawing_number FROM bogie_components"):
+        prod_by_component.setdefault(r["component_type_id"], {}).setdefault(r["drawing_number"], []).append(r["bogie_id"])
+
+    component_repair_drawings = {}  # component_type_id -> [{drawingNumber, bogieIds}]
+    for r in rows("""SELECT component_type_id, drawing_number FROM component_repair_drawings
+                      ORDER BY component_type_id, sort_order"""):
+        bogie_ids = prod_by_component.get(r["component_type_id"], {}).get(r["drawing_number"], [])
+        component_repair_drawings.setdefault(r["component_type_id"], []).append({
+            "drawingNumber": r["drawing_number"], "bogieIds": bogie_ids,
+        })
 
     depots = rows("""
         SELECT id, holding_id, name, stamp_code, railway_id, adjoining_station, station_code,
@@ -194,6 +223,10 @@ def main():
         "cargoTypes": cargo_types,
         "vagonCargoLinks": vagon_cargo,
         "vagons": vagons,
+        "componentTypes": component_types,
+        "bogieAssemblyDrawings": bogie_assembly_drawings,
+        "bogieComponentDrawings": bogie_component_drawings,
+        "componentRepairDrawings": component_repair_drawings,
     }
 
     with open(OUT_PATH, "w", encoding="utf-8") as f:
@@ -205,6 +238,8 @@ def main():
     print(f"depots: {len(depots)}")
     print(f"cargoTypes: {len(cargo_types)}, vagonCargoLinks: {len(vagon_cargo)}")
     print(f"depotCompetencies: {len(depot_competencies)}, depotAuthorizations: {len(depot_authorizations)}")
+    print(f"bogies: {len(bogies)}, componentRepairDrawings: "
+          f"{sum(len(v) for v in component_repair_drawings.values())}")
     print(f"-> {OUT_PATH}  ({size_kb:.0f} KB)")
 
 

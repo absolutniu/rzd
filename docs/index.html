@@ -364,6 +364,14 @@
   .bogie-card .load b { display: block; font-size: 17px; }
   .bogie-card .load span { font-size: 11.5px; color: var(--ink-faint); }
 
+  .part-block { padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .part-block:last-of-type { border-bottom: none; }
+  .part-block h4 { font-size: 13.5px; margin: 0 0 8px; display: flex; align-items: baseline; gap: 8px; }
+  .part-block h4 .n { font-weight: 400; color: var(--ink-faint); font-size: 11.5px; }
+  .part-sub-label { font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-faint); margin: 10px 0 6px; }
+  .part-sub-label .n { text-transform: none; letter-spacing: 0; }
+  .part-block .feature-chip b { font-weight: 600; color: var(--accent); }
+
   table.overhaul { width: 100%; border-collapse: collapse; font-size: 12.5px; }
   table.overhaul th, table.overhaul td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: right; }
   table.overhaul td:first-child, table.overhaul th:first-child { text-align: left; }
@@ -586,7 +594,8 @@
 /* ---------- справочники и индексы ---------- */
 let DATA, KIND_BY_ID, MFR_BY_ID, BOGIE_BY_ID, DEPOT_BY_ID, RAILWAY_BY_ID, REPAIR_TYPE_BY_ID,
     HOLDING_BY_ID, FEATURE_BY_ID, CONTAINER_BY_ID, CARGO_TYPES, CARGO_BY_ID, DEPOT_COMPETENCIES,
-    DEPOT_AUTHORIZATIONS, VAGONS, VAGON_BY_ID, CARGO_VAGON_IDS;
+    DEPOT_AUTHORIZATIONS, VAGONS, VAGON_BY_ID, CARGO_VAGON_IDS,
+    COMPONENT_TYPE_BY_ID, BOGIE_ASSEMBLY_DRAWINGS, BOGIE_COMPONENT_DRAWINGS, COMPONENT_REPAIR_DRAWINGS;
 
 function initFromData(data) {
   DATA = data;
@@ -603,6 +612,10 @@ function initFromData(data) {
   CARGO_BY_ID = new Map(CARGO_TYPES.map(c => [c.id, c]));
   DEPOT_COMPETENCIES = DATA.depotCompetencies;
   DEPOT_AUTHORIZATIONS = DATA.depotAuthorizations;
+  COMPONENT_TYPE_BY_ID = new Map(DATA.componentTypes.map(t => [t.id, t.name]));
+  BOGIE_ASSEMBLY_DRAWINGS = DATA.bogieAssemblyDrawings;
+  BOGIE_COMPONENT_DRAWINGS = DATA.bogieComponentDrawings;
+  COMPONENT_REPAIR_DRAWINGS = DATA.componentRepairDrawings;
   VAGONS = DATA.vagons;
   VAGON_BY_ID = new Map(VAGONS.map(v => [v.id, v]));
   VAGONS.forEach(v => { v.cargoSet = new Set(v.cargoIds || []); });
@@ -833,6 +846,67 @@ function renderCatalog() {
 }
 
 /* ---------- detail ---------- */
+function bogieManufacturerLabel(b) {
+  if (!b) return null;
+  if (b.manufacturer_id) return mfrShort(b.manufacturer_id);
+  return b.rd9246_manufacturer_label || null;
+}
+
+function bogiePartsHTML(bogie) {
+  if (!bogie) return `<p class="no-data">тележка не указана в источнике</p>`;
+  const assembly = BOGIE_ASSEMBLY_DRAWINGS[bogie.id] || [];
+  const comps = BOGIE_COMPONENT_DRAWINGS[bogie.id] || [];
+  if (!assembly.length && !comps.length) {
+    return `<p class="no-data">для модели «${bogie.model}» нет данных по чертежам (охвачены только модели тип 2 по ГОСТ 9246 из Прил.Е РД 32 ЦВ 052-2009)</p>`;
+  }
+
+  const byType = new Map();
+  comps.forEach(c => {
+    if (!byType.has(c.componentTypeId)) byType.set(c.componentTypeId, []);
+    byType.get(c.componentTypeId).push(c.drawingNumber);
+  });
+
+  const REPAIR_PAGE = 12;
+  const repairChip = (drawingNumber, bogieIds) => {
+    const mfrNames = [...new Set((bogieIds || []).map(bid => bogieManufacturerLabel(BOGIE_BY_ID.get(bid))).filter(Boolean))];
+    const title = mfrNames.length ? `Делает: ${mfrNames.join(", ")}` : "завод по этому чертежу не определён";
+    return `<span class="feature-chip" title="${title}">${drawingNumber}${mfrNames.length ? ` <b>· ${mfrNames[0]}</b>` : ""}</span>`;
+  };
+
+  let html = "";
+  if (assembly.length) {
+    html += `<div class="part-block">
+      <h4>Тележка в сборе<span class="n">— чертежи, применявшиеся при производстве модели «${bogie.model}»</span></h4>
+      <div class="feature-list">${assembly.map(d => `<span class="feature-chip">${d}</span>`).join("")}</div>
+    </div>`;
+  }
+
+  for (const [typeId, typeName] of COMPONENT_TYPE_BY_ID) {
+    const prod = byType.get(typeId);
+    const repair = COMPONENT_REPAIR_DRAWINGS[typeId] || [];
+    if (!prod && !repair.length) continue;
+    const uid = `parts-${typeId}`;
+    html += `<div class="part-block">
+      <h4>${typeName}</h4>
+      ${prod ? `
+        <div class="part-sub-label">При производстве этой модели</div>
+        <div class="feature-list">${prod.map(d => `<span class="feature-chip">${d}</span>`).join("")}</div>
+      ` : `<p class="no-data">чертёж при производстве этой модели не указан</p>`}
+      ${repair.length ? `
+        <div class="part-sub-label">Допустимо применить при ремонте <span class="n">— ${repair.length}, ГОСТ 9246 тип 2 с боковыми скользунами зазорного типа</span></div>
+        <div class="feature-list" id="${uid}">
+          ${repair.slice(0, REPAIR_PAGE).map(r => repairChip(r.drawingNumber, r.bogieIds)).join("")}
+          <span class="repair-overflow" style="display:none">${repair.slice(REPAIR_PAGE).map(r => repairChip(r.drawingNumber, r.bogieIds)).join("")}</span>
+        </div>
+        ${repair.length > REPAIR_PAGE ? `<button class="filter-clear" style="margin-top:8px" onclick="document.querySelector('#${uid} .repair-overflow').style.display='contents'; this.remove();">показать все ${repair.length}</button>` : ""}
+      ` : ""}
+    </div>`;
+  }
+
+  html += `<p style="color:var(--ink-faint);font-size:12px;margin-top:4px;">Источник: Прил.Е (обязательное) РД 32 ЦВ 052-2009 «Ремонт тележек грузовых вагонов тип 2 по ГОСТ 9246 с боковыми скользунами зазорного типа». Завод указан там, где чертёж совпадает с производственным чертежом одной из моделей тележек этого приложения.</p>`;
+  return html;
+}
+
 function openDetail(id) {
   const v = VAGON_BY_ID.get(id);
   if (!v) return;
@@ -917,6 +991,7 @@ function openDetail(id) {
       <nav class="jump-nav">
         <a href="#s-char">Характеристики</a>
         <a href="#s-bogie">Тележка</a>
+        <a href="#s-parts">Чертежи и запчасти</a>
         <a href="#s-overhaul">Сроки ремонта</a>
         <a href="#s-features">Особенности</a>
         <a href="#s-cargo">Грузы</a>
@@ -932,12 +1007,17 @@ function openDetail(id) {
         </div>
 
         <div class="dsection" id="s-bogie">
-          <h2>Тележка ${bogie?`<span class="n">— запчасти и чертежи по этой модели тележки</span>`:""}</h2>
+          <h2>Тележка</h2>
           ${bogie ? `
             <div class="bogie-card">
               <div><div class="name">Модель ${bogie.model}</div><div class="note">${bogie.model_note || "типовая"}</div></div>
-              <div class="load"><b>${bogie.axle_load_tf} тс</b><span>осевая нагрузка</span></div>
+              <div class="load"><b>${bogie.axle_load_tf?bogie.axle_load_tf+' тс':'—'}</b><span>осевая нагрузка</span></div>
             </div>` : `<p class="no-data">тележка не указана в источнике</p>`}
+        </div>
+
+        <div class="dsection" id="s-parts">
+          <h2>Чертежи и запчасти ${bogie?`<span class="n">— по Прил.Е РД 32 ЦВ 052-2009</span>`:""}</h2>
+          ${bogiePartsHTML(bogie)}
         </div>
 
         <div class="dsection" id="s-overhaul">

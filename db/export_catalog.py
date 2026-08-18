@@ -18,6 +18,7 @@ if hasattr(sys.stdout, "reconfigure"):
 BASE = Path(__file__).parent
 DB_PATH = BASE / "rzd.db"
 OUT_PATH = BASE.parent / "docs" / "data" / "catalog_data.json"
+PHOTOS_DIR = BASE.parent / "docs" / "photos"
 
 # таблица характеристик -> её "тип семейства" (T00x), для приоритета при разборе конфликтов
 CHAR_TABLES = {
@@ -181,6 +182,7 @@ def main():
     """):
         table, specs = specs_by_vagon.get(v["id"], (None, {}))
         bogie_ids = vagon_bogie.get(v["id"], [])
+        has_photo = (PHOTOS_DIR / f"{v['id']}.jpg").exists()
         vagons.append({
             "id": v["id"],
             "typeId": v["vagon_type_id"],
@@ -199,6 +201,8 @@ def main():
             "overhaul": overhaul.get(v["id"], []),
             "cargoIds": None,  # заполним ниже из vagon_cargo (экономим место, не дублируем)
             "containerIds": platform_containers.get(v["id"]),
+            "photo": f"photos/{v['id']}.jpg" if has_photo else None,
+            "photoThumb": f"photos/thumb/{v['id']}.jpg" if has_photo else None,
         })
 
     vagon_cargo_map = {}
@@ -233,7 +237,8 @@ def main():
         json.dump(bundle, f, ensure_ascii=False, separators=(",", ":"))
 
     size_kb = OUT_PATH.stat().st_size / 1024
-    print(f"vagons: {len(vagons)}")
+    photos_count = sum(1 for v in vagons if v["photo"])
+    print(f"vagons: {len(vagons)} (с фото: {photos_count})")
     print(f"manufacturers: {len(manufacturers)}")
     print(f"depots: {len(depots)}")
     print(f"cargoTypes: {len(cargo_types)}, vagonCargoLinks: {len(vagon_cargo)}")

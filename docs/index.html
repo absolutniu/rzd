@@ -274,8 +274,9 @@
   }
   .card-compare { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--ink-faint); cursor: pointer; }
   .card-compare input { accent-color: var(--accent); width: 14px; height: 14px; }
-  .card-icon { display: flex; justify-content: center; padding: 6px 0; color: var(--steel); }
+  .card-icon { display: flex; justify-content: center; align-items: center; padding: 6px 0; color: var(--steel); height: 90px; }
   .card-icon svg { width: 78px; height: 52px; }
+  .card-icon img { width: 100%; height: 90px; object-fit: cover; border-radius: 8px; background: var(--panel-sunken); }
   .card-name { display: block; font-size: 15px; font-weight: 600; text-decoration: none; cursor: pointer; }
   .card-name .num { font-family: "Cascadia Code",Consolas,monospace; color: var(--accent); font-weight: 600; }
   .card-name:hover { color: var(--accent); }
@@ -316,6 +317,12 @@
     display: flex; align-items: center; justify-content: center; color: var(--steel);
   }
   .detail-icon svg { width: 60px; height: 42px; }
+  .detail-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 14px; }
+  .detail-photo {
+    width: 100%; max-height: 360px; overflow: hidden; border-radius: 14px; background: var(--panel-sunken);
+    margin: 8px 0 4px; display: flex; justify-content: center;
+  }
+  .detail-photo img { width: 100%; max-height: 360px; object-fit: contain; }
   .detail-title h1 { font-size: 26px; margin: 0 0 6px; text-wrap: balance; }
   .detail-title h1 .num { color: var(--accent); font-family: "Cascadia Code",Consolas,monospace; }
   .detail-tags { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
@@ -831,7 +838,7 @@ function cardHTML(v, i) {
         <input type="checkbox" ${state.compare.has(v.id)?'checked':''} onchange="toggleCompare('${v.id}')" /> сравнить
       </label>
     </div>
-    <div class="card-icon" onclick="openDetail('${v.id}')">${ICONS[v.typeId]}</div>
+    <div class="card-icon" onclick="openDetail('${v.id}')">${v.photoThumb ? `<img src="${v.photoThumb}" alt="${meta.name} ${v.model}" loading="lazy">` : ICONS[v.typeId]}</div>
     <a class="card-name" onclick="openDetail('${v.id}')">${meta.name} <span class="num">${v.model}</span></a>
     <div class="card-mfr">${mfrShort(v.mfrId)}${v.requiresAuth?' · требует авторизации':''}</div>
     <dl class="card-specs">${specs}</dl>
@@ -974,8 +981,9 @@ function openDetail(id) {
        ${depotInfo.items.length>DEPOT_PAGE ? `<button class="filter-clear" style="margin-top:10px" onclick="document.querySelector('#depot-list .depot-overflow').style.display='contents'; this.remove();">показать все ${depotInfo.items.length}</button>` : ""}`;
 
   document.getElementById("detail-content").innerHTML = `
+    ${v.photo ? `<div class="detail-photo"><img src="${v.photo}" alt="${meta.name} ${v.model}" loading="lazy"></div>` : ""}
     <div class="detail-head">
-      <div class="detail-icon">${ICONS[v.typeId]}</div>
+      <div class="detail-icon">${v.photoThumb ? `<img src="${v.photoThumb}" alt="${meta.name} ${v.model}" loading="lazy">` : ICONS[v.typeId]}</div>
       <div class="detail-title">
         <h1 class="display">${meta.name} <span class="num">${v.model}</span></h1>
         <div class="detail-tags">

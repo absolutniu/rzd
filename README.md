@@ -18,11 +18,15 @@ RZD.md               исходная выгрузка из Excel (первои�
 db/
   schema.sql          DDL — 44 таблицы SQLite
   build_db.py          RZD.md -> rzd.db
-  export_catalog.py    rzd.db -> docs/data/catalog_data.json
+  export_catalog.py    rzd.db + docs/photos/ -> docs/data/catalog_data.json
+  match_photos.py       docs/Photo/ -> photo_match_results.json (сопоставление файла с id вагона)
+  build_photos.py       photo_match_results.json + docs/Photo/ -> docs/photos/
   rzd.db               собранная база (пересоздаётся build_db.py)
 docs/
   index.html            сама страница (HTML+CSS+JS, без сборки)
   data/catalog_data.json  выгрузка для сайта (генерируется export_catalog.py)
+  Photo/                 сырые фото вагонов "как есть" (источник, в git не трогаем руками)
+  photos/                фото под сайт: {id вагона}.jpg + thumb/{id}.jpg (генерируется build_photos.py)
 ```
 
 ## Как обновить данные
@@ -34,13 +38,24 @@ docs/
    python build_db.py        # RZD.md -> rzd.db
    python export_catalog.py  # rzd.db -> ../docs/data/catalog_data.json
    ```
-3. Проверить локально:
+3. Если добавились новые фото — сложить их в `docs/Photo/` (имя файла вида
+   `<Категория> <Завод> <модель>.jpg`, как уже лежат) и пересобрать:
+   ```bash
+   cd db
+   python match_photos.py    # docs/Photo/ -> photo_match_results.json (сопоставление файла с id вагона)
+   python build_photos.py    # -> docs/photos/{id}.jpg + docs/photos/thumb/{id}.jpg
+   python export_catalog.py  # подхватит наличие фото в catalog_data.json
+   ```
+   `match_photos.py` сопоставляет по модели и заводу из имени файла — стоит
+   проверить `photo_match_results.json` (ключ `unmatched`) на случай, если
+   что-то не нашлось в каталоге.
+4. Проверить локально:
    ```bash
    cd ../docs
    python -m http.server 8000
    # открыть http://localhost:8000
    ```
-4. Закоммитить и запушить — GitHub Pages обновится сам за пару минут
+5. Закоммитить и запушить — GitHub Pages обновится сам за пару минут
 
 ## Локальный запуск
 

@@ -31,49 +31,53 @@
   }
 
   :root {
-    --ink: #1b2228; --ink-soft: #4c5760; --ink-faint: #8b96a0;
-    --paper: #eef1f2; --panel: #ffffff; --panel-sunken: #f3f5f5;
-    --steel: #5b6b73;
-    --line: rgba(27,34,40,.13); --line-strong: rgba(27,34,40,.26);
-    --accent: #b5502a; --accent-ink: #ffffff; --accent-soft: rgba(181,80,42,.11); --accent-soft-strong: rgba(181,80,42,.22);
+    --ink: #14181b; --ink-soft: #4a545e; --ink-faint: #869099;
+    --paper: #f5f6f5; --panel: #ffffff; --panel-sunken: #eef1f1;
+    --steel: #56636c;
+    --line: rgba(20,24,27,.12); --line-strong: rgba(20,24,27,.25);
+    --accent: #bb4d0a; --accent-ink: #ffffff; --accent-soft: rgba(187,77,10,.11); --accent-soft-strong: rgba(187,77,10,.22);
+    --accent2: #00707f; --accent2-ink: #ffffff; --accent2-soft: rgba(0,112,127,.12); --accent2-soft-strong: rgba(0,112,127,.24);
     --ok: #2f8f5b; --ok-soft: rgba(47,143,91,.13);
     --warn: #b9791b; --warn-soft: rgba(185,121,27,.15);
     --danger: #c1442e; --danger-soft: rgba(193,68,46,.13);
-    --map-1: #b5502a; --map-2: #3b6ea8; --map-3: #6a8a3f;
+    --map-1: #bb4d0a; --map-2: #00707f; --map-3: #6a8a3f;
     --shadow: 0 1px 2px rgba(20,24,28,.06), 0 10px 28px rgba(20,24,28,.08);
     --shadow-lg: 0 12px 40px rgba(20,24,28,.18);
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --ink: #e8ecee; --ink-soft: #aab4ba; --ink-faint: #6d7a81;
-      --paper: #14181b; --panel: #1b2124; --panel-sunken: #20272a;
+      --ink: #eef1f2; --ink-soft: #aeb8bf; --ink-faint: #6d7a81;
+      --paper: #12161a; --panel: #1a1f23; --panel-sunken: #202629;
       --steel: #8a99a1;
-      --line: rgba(232,236,238,.12); --line-strong: rgba(232,236,238,.24);
-      --accent: #e0895a; --accent-ink: #1b1210; --accent-soft: rgba(224,137,90,.15); --accent-soft-strong: rgba(224,137,90,.28);
+      --line: rgba(238,241,242,.12); --line-strong: rgba(238,241,242,.24);
+      --accent: #ff9d55; --accent-ink: #1b1210; --accent-soft: rgba(255,157,85,.15); --accent-soft-strong: rgba(255,157,85,.28);
+      --accent2: #3fd0e8; --accent2-ink: #062226; --accent2-soft: rgba(63,208,232,.16); --accent2-soft-strong: rgba(63,208,232,.3);
       --ok: #4cb37e; --ok-soft: rgba(76,179,126,.15);
       --warn: #d6a13c; --warn-soft: rgba(214,161,60,.16);
       --danger: #e0685a; --danger-soft: rgba(224,104,90,.16);
-      --map-1: #e0895a; --map-2: #7aa6d9; --map-3: #9dbf6e;
+      --map-1: #ff9d55; --map-2: #3fd0e8; --map-3: #9dbf6e;
       --shadow: 0 1px 2px rgba(0,0,0,.35), 0 10px 28px rgba(0,0,0,.4);
       --shadow-lg: 0 16px 48px rgba(0,0,0,.55);
     }
   }
   :root[data-theme="dark"] {
-    --ink: #e8ecee; --ink-soft: #aab4ba; --ink-faint: #6d7a81; --paper: #14181b; --panel: #1b2124; --panel-sunken: #20272a;
-    --steel: #8a99a1; --line: rgba(232,236,238,.12); --line-strong: rgba(232,236,238,.24);
-    --accent: #e0895a; --accent-ink: #1b1210; --accent-soft: rgba(224,137,90,.15); --accent-soft-strong: rgba(224,137,90,.28);
+    --ink: #eef1f2; --ink-soft: #aeb8bf; --ink-faint: #6d7a81; --paper: #12161a; --panel: #1a1f23; --panel-sunken: #202629;
+    --steel: #8a99a1; --line: rgba(238,241,242,.12); --line-strong: rgba(238,241,242,.24);
+    --accent: #ff9d55; --accent-ink: #1b1210; --accent-soft: rgba(255,157,85,.15); --accent-soft-strong: rgba(255,157,85,.28);
+    --accent2: #3fd0e8; --accent2-ink: #062226; --accent2-soft: rgba(63,208,232,.16); --accent2-soft-strong: rgba(63,208,232,.3);
     --ok: #4cb37e; --ok-soft: rgba(76,179,126,.15); --warn: #d6a13c; --warn-soft: rgba(214,161,60,.16);
     --danger: #e0685a; --danger-soft: rgba(224,104,90,.16);
-    --map-1: #e0895a; --map-2: #7aa6d9; --map-3: #9dbf6e;
+    --map-1: #ff9d55; --map-2: #3fd0e8; --map-3: #9dbf6e;
     --shadow: 0 1px 2px rgba(0,0,0,.35), 0 10px 28px rgba(0,0,0,.4); --shadow-lg: 0 16px 48px rgba(0,0,0,.55);
   }
   :root[data-theme="light"] {
-    --ink: #1b2228; --ink-soft: #4c5760; --ink-faint: #8b96a0; --paper: #eef1f2; --panel: #ffffff; --panel-sunken: #f3f5f5;
-    --steel: #5b6b73; --line: rgba(27,34,40,.13); --line-strong: rgba(27,34,40,.26);
-    --accent: #b5502a; --accent-ink: #ffffff; --accent-soft: rgba(181,80,42,.11); --accent-soft-strong: rgba(181,80,42,.22);
+    --ink: #14181b; --ink-soft: #4a545e; --ink-faint: #869099; --paper: #f5f6f5; --panel: #ffffff; --panel-sunken: #eef1f1;
+    --steel: #56636c; --line: rgba(20,24,27,.12); --line-strong: rgba(20,24,27,.25);
+    --accent: #bb4d0a; --accent-ink: #ffffff; --accent-soft: rgba(187,77,10,.11); --accent-soft-strong: rgba(187,77,10,.22);
+    --accent2: #00707f; --accent2-ink: #ffffff; --accent2-soft: rgba(0,112,127,.12); --accent2-soft-strong: rgba(0,112,127,.24);
     --ok: #2f8f5b; --ok-soft: rgba(47,143,91,.13); --warn: #b9791b; --warn-soft: rgba(185,121,27,.15);
     --danger: #c1442e; --danger-soft: rgba(193,68,46,.13);
-    --map-1: #b5502a; --map-2: #3b6ea8; --map-3: #6a8a3f;
+    --map-1: #bb4d0a; --map-2: #00707f; --map-3: #6a8a3f;
     --shadow: 0 1px 2px rgba(20,24,28,.06), 0 10px 28px rgba(20,24,28,.08); --shadow-lg: 0 12px 40px rgba(20,24,28,.18);
   }
 
@@ -86,8 +90,24 @@
   }
   @media (prefers-reduced-motion: reduce) { * { animation-duration: .001ms !important; transition-duration: .001ms !important; } }
 
+  :root { --ease-spring: cubic-bezier(.34,1.56,.64,1); --ease-smooth: cubic-bezier(.22,1,.36,1); }
+
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
   [role="button"] { cursor: pointer; }
+
+  /* ===== фирменная деталь: ритм рельсового стыка — пунктир как шпалы,
+     по нему периодически проходит сигнальный импульс ===== */
+  .rail-rule {
+    position: relative; height: 3px; margin-top: 10px; border-radius: 2px; overflow: hidden;
+    background-image: repeating-linear-gradient(to right, var(--line-strong) 0 2px, transparent 2px 11px);
+  }
+  .rail-rule::after {
+    content: ""; position: absolute; top: 0; left: -20%; width: 20%; height: 100%;
+    background: linear-gradient(to right, transparent, var(--accent), transparent);
+    animation: railPulse 3.4s var(--ease-smooth) infinite;
+  }
+  .rail-rule.accent2::after { background: linear-gradient(to right, transparent, var(--accent2), transparent); }
+  @keyframes railPulse { 0% { left: -20%; } 55% { left: 100%; } 100% { left: 100%; } }
 
   .display {
     font-family: "Oswald","Bahnschrift","DIN Alternate","Franklin Gothic Medium","Arial Narrow",sans-serif;
@@ -128,12 +148,14 @@
   nav.top-nav button {
     border: none; background: transparent; color: var(--ink-soft); padding: 8px 13px; border-radius: 7px;
     cursor: pointer; font-size: 13.5px; display: flex; align-items: center; gap: 7px;
+    transition: background .15s ease, color .15s ease, transform .15s var(--ease-spring);
   }
-  nav.top-nav button:hover { background: var(--panel-sunken); color: var(--ink); }
+  nav.top-nav button:hover { background: var(--panel-sunken); color: var(--ink); transform: translateY(-1px); }
   nav.top-nav button.active { background: var(--ink); color: var(--paper); }
   nav.top-nav .badge {
     background: var(--accent); color: var(--accent-ink); font-size: 11px; font-weight: 700;
     border-radius: 999px; min-width: 17px; height: 17px; display: inline-flex; align-items: center; justify-content: center; padding: 0 5px;
+    transition: transform .2s var(--ease-spring);
   }
   nav.top-nav button.active .badge { background: var(--accent); color: var(--accent-ink); }
 
@@ -141,7 +163,8 @@
 
   /* ===== view visibility ===== */
   .view { display: none; }
-  .view.active { display: block; }
+  .view.active { display: block; animation: viewIn .38s var(--ease-smooth) both; }
+  @keyframes viewIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
   /* ===== catalog: type tabs ===== */
   .type-tabs { display: flex; gap: 8px; flex-wrap: wrap; padding: 18px 0 6px; }
@@ -149,8 +172,10 @@
     flex-shrink: 0; display: flex; align-items: center; gap: 8px; padding: 8px 14px 8px 10px;
     border-radius: 9px; border: 1px solid var(--line); background: var(--panel); cursor: pointer;
     color: var(--ink-soft); font-size: 13px; white-space: nowrap;
+    transition: border-color .15s ease, background .15s ease, color .15s ease, transform .15s var(--ease-spring);
   }
-  .type-tab svg { width: 20px; height: 20px; color: var(--steel); }
+  .type-tab:hover { transform: translateY(-1px); border-color: var(--line-strong); }
+  .type-tab svg { width: 20px; height: 20px; color: var(--steel); transition: color .15s ease; }
   .type-tab.active { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
   .type-tab.active svg { color: var(--accent); }
   .type-tab .n { color: var(--ink-faint); font-size: 11.5px; }
@@ -214,25 +239,30 @@
     width: 100%; padding: 8px 10px; border-radius: 7px; border: 1px solid var(--line-strong);
     background: var(--panel); color: var(--ink); font-size: 13px; outline: none;
   }
-  .cargo-search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .cargo-search input:focus { border-color: var(--accent2); box-shadow: 0 0 0 3px var(--accent2-soft); }
   .cargo-suggest {
     display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20;
     background: var(--panel); border: 1px solid var(--line-strong); border-radius: 9px; box-shadow: var(--shadow-lg);
     max-height: 300px; overflow-y: auto; padding: 5px;
+    transform-origin: top; animation: suggestIn .18s var(--ease-smooth) both;
   }
+  @keyframes suggestIn { from { opacity: 0; transform: scaleY(.92) translateY(-4px); } to { opacity: 1; transform: scaleY(1) translateY(0); } }
   .cargo-suggest.show { display: block; }
   .cargo-suggest-item {
     display: flex; justify-content: space-between; gap: 8px; padding: 7px 9px; border-radius: 6px; cursor: pointer; font-size: 12.5px;
+    transition: background .1s ease;
   }
-  .cargo-suggest-item:hover, .cargo-suggest-item.hi { background: var(--accent-soft); }
+  .cargo-suggest-item:hover, .cargo-suggest-item.hi { background: var(--accent2-soft); }
   .cargo-suggest-item .code { color: var(--ink-faint); font-family: "Cascadia Code",Consolas,monospace; font-size: 11px; white-space: nowrap; }
   .cargo-suggest-empty { padding: 10px 9px; font-size: 12.5px; color: var(--ink-faint); }
   .cargo-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
   .cargo-chips:empty { margin-top: 0; }
   .cargo-chip {
-    display: flex; align-items: center; gap: 6px; background: var(--accent-soft-strong); color: var(--accent);
+    display: flex; align-items: center; gap: 6px; background: var(--accent2-soft-strong); color: var(--accent2);
     border-radius: 999px; padding: 5px 6px 5px 11px; font-size: 12px; font-weight: 600; max-width: 100%;
+    animation: chipIn .22s var(--ease-spring) both;
   }
+  @keyframes chipIn { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: scale(1); } }
   .cargo-chip span.t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px; }
   .cargo-chip button {
     border: none; background: rgba(0,0,0,.12); color: inherit; width: 16px; height: 16px; border-radius: 999px;
@@ -259,14 +289,14 @@
   .result-meta .count b { color: var(--ink); font-variant-numeric: tabular-nums; }
 
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
-  @keyframes cardIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes cardIn { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
   .card {
     background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px;
     display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow); position: relative;
-    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
-    animation: cardIn .32s ease both;
+    transition: transform .25s var(--ease-spring), box-shadow .25s var(--ease-smooth), border-color .15s ease;
+    animation: cardIn .42s var(--ease-smooth) both;
   }
-  .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); border-color: var(--line-strong); }
+  .card:hover { transform: translateY(-3px) scale(1.012); box-shadow: var(--shadow-lg); border-color: var(--accent); }
   .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
   .card-badge {
     font-size: 11px; color: var(--ink-soft); background: var(--panel-sunken); border-radius: 999px;
@@ -292,7 +322,7 @@
   .compare-tray {
     position: fixed; left: 50%; transform: translateX(-50%) translateY(120%); bottom: 20px; z-index: 40;
     background: var(--ink); color: var(--paper); border-radius: 12px; padding: 12px 14px 12px 18px;
-    display: flex; align-items: center; gap: 16px; box-shadow: var(--shadow-lg); transition: transform .25s ease;
+    display: flex; align-items: center; gap: 16px; box-shadow: var(--shadow-lg); transition: transform .4s var(--ease-spring);
   }
   .compare-tray.show { transform: translateX(-50%) translateY(0); }
   .compare-tray .txt { font-size: 13px; }
@@ -311,7 +341,7 @@
   .back-btn:hover { color: var(--accent); }
   .back-btn svg { width: 14px; height: 14px; }
 
-  .detail-head { display: flex; gap: 20px; align-items: flex-start; padding: 8px 0 24px; border-bottom: 1px solid var(--line); }
+  .detail-head { display: flex; gap: 20px; align-items: flex-start; padding: 8px 0 24px; }
   .detail-icon {
     flex-shrink: 0; width: 96px; height: 96px; border-radius: 14px; background: var(--panel-sunken);
     display: flex; align-items: center; justify-content: center; color: var(--steel);
@@ -387,9 +417,9 @@
   .overhaul-wrap { overflow-x: auto; }
 
   .feature-list { display: flex; flex-wrap: wrap; gap: 8px; }
-  .feature-chip { background: var(--accent-soft); color: var(--accent); border-radius: 8px; padding: 6px 11px; font-size: 12.5px; }
-  .feature-chip.cargo-pick { cursor: pointer; border: 1px solid transparent; }
-  .feature-chip.cargo-pick:hover { border-color: var(--accent); background: var(--accent-soft-strong); }
+  .feature-chip { background: var(--accent-soft); color: var(--accent); border-radius: 8px; padding: 6px 11px; font-size: 12.5px; transition: background .15s ease, transform .15s var(--ease-spring); }
+  .feature-chip.cargo-pick { cursor: pointer; border: 1px solid transparent; background: var(--accent2-soft); color: var(--accent2); }
+  .feature-chip.cargo-pick:hover { border-color: var(--accent2); background: var(--accent2-soft-strong); transform: translateY(-1px); }
 
 
   .depot-list { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
@@ -409,11 +439,12 @@
   /* ===== overlay panel (manufacturer / depot) ===== */
   .overlay-mask {
     position: fixed; inset: 0; background: rgba(10,12,14,.4); z-index: 50; display: none;
+    opacity: 0; transition: opacity .25s var(--ease-smooth);
   }
-  .overlay-mask.show { display: block; }
+  .overlay-mask.show { display: block; opacity: 1; }
   .overlay-panel {
     position: fixed; top: 0; right: 0; height: 100%; width: min(380px, 92vw); background: var(--panel);
-    z-index: 51; box-shadow: var(--shadow-lg); transform: translateX(100%); transition: transform .25s ease;
+    z-index: 51; box-shadow: var(--shadow-lg); transform: translateX(100%); transition: transform .4s var(--ease-spring);
     padding: 22px; overflow-y: auto; overflow-x: hidden;
   }
   .overlay-mask.show .overlay-panel { transform: translateX(0); }
@@ -469,6 +500,7 @@
     <section id="view-catalog" class="view active">
       <h1 class="display" style="font-size:26px;margin:20px 0 0;">Грузовые вагоны</h1>
       <p style="color:var(--ink-soft);font-size:13.5px;margin:6px 0 0;max-width:56ch;">Характеристики, тележка и запчасти, сроки ремонта, допустимые грузы и депо — по каждой модели в одном месте.</p>
+      <div class="rail-rule"></div>
       <div class="type-tabs" id="type-tabs"></div>
 
       <div class="catalog-body">
@@ -530,14 +562,16 @@
     <!-- ===================== MANUFACTURERS ===================== -->
     <section id="view-manufacturers" class="view">
       <h1 class="display" style="font-size:26px;margin:20px 0 0;">Вагоностроительные заводы</h1>
-      <p style="color:var(--ink-soft);font-size:13.5px;margin:6px 0 20px;max-width:56ch;">27 предприятий — головные заводы и их филиалы. Клик открывает карточку с мощностью, персоналом и списком выпускаемых типов.</p>
+      <p style="color:var(--ink-soft);font-size:13.5px;margin:6px 0 0;max-width:56ch;">27 предприятий — головные заводы и их филиалы. Клик открывает карточку с мощностью, персоналом и списком выпускаемых типов.</p>
+      <div class="rail-rule accent2" style="margin-bottom:20px"></div>
       <div class="mfr-grid" id="mfr-grid"></div>
     </section>
 
     <!-- ===================== DEPOTS ===================== -->
     <section id="view-depots" class="view">
       <h1 class="display" style="font-size:26px;margin:20px 0 0;">Ремонтные депо</h1>
-      <p style="color:var(--ink-soft);font-size:13.5px;margin:6px 0 20px;max-width:56ch;">112 депо трёх ремонтных холдингов. На карте — размещение по стране, в списке — дорога и станция примыкания.</p>
+      <p style="color:var(--ink-soft);font-size:13.5px;margin:6px 0 0;max-width:56ch;">112 депо трёх ремонтных холдингов. На карте — размещение по стране, в списке — дорога и станция примыкания.</p>
+      <div class="rail-rule accent2" style="margin-bottom:20px"></div>
 
       <div class="depot-page-body">
         <aside class="filters">
@@ -994,6 +1028,7 @@ function openDetail(id) {
         </div>
       </div>
     </div>
+    <div class="rail-rule" style="margin:0 0 -1px"></div>
 
     <div class="detail-body">
       <nav class="jump-nav">
@@ -1329,7 +1364,7 @@ document.addEventListener("keydown", e => {
 });
 
 /* ---------- загрузка данных и старт ---------- */
-document.getElementById("catalog-grid").innerHTML = `<div class="empty-state" style="grid-column:1/-1">Загрузка каталога…</div>`;
+document.getElementById("catalog-grid").innerHTML = `<div class="empty-state" style="grid-column:1/-1">Загрузка каталога…<div class="rail-rule" style="max-width:220px;margin:14px auto 0"></div></div>`;
 fetch("data/catalog_data.json")
   .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
   .then(data => {

@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Каталог вагонов</title>
-<meta name="description" content="Справочник по грузовым вагонам: характеристики, тележки и запчасти, сроки ремонта, депо, поиск по грузу.">
+<title>Вагонотека — всё о вагоне в одном месте</title>
+<meta name="description" content="Вагонотека: характеристики, тележки и запчасти, сроки ремонта, депо и грузы — всё о вагоне в одном месте, без беготни по справочникам.">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<meta name="theme-color" content="#b5502a">
+<meta name="theme-color" content="#bb4d0a">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Каталог вагонов">
-<meta property="og:description" content="Справочник по грузовым вагонам: характеристики, тележки и запчасти, сроки ремонта, депо, поиск по грузу.">
+<meta property="og:title" content="Вагонотека">
+<meta property="og:description" content="Всё о вагоне — в одном месте: характеристики, тележки и запчасти, сроки ремонта, депо и грузы.">
 <!-- Аналитика: вставьте сюда счётчик (например, Яндекс.Метрика или GoatCounter) —
      см. README.md, раздел «Аналитика», как выбрать и подключить бесплатный вариант. -->
 <style>
@@ -131,10 +131,9 @@
     nav.top-nav { order: 2; flex: 1 1 100%; margin-left: 0; flex-wrap: wrap; }
   }
   .brand { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
-  .brand-mark { width: 26px; height: 26px; color: var(--accent); }
-  .brand-text { font-size: 16px; }
-  .brand-text b { font-weight: 620; }
-  .brand-text span { color: var(--ink-soft); font-weight: 400; }
+  .brand-mark { width: 28px; height: 28px; color: var(--accent); }
+  .brand-text { font-size: 18px; letter-spacing: .01em; }
+  .brand-text .suffix { color: var(--accent); }
 
   .search-wrap { position: relative; flex: 1; max-width: 420px; }
   .search-wrap svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--ink-faint); }
@@ -470,6 +469,7 @@
   .diff-toggle input { accent-color: var(--accent); }
 
   footer.foot { border-top: 1px solid var(--line); padding: 22px 24px 40px; font-size: 12px; color: var(--ink-faint); }
+  .foot-brand { color: var(--accent); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -477,9 +477,9 @@
 <div id="app">
   <header class="top">
     <div class="top-inner">
-      <div class="brand">
-        <svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="7" width="20" height="10" rx="1.4"/><line x1="6" y1="7" x2="6" y2="17"/><line x1="12" y1="7" x2="12" y2="17"/><line x1="18" y1="7" x2="18" y2="17"/><circle cx="7" cy="19.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="17" cy="19.5" r="1.4" fill="currentColor" stroke="none"/></svg>
-        <div class="brand-text"><b>Вагоны</b> <span>· каталог</span></div>
+      <div class="brand" title="Всё о вагоне — в одном месте">
+        <svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="7" width="20" height="10" rx="1.4"/><line x1="6" y1="7" x2="6" y2="17"/><line x1="12" y1="7" x2="12" y2="17"/><line x1="18" y1="7" x2="18" y2="17"/><circle cx="7" cy="19.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="17" cy="19.5" r="1.4" fill="currentColor" stroke="none"/><line x1="1" y1="21.6" x2="23" y2="21.6" stroke-width="1.1" opacity=".55"/></svg>
+        <div class="brand-text display">Вагоно<span class="suffix">тека</span></div>
       </div>
       <div class="search-wrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -608,7 +608,7 @@
   </main>
 
   <footer class="foot">
-    Каталог грузовых вагонов: 256 моделей, 27 заводов, 112 депо, 1 870 видов груза. Данные — <span class="mono">rzd.db</span>.
+    <b class="foot-brand">Вагонотека</b> — 256 моделей, 27 заводов, 112 депо, 1 870 видов груза, ни одного звонка «а подскажите номер чертежа».
   </footer>
 
   <div class="compare-tray" id="compare-tray">
@@ -1364,7 +1364,10 @@ document.addEventListener("keydown", e => {
 });
 
 /* ---------- загрузка данных и старт ---------- */
-document.getElementById("catalog-grid").innerHTML = `<div class="empty-state" style="grid-column:1/-1">Загрузка каталога…<div class="rail-rule" style="max-width:220px;margin:14px auto 0"></div></div>`;
+console.log("%c🚃 Вагонотека", "font:700 20px Oswald,sans-serif;color:#bb4d0a;");
+console.log("%cЗаглянул под капот — уважаем. Если чинишь вагон, а не сайт: вкладка «Чертежи и запчасти» в карточке вагона.", "color:#00707f;font-size:12px;");
+
+document.getElementById("catalog-grid").innerHTML = `<div class="empty-state" style="grid-column:1/-1">Сверяем номера…<div class="rail-rule" style="max-width:220px;margin:14px auto 0"></div></div>`;
 fetch("data/catalog_data.json")
   .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
   .then(data => {

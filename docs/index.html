@@ -354,7 +354,30 @@
   .detail-photo img { width: 100%; max-height: 360px; object-fit: contain; }
   .detail-title h1 { font-size: 26px; margin: 0 0 6px; text-wrap: balance; }
   .detail-title h1 .num { color: var(--accent); font-family: "Cascadia Code",Consolas,monospace; }
-  .detail-tags { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+  .detail-tags, .badges { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+
+  .type-icon-grid { display: flex; flex-wrap: wrap; gap: 16px; }
+  .type-icon-item { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 64px; text-align: center; }
+  .type-icon-item svg { width: 44px; height: 30px; color: var(--steel); }
+  .type-icon-item span { font-size: 10.5px; color: var(--ink-soft); line-height: 1.25; }
+
+  .contact-accordion details { border-bottom: 1px solid var(--line); }
+  .contact-accordion details:last-child { border-bottom: none; }
+  .contact-accordion summary {
+    padding: 11px 2px; font-size: 13px; font-weight: 600; cursor: pointer; list-style: none;
+    display: flex; align-items: baseline; gap: 8px; color: var(--ink);
+  }
+  .contact-accordion summary .n { font-weight: 400; color: var(--ink-faint); font-size: 12px; text-transform: none; }
+  .contact-accordion summary::-webkit-details-marker { display: none; }
+  .contact-accordion summary::before { content: "›"; display: inline-block; transition: transform .2s ease; font-size: 16px; color: var(--ink-faint); }
+  .contact-accordion details[open] summary::before { transform: rotate(90deg); }
+  .contact-dept-list { padding: 2px 2px 14px 20px; display: flex; flex-direction: column; gap: 12px; }
+  .contact-dept-row .contact-name { margin-bottom: 3px; }
+
+  .pill-num { display: inline-block; font-size: 22px; font-weight: 700; font-family: "Cascadia Code",Consolas,monospace; }
+  .pill-num.ok { color: var(--ok); }
+  .pill-num.warn { color: var(--warn); }
+  .pill-num.danger { color: var(--danger); }
   .tag {
     font-size: 12px; padding: 4px 10px; border-radius: 999px; background: var(--panel-sunken); color: var(--ink-soft);
     border: 1px solid var(--line);
@@ -605,6 +628,15 @@
       <p style="color:var(--ink-soft);font-size:13.5px;margin:6px 0 0;max-width:56ch;">27 предприятий — головные заводы и их филиалы. Клик открывает карточку с мощностью, персоналом и списком выпускаемых типов.</p>
       <div class="rail-rule accent2" style="margin-bottom:20px"></div>
       <div class="mfr-grid" id="mfr-grid"></div>
+    </section>
+
+    <!-- ===================== MANUFACTURER (single) ===================== -->
+    <section id="view-manufacturer" class="view">
+      <button class="back-btn" onclick="go('manufacturers')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Все заводы
+      </button>
+      <div id="mfr-detail-content"></div>
     </section>
 
     <!-- ===================== DEPOTS ===================== -->
@@ -1197,28 +1229,145 @@ function openDetail(id) {
 }
 
 /* ---------- manufacturer / depot overlays ---------- */
+function outputChartSVG(rows) {
+  if (!rows || !rows.length) return "";
+  const W = 560, H = 190, PAD_L = 30, PAD_R = 8, PAD_T = 16, PAD_B = 24;
+  const innerW = W-PAD_L-PAD_R, innerH = H-PAD_T-PAD_B;
+  const n = rows.length, gap = innerW/n, bw = Math.min(gap*0.5, 34);
+  const maxVol = Math.max(...rows.map(r=>r.volume||0), 1);
+  const maxShare = Math.max(...rows.map(r=>r.share||0), 1);
+  const xOf = i => PAD_L + i*gap + (gap-bw)/2;
+  const yVol = v => PAD_T + innerH - (v/maxVol)*innerH;
+  const yShare = v => PAD_T + innerH - (v/maxShare)*innerH;
+  const bars = rows.map((r,i) => {
+    if (r.volume == null) return "";
+    const x = xOf(i), y = yVol(r.volume), h = (PAD_T+innerH)-y;
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="var(--accent)" opacity=".82"/>`;
+  }).join("");
+  const linePts = rows.map((r,i) => r.share!=null ? `${(xOf(i)+bw/2).toFixed(1)},${yShare(r.share).toFixed(1)}` : null).filter(Boolean).join(" ");
+  const dots = rows.map((r,i) => r.share==null?"":`<circle cx="${(xOf(i)+bw/2).toFixed(1)}" cy="${yShare(r.share).toFixed(1)}" r="2.8" fill="var(--accent2)"/>`).join("");
+  const labels = rows.map((r,i) => `<text x="${(xOf(i)+bw/2).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="10" fill="var(--ink-faint)">${r.year}</text>`).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;overflow:visible" role="img" aria-label="Выпуск вагонов по годам">
+      ${bars}<polyline points="${linePts}" fill="none" stroke="var(--accent2)" stroke-width="2"/>${dots}${labels}
+    </svg>
+    <div style="display:flex;gap:18px;margin-top:6px;font-size:11.5px;color:var(--ink-soft);">
+      <span><span style="display:inline-block;width:8px;height:8px;background:var(--accent);border-radius:2px;margin-right:5px;"></span>тыс. вагонов/год</span>
+      <span><span style="display:inline-block;width:8px;height:8px;background:var(--accent2);border-radius:999px;margin-right:5px;"></span>доля рынка, %</span>
+    </div>`;
+}
+
 function openManufacturer(mfrId) {
   const m = MFR_BY_ID.get(mfrId);
-  const mask = document.getElementById("overlay-mask");
-  if (!m) { closeOverlay(); return; }
+  if (!m) return;
   const parent = m.parent_id ? MFR_BY_ID.get(m.parent_id) : null;
-  document.getElementById("overlay-content").innerHTML = `
-    <div class="overlay-eyebrow">Производитель</div>
-    <h3>${m.short_name || m.full_name}</h3>
-    <div class="overlay-sub">${m.full_name}${parent?` · входит в состав <span class="tag link" onclick="openManufacturer('${parent.id}')" tabindex="0" role="button" style="display:inline-flex">${parent.short_name}</span>`:""}</div>
-    <div class="spec-table">
-      <div class="row"><dt>Город</dt><dd>${m.city||"—"}</dd></div>
-      <div class="row"><dt>Регион</dt><dd>${m.region||"—"}</dd></div>
-      <div class="row"><dt>Тип</dt><dd>${m.enterprise_type||"—"}</dd></div>
-      ${m.capacity?`<div class="row"><dt>Мощность</dt><dd>${fmtNum(m.capacity)} тыс. ваг/год</dd></div>`:""}
-      ${m.staff?`<div class="row"><dt>Персонал</dt><dd>${fmtNum(m.staff)} тыс. чел.</dd></div>`:""}
-      <div class="row"><dt>Вагоны 25 тс</dt><dd>${m.produces_25tf_vagons||"н/д"}</dd></div>
-      <div class="row"><dt>Сайт</dt><dd>${siteLink(m.website)}</dd></div>
+  const children = DATA.manufacturers.filter(x => x.parent_id === mfrId);
+  const output = MFR_OUTPUT[mfrId] || [];
+  const contacts = MFR_CONTACTS[mfrId] || [];
+
+  const byDept = new Map();
+  contacts.forEach(c => {
+    const key = c.deptId || "_";
+    if (!byDept.has(key)) byDept.set(key, []);
+    byDept.get(key).push(c);
+  });
+  const deptOrder = [...DATA.manufacturerDepartments.map(d=>d.id), "_"];
+  const contactsHTML = contacts.length ? deptOrder.filter(k=>byDept.has(k)).map((k,i) => {
+    const name = k==="_" ? "Прочее" : MFR_DEPARTMENT_BY_ID.get(k) || "Прочее";
+    const list = byDept.get(k);
+    return `<details ${i===0?"open":""}>
+      <summary>${name} <span class="n">— ${list.length}</span></summary>
+      <div class="contact-dept-list">
+        ${list.map(c => `<div class="contact-dept-row">
+            <div class="contact-name">${c.name}</div>
+            ${c.phone?`<div class="contact-line">${c.phone}</div>`:""}
+            ${c.email?`<div class="contact-line">${c.email.split(",").map(e=>`<a href="mailto:${e.trim()}">${e.trim()}</a>`).join(", ")}</div>`:""}
+          </div>`).join("")}
+      </div>
+    </details>`;
+  }).join("") : `<p class="no-data">контакты не внесены в источник</p>`;
+
+  const vagonsHere = VAGONS.filter(v => v.mfrId === mfrId && v.cert);
+  const certCounts = {};
+  vagonsHere.forEach(v => { certCounts[v.cert.status] = (certCounts[v.cert.status]||0)+1; });
+  const certStat = (status, cls) => certCounts[status] ? `<div class="bstat"><b class="pill-num ${cls}">${certCounts[status]}</b><span>${status.toLowerCase()}</span></div>` : "";
+
+  document.getElementById("mfr-detail-content").innerHTML = `
+    <div class="breadcrumbs">
+      <a onclick="go('manufacturers')" tabindex="0" role="button">Главная</a><span class="sep">/</span>
+      <a onclick="go('manufacturers')" tabindex="0" role="button">Заводы</a><span class="sep">/</span>
+      ${m.short_name || m.full_name}
     </div>
-    ${m.vagonTypes&&m.vagonTypes.length?`<h4 style="font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);margin:0 0 9px;">Выпускает</h4><div class="feature-list">${m.vagonTypes.map(t=>`<span class="feature-chip">${t}</span>`).join("")}</div>`:""}
-    <div class="overlay-note">Клик по заводу в карточке вагона открывает эту панель.</div>
+    <div class="bento">
+
+      <div class="bcard span2">
+        <h3>Производитель</h3>
+        <h1 class="display" style="font-size:22px;margin:0 0 4px;">${m.short_name || m.full_name}</h1>
+        <p class="kind" style="margin-bottom:10px">${m.full_name}${parent?` · входит в состав <span class="tag link" onclick="openManufacturer('${parent.id}')" tabindex="0" role="button" style="display:inline-flex">${parent.short_name}</span>`:""}</p>
+        <div class="badges">
+          ${m.produces_25tf_vagons==="да"?`<span class="pill ok">есть компетенции по вагонам 25 тс</span>`:""}
+        </div>
+      </div>
+
+      <div class="bcard">
+        <h3>Общие</h3>
+        <div class="spec-table">
+          <div class="row"><dt>Страна</dt><dd>${m.country||"—"}</dd></div>
+          <div class="row"><dt>Регион</dt><dd>${m.region||"—"}</dd></div>
+          <div class="row"><dt>Город</dt><dd>${m.city||"—"}</dd></div>
+        </div>
+        ${m.website?`<p style="margin:10px 0 0;font-size:12.5px;">${siteLink(m.website)}</p>`:""}
+        ${(m.capacity||m.staff)?`<div class="bstat-row" style="margin-top:14px">
+          ${m.staff?`<div class="bstat"><b>${fmtNum(m.staff)} тыс.</b><span>человек</span></div>`:""}
+          ${m.capacity?`<div class="bstat"><b>${fmtNum(m.capacity)} тыс.</b><span>вагонов в год</span></div>`:""}
+        </div>`:""}
+      </div>
+
+      ${output.length ? `
+      <div class="bcard span3">
+        <h3>Выпуск вагонов в ретроспективе</h3>
+        ${outputChartSVG(output)}
+      </div>` : ""}
+
+      ${m.vagonTypeIds && m.vagonTypeIds.length ? `
+      <div class="bcard">
+        <h3>Типы выпускаемых вагонов</h3>
+        <div class="type-icon-grid">
+          ${m.vagonTypeIds.map(tid => `<div class="type-icon-item">${ICONS[tid]||""}<span>${TYPE_META[tid]?.name||tid}</span></div>`).join("")}
+        </div>
+      </div>` : ""}
+
+      ${children.length ? `
+      <div class="bcard span2">
+        <h3>Предприятия «${m.short_name}»</h3>
+        <table class="depot-table">
+          <thead><tr><th>Наименование</th><th>Город</th><th>Сфера деятельности</th></tr></thead>
+          <tbody>
+            ${children.map(c => `<tr onclick="openManufacturer('${c.id}')" style="cursor:pointer">
+              <td class="name">${c.short_name||c.full_name}</td><td>${c.city||"—"}</td><td style="white-space:normal">${c.enterprise_type||"—"}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>` : ""}
+
+      ${vagonsHere.length ? `
+      <div class="bcard">
+        <h3>Сертификаты на вагоны</h3>
+        <div class="bstat-row" style="flex-direction:column;gap:10px">
+          ${certStat("Действует","ok")}
+          ${certStat("Приостановлен","warn")}
+          ${certStat("Срок действия закончился","danger")}
+        </div>
+      </div>` : ""}
+
+      <div class="bcard span3">
+        <h3>Контакты</h3>
+        <div class="contact-accordion">${contactsHTML}</div>
+      </div>
+
+    </div>
   `;
-  mask.classList.add("show");
+  go("manufacturer", true);
+  window.scrollTo(0,0);
 }
 function openDepot(depotId) {
   const d = DEPOT_BY_ID.get(depotId);
@@ -1421,7 +1570,7 @@ function go(view, fromDetail) {
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
   document.getElementById("view-"+view).classList.add("active");
   document.getElementById("nav-catalog").classList.toggle("active", view==="catalog");
-  document.getElementById("nav-manufacturers").classList.toggle("active", view==="manufacturers");
+  document.getElementById("nav-manufacturers").classList.toggle("active", view==="manufacturers"||view==="manufacturer");
   document.getElementById("nav-depots").classList.toggle("active", view==="depots");
   document.getElementById("nav-compare").classList.toggle("active", view==="compare");
   if (view === "compare") renderCompare();

@@ -93,15 +93,18 @@ def main():
     """)
     mfr_cap = {r["manufacturer_id"]: r for r in rows("SELECT * FROM manufacturer_capacity")}
     mfr_types = {}
-    for r in rows("""SELECT mvt.manufacturer_id, vt.name FROM manufacturer_vagon_types mvt
+    mfr_type_ids = {}
+    for r in rows("""SELECT mvt.manufacturer_id, vt.id as type_id, vt.name FROM manufacturer_vagon_types mvt
                       JOIN vagon_types vt ON vt.id = mvt.vagon_type_id"""):
         mfr_types.setdefault(r["manufacturer_id"], []).append(r["name"])
+        mfr_type_ids.setdefault(r["manufacturer_id"], []).append(r["type_id"])
     for m in manufacturers:
         cap = mfr_cap.get(m["id"])
         m["capacity"] = cap["capacity_thousand_vagons_year"] if cap else None
         m["staff"] = cap["staff_thousand"] if cap else None
         m["capYear"] = cap["data_year"] if cap else None
         m["vagonTypes"] = mfr_types.get(m["id"], [])
+        m["vagonTypeIds"] = mfr_type_ids.get(m["id"], [])
 
     manufacturer_departments = rows("SELECT id, name, sort_order FROM manufacturer_departments ORDER BY sort_order")
 

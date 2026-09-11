@@ -381,6 +381,46 @@
   .dsection h2 { font-size: 15px; margin: 0 0 14px; display: flex; align-items: center; gap: 8px; }
   .dsection h2 .n { color: var(--ink-faint); font-weight: 400; font-size: 12.5px; }
 
+  /* ===== bento-сетка карточек (карточка вагона, завода) ===== */
+  .breadcrumbs { font-size: 12px; color: var(--ink-faint); margin: 18px 0 0; }
+  .breadcrumbs a { color: inherit; text-decoration: none; }
+  .breadcrumbs a:hover { color: var(--accent); }
+  .breadcrumbs .sep { margin: 0 6px; opacity: .5; }
+  .bento { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+  @media (max-width: 900px) { .bento { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .bento { grid-template-columns: 1fr; } }
+  .bcard {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px;
+    box-shadow: var(--shadow); transition: transform .25s var(--ease-spring), box-shadow .25s var(--ease-smooth), border-color .15s ease;
+  }
+  .bcard:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); border-color: var(--accent); }
+  .bcard.span2 { grid-column: span 2; }
+  .bcard.span3 { grid-column: span 3; }
+  @media (max-width: 900px) { .bcard.span3 { grid-column: span 2; } }
+  @media (max-width: 600px) { .bcard.span2, .bcard.span3 { grid-column: span 1; } }
+  .bcard h3 {
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-faint);
+    margin: 0 0 13px; font-weight: 600; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  }
+  .bcard h3 .n { text-transform: none; letter-spacing: 0; font-weight: 400; }
+  .bcard-hero { display: flex; gap: 26px; align-items: flex-start; flex-wrap: wrap; }
+  @media (max-width: 640px) { .bcard-hero { flex-direction: column; } }
+  .hero-media {
+    width: 300px; max-width: 100%; flex-shrink: 0; border-radius: 9px; overflow: hidden;
+    background: var(--panel-sunken); display: flex; align-items: center; justify-content: center; color: var(--steel);
+  }
+  .hero-media img { width: 100%; display: block; }
+  .hero-media svg { width: 70%; height: auto; padding: 22px 0; }
+  .hero-copy h1 { margin: 0 0 4px; }
+  .hero-copy .kind { color: var(--ink-soft); font-size: 13.5px; margin: 0 0 12px; }
+  .bstat-row { display: flex; gap: 26px; flex-wrap: wrap; }
+  .bstat b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; font-family: "Cascadia Code",Consolas,monospace; }
+  .bstat span { font-size: 11.5px; color: var(--ink-faint); }
+  .contact-name { font-size: 12.5px; color: var(--ink-soft); margin-bottom: 7px; line-height: 1.4; }
+  .contact-line { font-size: 13px; margin-top: 2px; }
+  .contact-line a { color: var(--accent2); text-decoration: none; }
+  .contact-line a:hover { text-decoration: underline; }
+
   .spec-table { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
   .spec-table .row { display: contents; }
   .spec-table dt, .spec-table dd { padding: 9px 14px; border-bottom: 1px solid var(--line); margin: 0; font-size: 13px; overflow-wrap: break-word; word-break: break-word; min-width: 0; }
@@ -636,7 +676,8 @@
 let DATA, KIND_BY_ID, MFR_BY_ID, BOGIE_BY_ID, DEPOT_BY_ID, RAILWAY_BY_ID, REPAIR_TYPE_BY_ID,
     HOLDING_BY_ID, FEATURE_BY_ID, CONTAINER_BY_ID, CARGO_TYPES, CARGO_BY_ID, DEPOT_COMPETENCIES,
     DEPOT_AUTHORIZATIONS, VAGONS, VAGON_BY_ID, CARGO_VAGON_IDS,
-    COMPONENT_TYPE_BY_ID, BOGIE_ASSEMBLY_DRAWINGS, BOGIE_COMPONENT_DRAWINGS, COMPONENT_REPAIR_DRAWINGS;
+    COMPONENT_TYPE_BY_ID, BOGIE_ASSEMBLY_DRAWINGS, BOGIE_COMPONENT_DRAWINGS, COMPONENT_REPAIR_DRAWINGS,
+    MFR_DEPARTMENT_BY_ID, MFR_OUTPUT, MFR_CONTACTS;
 
 function initFromData(data) {
   DATA = data;
@@ -657,6 +698,9 @@ function initFromData(data) {
   BOGIE_ASSEMBLY_DRAWINGS = DATA.bogieAssemblyDrawings;
   BOGIE_COMPONENT_DRAWINGS = DATA.bogieComponentDrawings;
   COMPONENT_REPAIR_DRAWINGS = DATA.componentRepairDrawings;
+  MFR_DEPARTMENT_BY_ID = new Map(DATA.manufacturerDepartments.map(d => [d.id, d.name]));
+  MFR_OUTPUT = DATA.manufacturerOutput;
+  MFR_CONTACTS = DATA.manufacturerContacts;
   VAGONS = DATA.vagons;
   VAGON_BY_ID = new Map(VAGONS.map(v => [v.id, v]));
   VAGONS.forEach(v => { v.cargoSet = new Set(v.cargoIds || []); });
@@ -1014,81 +1058,138 @@ function openDetail(id) {
        </div>
        ${depotInfo.items.length>DEPOT_PAGE ? `<button class="filter-clear" style="margin-top:10px" onclick="document.querySelector('#depot-list .depot-overflow').style.display='contents'; this.remove();">показать все ${depotInfo.items.length}</button>` : ""}`;
 
+  // хлебные крошки
+  const breadcrumbs = `
+    <div class="breadcrumbs">
+      <a onclick="clearFilters();go('catalog')" tabindex="0" role="button">Главная</a><span class="sep">/</span>
+      <a onclick="clearFilters();go('catalog')" tabindex="0" role="button">Каталог</a><span class="sep">/</span>
+      <a onclick="setType('${v.typeId}');go('catalog')" tabindex="0" role="button">${meta.name}</a><span class="sep">/</span>
+      ${kn ? `${kn}<span class="sep">/</span>` : ""}
+      модель ${v.model}
+    </div>`;
+
+  // покупка: основной контакт завода для карточки вагона
+  const mfrContacts = MFR_CONTACTS[v.mfrId] || [];
+  const salesContact = mfrContacts.find(c => c.primary);
+
+  // контейнеры
+  const containerNames = (v.containerIds || []).map(id => CONTAINER_BY_ID.get(id)).filter(Boolean);
+
+  // ремонт: сводные числа поверх уже собранного списка депо
+  const distinctDepots = new Set(depotInfo.items.map(i => i.depotId)).size;
+  const distinctRailways = new Set(depotInfo.items.map(i => DEPOT_BY_ID.get(i.depotId)?.railway_id).filter(Boolean)).size;
+
+  const heroMedia = v.photo
+    ? `<img src="${v.photo}" alt="${meta.name} ${v.model}" loading="lazy">`
+    : ICONS[v.typeId];
+
   document.getElementById("detail-content").innerHTML = `
-    ${v.photo ? `<div class="detail-photo"><img src="${v.photo}" alt="${meta.name} ${v.model}" loading="lazy"></div>` : ""}
-    <div class="detail-head">
-      <div class="detail-icon">${v.photoThumb ? `<img src="${v.photoThumb}" alt="${meta.name} ${v.model}" loading="lazy">` : ICONS[v.typeId]}</div>
-      <div class="detail-title">
-        <h1 class="display">${meta.name} <span class="num">${v.model}</span></h1>
-        <div class="detail-tags">
-          <span class="tag">${kn || meta.name}</span>
-          <span class="tag link" onclick="openManufacturer('${v.mfrId}')" tabindex="0" role="button">завод: ${mfrShort(v.mfrId)}</span>
-          ${v.requiresAuth ? `<span class="pill warn">требуется авторизация</span>` : ""}
-          ${cert ? `<span class="pill ${pillClass}">${cert.status}</span>` : ""}
-        </div>
-      </div>
-    </div>
-    <div class="rail-rule" style="margin:0 0 -1px"></div>
+    ${breadcrumbs}
+    <div class="bento">
 
-    <div class="detail-body">
-      <nav class="jump-nav">
-        <a href="#s-char">Характеристики</a>
-        <a href="#s-bogie">Тележка</a>
-        <a href="#s-parts">Чертежи и запчасти</a>
-        <a href="#s-overhaul">Сроки ремонта</a>
-        <a href="#s-features">Особенности</a>
-        <a href="#s-cargo">Грузы</a>
-        <a href="#s-depots">Депо для ремонта</a>
-      </nav>
-
-      <div>
-        <div class="dsection" id="s-char">
-          <h2>Характеристики</h2>
-          <div class="spec-table">
-            ${specRows.map(([k,val]) => `<div class="row"><dt>${k}</dt><dd>${val}</dd></div>`).join("")}
+      <div class="bcard bcard-hero span3">
+        <div class="hero-media">${heroMedia}</div>
+        <div class="hero-copy">
+          <h1 class="display">${meta.name} <span class="num">${v.model}</span></h1>
+          <p class="kind">${kn || meta.name}</p>
+          <div class="detail-tags">
+            ${v.requiresAuth ? `<span class="pill warn">требуется авторизация</span>` : ""}
+            ${cert ? `<span class="pill ${pillClass}">${cert.status}</span>` : ""}
           </div>
         </div>
+      </div>
 
-        <div class="dsection" id="s-bogie">
-          <h2>Тележка</h2>
-          ${bogie ? `
-            <div class="bogie-card">
-              <div><div class="name">Модель ${bogie.model}</div><div class="note">${bogie.model_note || "типовая"}</div></div>
-              <div class="load"><b>${bogie.axle_load_tf?bogie.axle_load_tf+' тс':'—'}</b><span>осевая нагрузка</span></div>
-            </div>` : `<p class="no-data">тележка не указана в источнике</p>`}
+      <div class="bcard">
+        <h3>Общие</h3>
+        <div class="spec-table">
+          <div class="row"><dt>Производитель</dt><dd><span class="tag link" onclick="openManufacturer('${v.mfrId}')" tabindex="0" role="button" style="display:inline-flex">${mfrShort(v.mfrId)}</span></dd></div>
+          ${v.kdNumber ? `<div class="row"><dt>Номер КД</dt><dd>${v.kdNumber}</dd></div>` : ""}
+          ${v.specialization ? `<div class="row"><dt>Учётная специализация</dt><dd>${v.specialization}</dd></div>` : ""}
         </div>
+        ${MFR_BY_ID.get(v.mfrId)?.website ? `<p style="margin:10px 0 0;font-size:12.5px;">${siteLink(MFR_BY_ID.get(v.mfrId).website)}</p>` : ""}
+      </div>
 
-        <div class="dsection" id="s-parts">
-          <h2>Чертежи и запчасти ${bogie?`<span class="n">— по Прил.Е РД 32 ЦВ 052-2009</span>`:""}</h2>
-          ${bogiePartsHTML(bogie)}
-        </div>
+      <div class="bcard">
+        <h3>Сертификат</h3>
+        ${cert ? `
+          <span class="pill ${pillClass}">${cert.status}</span>
+          <div class="spec-table" style="margin-top:12px">
+            <div class="row"><dt>№ сертификата</dt><dd style="text-align:left">${cert.number||"—"}</dd></div>
+            ${cert.to ? `<div class="row"><dt>Действует до</dt><dd>${fmtDate(cert.to)}</dd></div>` : ""}
+          </div>` : `<p class="no-data">сертификат не внесён в источник</p>`}
+      </div>
 
-        <div class="dsection" id="s-overhaul">
-          <h2>Межремонтные сроки</h2>
-          ${overhaulRows ? `
-          <div class="overhaul-wrap">
-            <table class="overhaul">
-              <thead><tr><th>Критерий</th><th>ДР после постройки</th><th>ДР после ДР</th><th>ДР после КР</th><th>КР после постройки, лет</th></tr></thead>
-              <tbody>${overhaulRows}</tbody>
-            </table>
-          </div>` : `<p class="no-data">данные по срокам обслуживания не внесены для этой модели</p>`}
-        </div>
+      <div class="bcard">
+        <h3>Тележка вагона</h3>
+        ${bogie ? `
+          <div style="font-size:15px;font-weight:600;margin-bottom:3px">${bogie.model}</div>
+          <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:12px">${mfrShort(bogie.manufacturer_id)||bogie.model_note||"типовая"}</div>
+          <div class="bstat-row"><div class="bstat"><b>${bogie.axle_load_tf?bogie.axle_load_tf+' тс':'—'}</b><span>осевая нагрузка</span></div></div>
+        ` : `<p class="no-data">тележка не указана в источнике</p>`}
+      </div>
 
-        <div class="dsection" id="s-features">
-          <h2>Особенности конструкции</h2>
-          ${(v.featureIds||[]).length ? `<div class="feature-list">${v.featureIds.map(id=>`<span class="feature-chip">${FEATURE_BY_ID.get(id)}</span>`).join("")}</div>` : `<p class="no-data">особенностей не отмечено</p>`}
-        </div>
+      ${salesContact ? `
+      <div class="bcard">
+        <h3>Покупка</h3>
+        <div class="contact-name">${salesContact.name}</div>
+        ${salesContact.phone ? `<div class="contact-line">${salesContact.phone}</div>` : ""}
+        ${salesContact.email ? `<div class="contact-line"><a href="mailto:${salesContact.email.split(',')[0].trim()}">${salesContact.email}</a></div>` : ""}
+      </div>` : ""}
 
-        <div class="dsection" id="s-cargo">
-          <h2>Грузы ${cargoIds.length ? `<span class="n">— ${cargoIds.length}</span>` : ""}</h2>
-          ${cargoBlock}
-        </div>
+      <div class="bcard">
+        <h3>Конструктивные особенности</h3>
+        ${(v.featureIds||[]).length ? `<div class="feature-list">${v.featureIds.map(id=>`<span class="feature-chip">${FEATURE_BY_ID.get(id)}</span>`).join("")}</div>` : `<p class="no-data">особенностей не отмечено</p>`}
+      </div>
 
-        <div class="dsection" id="s-depots">
-          <h2>Депо, авторизованные на ремонт ${depotInfo.items.length?`<span class="n">— ${depotInfo.items.length}</span>`:""}</h2>
-          ${depotsHTML}
+      <div class="bcard span2">
+        <h3>Межремонтные нормативы</h3>
+        ${overhaulRows ? `
+        <div class="overhaul-wrap">
+          <table class="overhaul">
+            <thead><tr><th>Критерий</th><th>ДР после постройки</th><th>ДР после ДР</th><th>ДР после КР</th><th>КР после постройки, лет</th></tr></thead>
+            <tbody>${overhaulRows}</tbody>
+          </table>
+        </div>` : `<p class="no-data">данные по срокам обслуживания не внесены для этой модели</p>`}
+      </div>
+
+      <div class="bcard">
+        <h3>Характеристики</h3>
+        <div class="spec-table">
+          ${specRows.map(([k,val]) => `<div class="row"><dt>${k}</dt><dd>${val}</dd></div>`).join("")}
         </div>
       </div>
+
+      <div class="bcard span2">
+        <h3>Перевозимые грузы ${cargoIds.length ? `<span class="n">— ${cargoIds.length}</span>` : ""}</h3>
+        ${cargoBlock}
+      </div>
+
+      <div class="bcard">
+        <h3>Перевозка контейнеров</h3>
+        ${containerNames.length ? `<div class="feature-list">${containerNames.map(n=>`<span class="feature-chip">${n}</span>`).join("")}</div>` : `<p class="no-data">нет данных в источнике</p>`}
+      </div>
+
+      <div class="bcard">
+        <h3>Ремонт</h3>
+        ${depotInfo.items.length ? `
+          <div class="bstat-row">
+            <div class="bstat"><b>${distinctDepots}</b><span>депо (${depotInfo.mode==="direct"?"авторизовано":"компетентно"})</span></div>
+            ${distinctRailways ? `<div class="bstat"><b>${distinctRailways}</b><span>дорог</span></div>` : ""}
+          </div>
+          <p class="muted-link" onclick="document.getElementById('s-depots-detail').scrollIntoView({behavior:'smooth'})" tabindex="0" role="button" style="margin-top:10px;color:var(--accent);cursor:pointer;font-size:12.5px;">подробнее ↓</p>
+        ` : `<p class="no-data">данные по авторизованным депо пока не внесены в источник</p>`}
+      </div>
+
+      <div class="bcard span3" id="s-depots-detail">
+        <h3>Депо, авторизованные на ремонт ${depotInfo.items.length?`<span class="n">— ${depotInfo.items.length}</span>`:""}</h3>
+        ${depotsHTML}
+      </div>
+
+      <div class="bcard span3">
+        <h3>Чертежи и запчасти ${bogie?`<span class="n">— по Прил.Е РД 32 ЦВ 052-2009</span>`:""}</h3>
+        ${bogiePartsHTML(bogie)}
+      </div>
+
     </div>
   `;
   go("detail", true);

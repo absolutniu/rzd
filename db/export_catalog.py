@@ -103,6 +103,23 @@ def main():
         m["capYear"] = cap["data_year"] if cap else None
         m["vagonTypes"] = mfr_types.get(m["id"], [])
 
+    manufacturer_departments = rows("SELECT id, name, sort_order FROM manufacturer_departments ORDER BY sort_order")
+
+    manufacturer_output = {}  # mfrId -> [{year, volume, share}]
+    for r in rows("""SELECT manufacturer_id, year, volume_thousand_vagons, share_percent
+                      FROM manufacturer_output ORDER BY manufacturer_id, year"""):
+        manufacturer_output.setdefault(r["manufacturer_id"], []).append({
+            "year": r["year"], "volume": r["volume_thousand_vagons"], "share": r["share_percent"],
+        })
+
+    manufacturer_contacts = {}  # mfrId -> [{deptId, name, phone, email, primaryForVagonCard}]
+    for r in rows("""SELECT manufacturer_id, department_id, contact_name, phone, email, is_primary_for_vagon_card
+                      FROM manufacturer_contacts ORDER BY manufacturer_id"""):
+        manufacturer_contacts.setdefault(r["manufacturer_id"], []).append({
+            "deptId": r["department_id"], "name": r["contact_name"], "phone": r["phone"], "email": r["email"],
+            "primary": r["is_primary_for_vagon_card"] == "да",
+        })
+
     bogies = rows("""SELECT id, model, model_note, manufacturer_id, axle_load_tf, axle_load_kn,
                              rd9246_manufacturer_label FROM bogies""")
     vagon_bogie = {}
@@ -215,6 +232,9 @@ def main():
         "vagonTypes": vagon_types,
         "vagonKinds": vagon_kinds,
         "manufacturers": manufacturers,
+        "manufacturerDepartments": manufacturer_departments,
+        "manufacturerOutput": manufacturer_output,
+        "manufacturerContacts": manufacturer_contacts,
         "bogies": bogies,
         "depots": depots,
         "railways": railways,

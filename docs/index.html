@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Каталог вагонов</title>
-<meta name="description" content="Справочник по грузовым вагонам: характеристики, тележки и запчасти, сроки ремонта, депо, поиск по грузу.">
+<title>Вагонотека — всё о вагоне в одном месте</title>
+<meta name="description" content="Вагонотека: характеристики, тележки и запчасти, сроки ремонта, депо и грузы — всё о вагоне в одном месте, без беготни по справочникам.">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<meta name="theme-color" content="#b5502a">
+<meta name="theme-color" content="#bb4d0a">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Каталог вагонов">
-<meta property="og:description" content="Справочник по грузовым вагонам: характеристики, тележки и запчасти, сроки ремонта, депо, поиск по грузу.">
+<meta property="og:title" content="Вагонотека">
+<meta property="og:description" content="Всё о вагоне — в одном месте: характеристики, тележки и запчасти, сроки ремонта, депо и грузы.">
 <!-- Аналитика: вставьте сюда счётчик (например, Яндекс.Метрика или GoatCounter) —
      см. README.md, раздел «Аналитика», как выбрать и подключить бесплатный вариант. -->
 <style>
@@ -131,10 +131,9 @@
     nav.top-nav { order: 2; flex: 1 1 100%; margin-left: 0; flex-wrap: wrap; }
   }
   .brand { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
-  .brand-mark { width: 26px; height: 26px; color: var(--accent); }
-  .brand-text { font-size: 16px; }
-  .brand-text b { font-weight: 620; }
-  .brand-text span { color: var(--ink-soft); font-weight: 400; }
+  .brand-mark { width: 28px; height: 28px; color: var(--accent); }
+  .brand-text { font-size: 18px; letter-spacing: .01em; }
+  .brand-text .suffix { color: var(--accent); }
 
   .search-wrap { position: relative; flex: 1; max-width: 420px; }
   .search-wrap svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--ink-faint); }
@@ -182,7 +181,29 @@
 
   /* ===== catalog layout ===== */
   .catalog-body { display: grid; grid-template-columns: 216px 1fr; gap: 26px; align-items: start; margin-top: 14px; }
+  .catalog-body > * { min-width: 0; } /* та же защита, что у .depot-page-body — длинный текст в фильтрах/карточках не должен распирать колонку */
   @media (max-width: 800px) { .catalog-body { grid-template-columns: 1fr; } }
+
+  /* ===== каталог: вход (выбор типа/груза до показа списка) ===== */
+  .gate-lead { color: var(--ink-soft); font-size: 14px; margin: 24px 0 18px; max-width: 62ch; }
+  .gate-type-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 12px; }
+  .gate-tile {
+    display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;
+    padding: 22px 14px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line);
+    cursor: pointer; font: inherit; color: inherit;
+    transition: transform .25s var(--ease-spring), box-shadow .25s var(--ease-smooth), border-color .2s ease;
+  }
+  .gate-tile:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--accent); }
+  .gate-tile .gt-icon svg { width: 46px; height: 32px; color: var(--steel); }
+  .gate-tile .gt-name { font-size: 13.5px; font-weight: 600; }
+  .gate-tile .gt-count { font-size: 11px; color: var(--ink-faint); font-family: "Cascadia Code",Consolas,monospace; }
+  .gate-or { display: flex; align-items: center; gap: 12px; margin: 26px 0 18px; color: var(--ink-faint); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+  .gate-or::before, .gate-or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .gate-cargo { max-width: 420px; }
+  .gate-skip { display: block; margin: 26px 0 8px; background: none; border: none; color: var(--ink-faint); font-size: 12.5px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; padding: 0; }
+  .gate-skip:hover { color: var(--accent); }
+  .gate-back { display: inline-block; font-size: 12.5px; color: var(--accent); cursor: pointer; margin: 18px 0 2px; }
+  .gate-back:hover { text-decoration: underline; }
 
   /* ===== manufacturers page ===== */
   .mfr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
@@ -199,6 +220,7 @@
 
   /* ===== depots page ===== */
   .depot-page-body { display: grid; grid-template-columns: 216px 1fr; gap: 26px; align-items: start; margin-top: 14px; }
+  .depot-page-body > * { min-width: 0; } /* иначе nowrap-таблица депо распирает грид-колонку сайдбара, несмотря на overflow-x:auto у обёртки */
   @media (max-width: 800px) { .depot-page-body { grid-template-columns: 1fr; } }
   .depot-map-frame {
     position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
@@ -355,7 +377,30 @@
   .detail-photo img { width: 100%; max-height: 360px; object-fit: contain; }
   .detail-title h1 { font-size: 26px; margin: 0 0 6px; text-wrap: balance; }
   .detail-title h1 .num { color: var(--accent); font-family: "Cascadia Code",Consolas,monospace; }
-  .detail-tags { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+  .detail-tags, .badges { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+
+  .type-icon-grid { display: flex; flex-wrap: wrap; gap: 16px; }
+  .type-icon-item { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 64px; text-align: center; }
+  .type-icon-item svg { width: 44px; height: 30px; color: var(--steel); }
+  .type-icon-item span { font-size: 10.5px; color: var(--ink-soft); line-height: 1.25; }
+
+  .contact-accordion details { border-bottom: 1px solid var(--line); }
+  .contact-accordion details:last-child { border-bottom: none; }
+  .contact-accordion summary {
+    padding: 11px 2px; font-size: 13px; font-weight: 600; cursor: pointer; list-style: none;
+    display: flex; align-items: baseline; gap: 8px; color: var(--ink);
+  }
+  .contact-accordion summary .n { font-weight: 400; color: var(--ink-faint); font-size: 12px; text-transform: none; }
+  .contact-accordion summary::-webkit-details-marker { display: none; }
+  .contact-accordion summary::before { content: "›"; display: inline-block; transition: transform .2s ease; font-size: 16px; color: var(--ink-faint); }
+  .contact-accordion details[open] summary::before { transform: rotate(90deg); }
+  .contact-dept-list { padding: 2px 2px 14px 20px; display: flex; flex-direction: column; gap: 12px; }
+  .contact-dept-row .contact-name { margin-bottom: 3px; }
+
+  .pill-num { display: inline-block; font-size: 22px; font-weight: 700; font-family: "Cascadia Code",Consolas,monospace; }
+  .pill-num.ok { color: var(--ok); }
+  .pill-num.warn { color: var(--warn); }
+  .pill-num.danger { color: var(--danger); }
   .tag {
     font-size: 12px; padding: 4px 10px; border-radius: 999px; background: var(--panel-sunken); color: var(--ink-soft);
     border: 1px solid var(--line);
@@ -381,6 +426,52 @@
   .dsection:last-child { border-bottom: none; }
   .dsection h2 { font-size: 15px; margin: 0 0 14px; display: flex; align-items: center; gap: 8px; }
   .dsection h2 .n { color: var(--ink-faint); font-weight: 400; font-size: 12.5px; }
+
+  /* ===== bento-сетка карточек (карточка вагона, завода) ===== */
+  .breadcrumbs { font-size: 12px; color: var(--ink-faint); margin: 18px 0 0; }
+  .breadcrumbs a { color: inherit; text-decoration: none; }
+  .breadcrumbs a:hover { color: var(--accent); }
+  .breadcrumbs .sep { margin: 0 6px; opacity: .5; }
+  .bento { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+  @media (max-width: 900px) { .bento { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .bento { grid-template-columns: 1fr; } }
+  .bcard {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px;
+    box-shadow: var(--shadow); transition: transform .25s var(--ease-spring), box-shadow .25s var(--ease-smooth), border-color .15s ease;
+  }
+  .bcard:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); border-color: var(--accent); }
+  .bcard.span2 { grid-column: span 2; }
+  .bcard.span3 { grid-column: span 3; }
+  @media (max-width: 900px) { .bcard.span3 { grid-column: span 2; } }
+  @media (max-width: 600px) { .bcard.span2, .bcard.span3 { grid-column: span 1; } }
+  .bcard h3 {
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-faint);
+    margin: 0 0 13px; font-weight: 600; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  }
+  .bcard h3 .n { text-transform: none; letter-spacing: 0; font-weight: 400; }
+  .bcard > summary { cursor: pointer; list-style: none; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .bcard > summary::-webkit-details-marker { display: none; }
+  .bcard > summary h3 { margin: 0; }
+  .bcard > summary .chev { color: var(--ink-faint); font-size: 18px; transition: transform .2s ease; flex-shrink: 0; }
+  .bcard[open] > summary .chev { transform: rotate(90deg); }
+  .bcard-collapse-body { margin-top: 13px; }
+  .bcard-hero { display: flex; gap: 26px; align-items: flex-start; flex-wrap: wrap; }
+  @media (max-width: 640px) { .bcard-hero { flex-direction: column; } }
+  .hero-media {
+    width: 300px; max-width: 100%; flex-shrink: 0; border-radius: 9px; overflow: hidden;
+    background: var(--panel-sunken); display: flex; align-items: center; justify-content: center; color: var(--steel);
+  }
+  .hero-media img { width: 100%; display: block; }
+  .hero-media svg { width: 70%; height: auto; padding: 22px 0; }
+  .hero-copy h1 { margin: 0 0 4px; }
+  .hero-copy .kind { color: var(--ink-soft); font-size: 13.5px; margin: 0 0 12px; }
+  .bstat-row { display: flex; gap: 26px; flex-wrap: wrap; }
+  .bstat b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; font-family: "Cascadia Code",Consolas,monospace; }
+  .bstat span { font-size: 11.5px; color: var(--ink-faint); }
+  .contact-name { font-size: 12.5px; color: var(--ink-soft); margin-bottom: 7px; line-height: 1.4; }
+  .contact-line { font-size: 13px; margin-top: 2px; }
+  .contact-line a { color: var(--accent2); text-decoration: none; }
+  .contact-line a:hover { text-decoration: underline; }
 
   .spec-table { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
   .spec-table .row { display: contents; }
@@ -436,24 +527,13 @@
 
   .no-data { color: var(--ink-faint); font-size: 13px; font-style: italic; }
 
-  /* ===== overlay panel (manufacturer / depot) ===== */
-  .overlay-mask {
-    position: fixed; inset: 0; background: rgba(10,12,14,.4); z-index: 50; display: none;
-    opacity: 0; transition: opacity .25s var(--ease-smooth);
-  }
-  .overlay-mask.show { display: block; opacity: 1; }
-  .overlay-panel {
-    position: fixed; top: 0; right: 0; height: 100%; width: min(380px, 92vw); background: var(--panel);
-    z-index: 51; box-shadow: var(--shadow-lg); transform: translateX(100%); transition: transform .4s var(--ease-spring);
-    padding: 22px; overflow-y: auto; overflow-x: hidden;
-  }
-  .overlay-mask.show .overlay-panel { transform: translateX(0); }
-  .overlay-close { position: absolute; top: 18px; right: 18px; background: none; border: none; color: var(--ink-faint); cursor: pointer; }
-  .overlay-eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: .09em; color: var(--accent); font-weight: 600; margin-bottom: 8px; }
-  .overlay-panel h3 { font-size: 19px; margin: 0 0 4px; text-wrap: balance; }
-  .overlay-sub { color: var(--ink-soft); font-size: 13px; margin-bottom: 18px; }
-  .overlay-panel .spec-table { margin-bottom: 16px; }
-  .overlay-note { font-size: 12px; color: var(--ink-faint); border-top: 1px solid var(--line); padding-top: 12px; margin-top: 16px; }
+  /* ===== депо: компетенции по видам вагонов ===== */
+  .depot-comp-list { display: flex; flex-direction: column; gap: 0; }
+  .depot-comp-row { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .depot-comp-row:last-child { border-bottom: none; }
+  .depot-comp-row .label { font-size: 13px; flex: 1 1 200px; }
+  .depot-comp-row .label .n { color: var(--ink-faint); font-size: 12px; font-weight: 400; }
+  .depot-comp-row .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 
   /* ===== compare view ===== */
   .compare-wrap { overflow-x: auto; margin-top: 18px; }
@@ -470,6 +550,41 @@
   .diff-toggle input { accent-color: var(--accent); }
 
   footer.foot { border-top: 1px solid var(--line); padding: 22px 24px 40px; font-size: 12px; color: var(--ink-faint); }
+  .foot-brand { color: var(--accent); font-weight: 600; }
+
+  /* ===== hub (главная) ===== */
+  .hub-hero { text-align: center; padding: 36px 0 4px; }
+  .hub-eyebrow { font-size: 11.5px; text-transform: uppercase; letter-spacing: .12em; color: var(--accent); font-weight: 600; }
+  .hub-hero h1 { font-size: 32px; margin: 8px 0 0; }
+  .hub-hero p { color: var(--ink-soft); font-size: 14px; max-width: 52ch; margin: 10px auto 0; }
+  .hub-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-top: 30px; }
+  .hub-card {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 9px; text-align: left;
+    padding: 26px 22px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line);
+    cursor: pointer; font: inherit; color: inherit; position: relative; overflow: hidden;
+    transition: transform .25s var(--ease-spring), box-shadow .25s var(--ease-smooth), border-color .2s ease;
+  }
+  .hub-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: var(--accent); }
+  .hub-card.alt:hover { border-color: var(--accent2); }
+  .hub-card .hc-icon { width: 38px; height: 38px; color: var(--accent); }
+  .hub-card.alt .hc-icon { color: var(--accent2); }
+  .hub-card h3 { margin: 4px 0 0; font-size: 17px; }
+  .hub-card p { margin: 0; font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
+  .hub-card .hc-arrow { margin-top: 10px; color: var(--ink-faint); font-size: 19px; transition: transform .25s var(--ease-spring), color .2s ease; }
+  .hub-card:hover .hc-arrow { transform: translateX(5px); color: var(--accent); }
+  .hub-card.alt:hover .hc-arrow { color: var(--accent2); }
+  .brand[role="button"] { cursor: pointer; }
+
+  /* ===== parts (комплектующие) — аккордеон по тележкам ===== */
+  .parts-list { display: flex; flex-direction: column; gap: 10px; }
+  .bogie-acc { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--panel); }
+  .bogie-acc summary { list-style: none; cursor: pointer; }
+  .bogie-acc summary::-webkit-details-marker { display: none; }
+  .bogie-acc summary.bogie-card { background: var(--panel-sunken); }
+  .bogie-acc .chev { color: var(--ink-faint); font-size: 18px; transition: transform .2s ease; margin-left: 6px; }
+  .bogie-acc[open] .chev { transform: rotate(90deg); }
+  .bogie-acc.no-data summary { opacity: .58; }
+  .bogie-acc-body { padding: 6px 16px 16px; }
 </style>
 </head>
 <body>
@@ -477,18 +592,19 @@
 <div id="app">
   <header class="top">
     <div class="top-inner">
-      <div class="brand">
-        <svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="7" width="20" height="10" rx="1.4"/><line x1="6" y1="7" x2="6" y2="17"/><line x1="12" y1="7" x2="12" y2="17"/><line x1="18" y1="7" x2="18" y2="17"/><circle cx="7" cy="19.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="17" cy="19.5" r="1.4" fill="currentColor" stroke="none"/></svg>
-        <div class="brand-text"><b>Вагоны</b> <span>· каталог</span></div>
+      <div class="brand" title="На главную" role="button" tabindex="0" onclick="go('hub')" onkeydown="if(event.key==='Enter')go('hub')">
+        <svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="7" width="20" height="10" rx="1.4"/><line x1="6" y1="7" x2="6" y2="17"/><line x1="12" y1="7" x2="12" y2="17"/><line x1="18" y1="7" x2="18" y2="17"/><circle cx="7" cy="19.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="17" cy="19.5" r="1.4" fill="currentColor" stroke="none"/><line x1="1" y1="21.6" x2="23" y2="21.6" stroke-width="1.1" opacity=".55"/></svg>
+        <div class="brand-text display">Вагоно<span class="suffix">тека</span></div>
       </div>
       <div class="search-wrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input id="search" type="text" placeholder="Модель, завод — например «12-196» или «Алтайвагон»" autocomplete="off" />
       </div>
       <nav class="top-nav">
-        <button id="nav-catalog" class="active" onclick="go('catalog')">Каталог</button>
+        <button id="nav-catalog" onclick="go('catalog')">Каталог</button>
         <button id="nav-manufacturers" onclick="go('manufacturers')">Заводы</button>
         <button id="nav-depots" onclick="go('depots')">Депо</button>
+        <button id="nav-parts" onclick="go('parts')">Комплектующие</button>
         <button id="nav-compare" onclick="go('compare')">Сравнение <span class="badge" id="compare-badge">0</span></button>
       </nav>
     </div>
@@ -496,46 +612,109 @@
 
   <main>
 
+    <!-- ===================== HUB (главная) ===================== -->
+    <section id="view-hub" class="view active">
+      <div class="hub-hero">
+        <div class="hub-eyebrow">Вагонотека</div>
+        <h1 class="display">Всё о вагоне — в одном месте</h1>
+        <p>Характеристики, тележки и запчасти, сроки ремонта, допустимые грузы, заводы и депо — без беготни по справочникам. С чего начнём?</p>
+      </div>
+      <div class="rail-rule" style="max-width:560px;margin-left:auto;margin-right:auto;"></div>
+
+      <div class="hub-grid">
+        <button class="hub-card" onclick="go('catalog')">
+          <svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="7" width="20" height="10" rx="1.4"/><line x1="7" y1="7" x2="7" y2="17"/><line x1="12" y1="7" x2="12" y2="17"/><line x1="17" y1="7" x2="17" y2="17"/><circle cx="6.5" cy="19.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="17.5" cy="19.5" r="1.5" fill="currentColor" stroke="none"/></svg>
+          <h3>Чем везти?</h3>
+          <p>256 моделей вагонов — по типу, грузоподъёмности и производителю.</p>
+          <span class="hc-arrow">→</span>
+        </button>
+        <button class="hub-card alt" onclick="go('manufacturers')">
+          <svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 21V10l6 4V10l6 4V10l6 4v7z"/><path d="M3 21h18"/><line x1="7" y1="17" x2="7" y2="19"/><line x1="12" y1="17" x2="12" y2="19"/><line x1="17" y1="17" x2="17" y2="19"/></svg>
+          <h3>Кто производит?</h3>
+          <p>27 заводов — мощность, выпуск по годам, контакты по отделам.</p>
+          <span class="hc-arrow">→</span>
+        </button>
+        <button class="hub-card" onclick="go('catalog'); setTimeout(()=>{ const el = document.getElementById(state.catalogUnlocked ? 'cargo-search' : 'gate-cargo-search'); if (el) el.focus(); }, 60);">
+          <svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v9l9 5 9-5V8"/><path d="M12 13v9"/></svg>
+          <h3>Что везти?</h3>
+          <p>Поиск по 1 870 видам груза — какой вагон допущен под ваш груз.</p>
+          <span class="hc-arrow">→</span>
+        </button>
+        <button class="hub-card alt" onclick="go('depots')">
+          <svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="10" r="3"/><path d="M12 21s7-6.5 7-11a7 7 0 0 0-14 0c0 4.5 7 11 7 11Z"/></svg>
+          <h3>Где ремонтировать?</h3>
+          <p>112 депо трёх холдингов — размещение по дорогам и станциям.</p>
+          <span class="hc-arrow">→</span>
+        </button>
+        <button class="hub-card" onclick="go('parts')">
+          <svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14.7 6.3a1 1 0 0 0 1.4 0l1.6-1.6a4 4 0 0 1 5.6 5.6l-1.6 1.6a1 1 0 0 0 0 1.4l1.6 1.6a4 4 0 0 1-5.6 5.6l-1.6-1.6a1 1 0 0 0-1.4 0l-1.6 1.6a4 4 0 0 1-5.6-5.6l1.6-1.6a1 1 0 0 0 0-1.4L7.5 11.5a4 4 0 0 1 5.6-5.6Z"/></svg>
+          <h3>Чем ремонтировать?</h3>
+          <p>Тележки: чертежи производства и допустимые при ремонте — по Прил.Е.</p>
+          <span class="hc-arrow">→</span>
+        </button>
+      </div>
+    </section>
+
     <!-- ===================== CATALOG ===================== -->
-    <section id="view-catalog" class="view active">
+    <section id="view-catalog" class="view">
       <h1 class="display" style="font-size:26px;margin:20px 0 0;">Грузовые вагоны</h1>
       <p style="color:var(--ink-soft);font-size:13.5px;margin:6px 0 0;max-width:56ch;">Характеристики, тележка и запчасти, сроки ремонта, допустимые грузы и депо — по каждой модели в одном месте.</p>
       <div class="rail-rule"></div>
-      <div class="type-tabs" id="type-tabs"></div>
 
-      <div class="catalog-body">
-        <aside class="filters">
-          <div class="filter-group cargo-filter-group">
-            <h4>Что нужно перевезти <span class="filter-hint">1 870 видов груза</span></h4>
-            <div class="cargo-search">
-              <input id="cargo-search" type="text" placeholder="например, «бензин» или «зерно»" autocomplete="off" />
-              <div class="cargo-suggest" id="cargo-suggest"></div>
-            </div>
-            <div class="cargo-chips" id="cargo-chips"></div>
+      <!-- ===== вход: выбор типа или груза, прежде чем вываливать все 256 ===== -->
+      <div id="catalog-gate">
+        <p class="gate-lead">Чем везти? Выберите тип вагона — или сразу укажите, что нужно перевезти, ниже.</p>
+        <div class="gate-type-grid" id="gate-type-grid"></div>
+        <div class="gate-or"><span>или</span></div>
+        <div class="gate-cargo">
+          <div class="cargo-search">
+            <input id="gate-cargo-search" type="text" placeholder="что везём — например, «бензин» или «зерно»" autocomplete="off" />
+            <div class="cargo-suggest" id="gate-cargo-suggest"></div>
           </div>
-          <div class="filter-group">
-            <h4>Грузоподъёмность, т</h4>
-            <div class="filter-range">
-              <input id="cap-min" type="number" placeholder="от" min="0" />
-              <span>—</span>
-              <input id="cap-max" type="number" placeholder="до" min="0" />
-            </div>
-          </div>
-          <div class="filter-group">
-            <h4>Производитель</h4>
-            <div class="filter-check-list" id="mfr-filters"></div>
-          </div>
-          <div class="filter-group">
-            <label class="filter-toggle"><input id="only-auth" type="checkbox" /> Требуется авторизация</label>
-          </div>
-          <button class="filter-clear" onclick="clearFilters()">Сбросить фильтры</button>
-        </aside>
+        </div>
+        <button class="gate-skip" onclick="unlockAll()">Показать все <span id="gate-total-count">0</span> моделей без фильтра →</button>
+      </div>
 
-        <div>
-          <div class="result-meta">
-            <div class="count">Найдено: <b id="result-count">0</b></div>
+      <!-- ===== результат: табы типов, фильтры, сетка карточек ===== -->
+      <div id="catalog-main" hidden>
+        <p class="gate-back" onclick="backToGate()" tabindex="0" role="button">← выбрать другой тип или груз</p>
+        <div class="type-tabs" id="type-tabs"></div>
+
+        <div class="catalog-body">
+          <aside class="filters">
+            <div class="filter-group cargo-filter-group">
+              <h4>Что нужно перевезти <span class="filter-hint">1 870 видов груза</span></h4>
+              <div class="cargo-search">
+                <input id="cargo-search" type="text" placeholder="например, «бензин» или «зерно»" autocomplete="off" />
+                <div class="cargo-suggest" id="cargo-suggest"></div>
+              </div>
+              <div class="cargo-chips" id="cargo-chips"></div>
+            </div>
+            <div class="filter-group">
+              <h4>Грузоподъёмность, т</h4>
+              <div class="filter-range">
+                <input id="cap-min" type="number" placeholder="от" min="0" />
+                <span>—</span>
+                <input id="cap-max" type="number" placeholder="до" min="0" />
+              </div>
+            </div>
+            <div id="spec-filters"></div>
+            <div class="filter-group">
+              <h4>Производитель</h4>
+              <div class="filter-check-list" id="mfr-filters"></div>
+            </div>
+            <div class="filter-group">
+              <label class="filter-toggle"><input id="only-auth" type="checkbox" /> Требуется авторизация</label>
+            </div>
+            <button class="filter-clear" onclick="clearFilters()">Сбросить фильтры</button>
+          </aside>
+
+          <div>
+            <div class="result-meta">
+              <div class="count">Найдено: <b id="result-count">0</b></div>
+            </div>
+            <div class="grid" id="catalog-grid"></div>
           </div>
-          <div class="grid" id="catalog-grid"></div>
         </div>
       </div>
     </section>
@@ -565,6 +744,15 @@
       <p style="color:var(--ink-soft);font-size:13.5px;margin:6px 0 0;max-width:56ch;">27 предприятий — головные заводы и их филиалы. Клик открывает карточку с мощностью, персоналом и списком выпускаемых типов.</p>
       <div class="rail-rule accent2" style="margin-bottom:20px"></div>
       <div class="mfr-grid" id="mfr-grid"></div>
+    </section>
+
+    <!-- ===================== MANUFACTURER (single) ===================== -->
+    <section id="view-manufacturer" class="view">
+      <button class="back-btn" onclick="go('manufacturers')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Все заводы
+      </button>
+      <div id="mfr-detail-content"></div>
     </section>
 
     <!-- ===================== DEPOTS ===================== -->
@@ -605,10 +793,30 @@
       </div>
     </section>
 
+    <!-- ===================== DEPOT (single) ===================== -->
+    <section id="view-depot" class="view">
+      <button class="back-btn" onclick="go('depots')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Все депо
+      </button>
+      <div id="depot-detail-content"></div>
+    </section>
+
+    <!-- ===================== PARTS (комплектующие) ===================== -->
+    <section id="view-parts" class="view">
+      <h1 class="display" style="font-size:26px;margin:20px 0 0;">Комплектующие тележек</h1>
+      <p style="color:var(--ink-soft);font-size:13.5px;margin:6px 0 0;max-width:60ch;">Чертежи, применявшиеся при производстве, и чертежи, допустимые к применению при ремонте — по Прил.Е (обязательное) РД 32 ЦВ 052-2009. Данные охватывают 19 из 32 моделей тележек (тип 2 по ГОСТ 9246 с боковыми скользунами зазорного типа).</p>
+      <div class="rail-rule" style="margin-bottom:20px"></div>
+
+      <input id="parts-search" type="text" placeholder="Модель тележки или завод — например «18-100» или «УВЗ»" autocomplete="off" style="width:100%;max-width:420px;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:13.5px;margin-bottom:18px;" />
+
+      <div class="parts-list" id="parts-list"></div>
+    </section>
+
   </main>
 
   <footer class="foot">
-    Каталог грузовых вагонов: 256 моделей, 27 заводов, 112 депо, 1 870 видов груза. Данные — <span class="mono">rzd.db</span>.
+    <b class="foot-brand">Вагонотека</b> — 256 моделей, 27 заводов, 112 депо, 1 870 видов груза, ни одного звонка «а подскажите номер чертежа».
   </footer>
 
   <div class="compare-tray" id="compare-tray">
@@ -617,14 +825,6 @@
     <button class="go" onclick="go('compare')">Сравнить →</button>
   </div>
 
-  <div class="overlay-mask" id="overlay-mask" onclick="if(event.target===this) closeOverlay()">
-    <div class="overlay-panel">
-      <button class="overlay-close" onclick="closeOverlay()" aria-label="Закрыть">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
-      </button>
-      <div id="overlay-content"></div>
-    </div>
-  </div>
 </div>
 
 <script>
@@ -636,7 +836,8 @@
 let DATA, KIND_BY_ID, MFR_BY_ID, BOGIE_BY_ID, DEPOT_BY_ID, RAILWAY_BY_ID, REPAIR_TYPE_BY_ID,
     HOLDING_BY_ID, FEATURE_BY_ID, CONTAINER_BY_ID, CARGO_TYPES, CARGO_BY_ID, DEPOT_COMPETENCIES,
     DEPOT_AUTHORIZATIONS, VAGONS, VAGON_BY_ID, CARGO_VAGON_IDS,
-    COMPONENT_TYPE_BY_ID, BOGIE_ASSEMBLY_DRAWINGS, BOGIE_COMPONENT_DRAWINGS, COMPONENT_REPAIR_DRAWINGS;
+    COMPONENT_TYPE_BY_ID, BOGIE_ASSEMBLY_DRAWINGS, BOGIE_COMPONENT_DRAWINGS, COMPONENT_REPAIR_DRAWINGS,
+    MFR_DEPARTMENT_BY_ID, MFR_OUTPUT, MFR_CONTACTS, REPAIR_HOLDING_CONTACTS;
 
 function initFromData(data) {
   DATA = data;
@@ -657,6 +858,10 @@ function initFromData(data) {
   BOGIE_ASSEMBLY_DRAWINGS = DATA.bogieAssemblyDrawings;
   BOGIE_COMPONENT_DRAWINGS = DATA.bogieComponentDrawings;
   COMPONENT_REPAIR_DRAWINGS = DATA.componentRepairDrawings;
+  MFR_DEPARTMENT_BY_ID = new Map(DATA.manufacturerDepartments.map(d => [d.id, d.name]));
+  MFR_OUTPUT = DATA.manufacturerOutput;
+  MFR_CONTACTS = DATA.manufacturerContacts;
+  REPAIR_HOLDING_CONTACTS = DATA.repairHoldingContacts;
   VAGONS = DATA.vagons;
   VAGON_BY_ID = new Map(VAGONS.map(v => [v.id, v]));
   VAGONS.forEach(v => { v.cargoSet = new Set(v.cargoIds || []); });
@@ -723,7 +928,9 @@ const FIELD_LABELS = {
 const FIELD_ORDER = Object.keys(FIELD_LABELS);
 
 /* ---------- состояние ---------- */
-const state = { type: "ALL", search: "", capMin: null, capMax: null, mfrs: new Set(), onlyAuth: false, compare: new Set(), cargo: new Set() };
+const state = { type: "ALL", search: "", capMin: null, capMax: null, mfrs: new Set(), onlyAuth: false, compare: new Set(), cargo: new Set(), partsSearch: "", catalogUnlocked: false, specFilters: {} };
+// поля-значения (не диапазон, а перечисление) среди характеристик — фильтруются чекбоксами, а не "от—до"
+const CATEGORICAL_SPEC_FIELDS = new Set(["gauge", "end_walls", "temp_range_c"]);
 
 function fmtNum(n) {
   if (n === null || n === undefined) return "—";
@@ -753,24 +960,29 @@ function cargoSuggestions(query) {
   }
   return starts.concat(contains).slice(0, 12);
 }
-function renderCargoSuggest() {
-  const box = document.getElementById("cargo-suggest");
-  const q = document.getElementById("cargo-search").value;
+function renderCargoSuggestInto(inputId, boxId) {
+  const box = document.getElementById(boxId);
+  const q = document.getElementById(inputId).value;
   const items = cargoSuggestions(q);
   cargoHi = items.length ? 0 : -1;
   if (!q.trim()) { box.classList.remove("show"); box.innerHTML = ""; return; }
   box.innerHTML = items.length ? items.map((c,i) => `
-      <div class="cargo-suggest-item ${i===0?'hi':''}" data-id="${c.id}" onclick="addCargoFilter('${c.id}')">
+      <div class="cargo-suggest-item ${i===0?'hi':''}" data-id="${c.id}" onclick="addCargoFilter('${c.id}','${inputId}','${boxId}')">
         <span class="t">${c.name}</span>
         <span class="code">${CARGO_VAGON_IDS.has(c.id) ? (CARGO_VAGON_IDS.get(c.id).size+' ваг.') : (c.etsng_code||'')}</span>
       </div>`).join("")
     : `<div class="cargo-suggest-empty">Ничего не нашлось среди ${CARGO_TYPES.length} видов груза</div>`;
   box.classList.add("show");
 }
-function addCargoFilter(cargoId) {
+function renderCargoSuggest() { renderCargoSuggestInto("cargo-search", "cargo-suggest"); }
+function renderGateCargoSuggest() { renderCargoSuggestInto("gate-cargo-search", "gate-cargo-suggest"); }
+function addCargoFilter(cargoId, inputId, boxId) {
+  inputId = inputId || "cargo-search";
+  boxId = boxId || "cargo-suggest";
   state.cargo.add(cargoId);
-  document.getElementById("cargo-search").value = "";
-  document.getElementById("cargo-suggest").classList.remove("show");
+  const inp = document.getElementById(inputId); if (inp) inp.value = "";
+  const box = document.getElementById(boxId); if (box) box.classList.remove("show");
+  if (!state.catalogUnlocked) { unlockCatalog(); typeTabs(); mfrFilters(); renderSpecFilters(); }
   renderCargoChips(); renderCatalog();
 }
 function removeCargoFilter(cargoId) { state.cargo.delete(cargoId); renderCargoChips(); renderCatalog(); }
@@ -782,10 +994,12 @@ function renderCargoChips() {
 }
 function jumpToCargo(cargoId) {
   state.type="ALL"; state.search=""; state.capMin=null; state.capMax=null; state.mfrs.clear(); state.onlyAuth=false;
+  state.specFilters = {};
   state.cargo = new Set([cargoId]);
   document.getElementById("search").value=""; document.getElementById("cap-min").value=""; document.getElementById("cap-max").value="";
   document.getElementById("only-auth").checked=false;
-  typeTabs(); mfrFilters(); renderCargoChips(); renderCatalog();
+  unlockCatalog();
+  typeTabs(); mfrFilters(); renderCargoChips(); renderSpecFilters(); renderCatalog();
   go("catalog");
 }
 
@@ -803,6 +1017,42 @@ function depotsForVagon(v) {
     byDepot.get(c.depot_id).add(c.repair_type_id);
   });
   return { mode: "competency", items: [...byDepot.entries()].map(([depotId, set]) => ({ depotId, repairTypeIds: [...set] })) };
+}
+
+/* ---------- каталог: вход (выбор типа/груза до показа списка) ---------- */
+function renderGateTypeGrid() {
+  const box = document.getElementById("gate-type-grid");
+  if (!box) return;
+  const types = Object.keys(TYPE_META).filter(t => VAGONS.some(v => v.typeId === t));
+  box.innerHTML = types.map(t => {
+    const count = VAGONS.filter(v => v.typeId === t).length;
+    return `<button class="gate-tile" onclick="chooseType('${t}')">
+      <span class="gt-icon">${ICONS[t]}</span>
+      <span class="gt-name">${TYPE_META[t].name}</span>
+      <span class="gt-count">${count}</span>
+    </button>`;
+  }).join("");
+  const totalEl = document.getElementById("gate-total-count");
+  if (totalEl) totalEl.textContent = VAGONS.length;
+}
+function unlockCatalog() {
+  state.catalogUnlocked = true;
+  document.getElementById("catalog-gate").hidden = true;
+  document.getElementById("catalog-main").hidden = false;
+}
+function chooseType(t) {
+  state.type = t;
+  state.specFilters = {};
+  unlockCatalog();
+  typeTabs(); mfrFilters(); renderCargoChips(); renderSpecFilters(); renderCatalog();
+  window.scrollTo(0,0);
+}
+function unlockAll() { clearFilters(); } // «показать все без фильтра» = полный сброс + снять гейт
+function backToGate() {
+  state.catalogUnlocked = false;
+  document.getElementById("catalog-gate").hidden = false;
+  document.getElementById("catalog-main").hidden = true;
+  window.scrollTo(0,0);
 }
 
 /* ---------- фильтры каталога ---------- */
@@ -825,12 +1075,81 @@ function mfrFilters() {
     </label>`).join("");
 }
 function toggleMfr(id) { state.mfrs.has(id) ? state.mfrs.delete(id) : state.mfrs.add(id); renderCatalog(); }
-function setType(t) { state.type = t; renderCatalog(); typeTabs(); }
+function setType(t) {
+  state.type = t;
+  state.specFilters = {};
+  if (!state.catalogUnlocked) unlockCatalog();
+  renderCatalog(); typeTabs(); renderSpecFilters();
+}
 function clearFilters() {
   state.type="ALL"; state.search=""; state.capMin=null; state.capMax=null; state.mfrs.clear(); state.onlyAuth=false; state.cargo.clear();
+  state.specFilters = {};
+  unlockCatalog();
   document.getElementById("search").value=""; document.getElementById("cap-min").value=""; document.getElementById("cap-max").value="";
   document.getElementById("only-auth").checked=false; document.getElementById("cargo-search").value="";
-  typeTabs(); mfrFilters(); renderCargoChips(); renderCatalog();
+  typeTabs(); mfrFilters(); renderCargoChips(); renderSpecFilters(); renderCatalog();
+}
+
+/* ---------- фильтры по характеристикам конкретного типа (площадь пола, объём котла и т.п.) ---------- */
+function specFieldStats(typeId) {
+  if (typeId === "ALL") return [];
+  const items = VAGONS.filter(v => v.typeId === typeId);
+  if (!items.length) return [];
+  const out = [];
+  for (const key of FIELD_ORDER) {
+    if (key === "capacity_t") continue; // уже есть отдельный фильтр «Грузоподъёмность»
+    const vals = items.map(v => v.specs[key]).filter(v => v != null);
+    if (!vals.length) continue;
+    const [label, unit] = FIELD_LABELS[key];
+    if (CATEGORICAL_SPEC_FIELDS.has(key)) {
+      const options = [...new Set(vals)].sort((a,b)=>String(a).localeCompare(String(b),'ru'));
+      if (options.length < 2) continue; // одно и то же значение у всех — фильтр бесполезен
+      out.push({ key, label, unit, kind: "select", options });
+    } else if (typeof vals[0] === "number") {
+      const min = Math.min(...vals), max = Math.max(...vals);
+      if (min === max) continue;
+      out.push({ key, label, unit, kind: "range", min, max });
+    }
+  }
+  return out;
+}
+function renderSpecFilters() {
+  const box = document.getElementById("spec-filters");
+  if (!box) return;
+  const fields = specFieldStats(state.type);
+  if (!fields.length) { box.innerHTML = ""; return; }
+  box.innerHTML = `<div class="filter-group"><h4>Характеристики ${TYPE_META[state.type]?('— '+TYPE_META[state.type].name):''}</h4></div>` + fields.map(f => {
+    if (f.kind === "range") {
+      const cur = state.specFilters[f.key] || {};
+      return `<div class="filter-group">
+        <h4>${f.label}${f.unit ? ` <span class="filter-hint">${f.unit.trim()}</span>` : ""}</h4>
+        <div class="filter-range">
+          <input type="number" placeholder="от ${fmtNum(f.min)}" value="${cur.min ?? ""}" oninput="setSpecRange('${f.key}','min',this.value)" />
+          <span>—</span>
+          <input type="number" placeholder="до ${fmtNum(f.max)}" value="${cur.max ?? ""}" oninput="setSpecRange('${f.key}','max',this.value)" />
+        </div>
+      </div>`;
+    }
+    const cur = state.specFilters[f.key] instanceof Set ? state.specFilters[f.key] : new Set();
+    return `<div class="filter-group">
+      <h4>${f.label}</h4>
+      <div class="filter-check-list">
+        ${f.options.map(opt => `<label class="filter-check"><input type="checkbox" ${cur.has(opt)?"checked":""} onchange="toggleSpecOption('${f.key}', this.dataset.opt)" data-opt="${opt}" /> ${opt}</label>`).join("")}
+      </div>
+    </div>`;
+  }).join("");
+}
+function setSpecRange(key, edge, val) {
+  const cur = { ...(state.specFilters[key] || {}) };
+  cur[edge] = val ? +val : undefined;
+  state.specFilters[key] = cur;
+  renderCatalog();
+}
+function toggleSpecOption(key, opt) {
+  const set = state.specFilters[key] instanceof Set ? state.specFilters[key] : new Set();
+  set.has(opt) ? set.delete(opt) : set.add(opt);
+  state.specFilters[key] = set;
+  renderCatalog();
 }
 function filteredVagons() {
   return VAGONS.filter(v => {
@@ -841,6 +1160,19 @@ function filteredVagons() {
     const cap = v.specs.capacity_t;
     if (state.capMin != null && (cap == null || cap < state.capMin)) return false;
     if (state.capMax != null && (cap == null || cap > state.capMax)) return false;
+    for (const key in state.specFilters) {
+      const f = state.specFilters[key];
+      const val = v.specs[key];
+      if (f instanceof Set) {
+        if (f.size && !f.has(val)) return false;
+      } else {
+        if (f.min != null || f.max != null) {
+          if (val == null) return false;
+          if (f.min != null && val < f.min) return false;
+          if (f.max != null && val > f.max) return false;
+        }
+      }
+    }
     if (state.search) {
       const s = state.search.toLowerCase();
       const mfrName = mfrShort(v.mfrId).toLowerCase();
@@ -948,6 +1280,43 @@ function bogiePartsHTML(bogie) {
   return html;
 }
 
+/* ---------- parts (standalone) ---------- */
+function renderParts() {
+  const q = state.partsSearch.trim().toLowerCase();
+  let list = DATA.bogies.slice();
+  const hasData = b => (BOGIE_ASSEMBLY_DRAWINGS[b.id]||[]).length || (BOGIE_COMPONENT_DRAWINGS[b.id]||[]).length;
+  if (q) {
+    list = list.filter(b => {
+      const mfrName = bogieManufacturerLabel(b) || "";
+      return b.model.toLowerCase().includes(q) || mfrName.toLowerCase().includes(q);
+    });
+  }
+  list.sort((a,b) => (hasData(b)-hasData(a)) || a.model.localeCompare(b.model, "ru"));
+
+  const box = document.getElementById("parts-list");
+  if (!list.length) {
+    box.innerHTML = `<div class="empty-state">Ничего не найдено — попробуйте изменить запрос</div>`;
+    return;
+  }
+  box.innerHTML = list.map(b => {
+    const mfrName = bogieManufacturerLabel(b);
+    const withData = hasData(b);
+    return `<details class="bogie-acc${withData?"":" no-data"}">
+      <summary class="bogie-card">
+        <div>
+          <div class="name">${b.model}</div>
+          <div class="note">${mfrName || b.model_note || "производитель не указан"}</div>
+        </div>
+        <div style="display:flex;align-items:center;">
+          <div class="load"><b>${b.axle_load_tf?b.axle_load_tf+' тс':'—'}</b><span>осевая нагрузка</span></div>
+          <span class="chev">›</span>
+        </div>
+      </summary>
+      <div class="bogie-acc-body">${bogiePartsHTML(b)}</div>
+    </details>`;
+  }).join("");
+}
+
 function openDetail(id) {
   const v = VAGON_BY_ID.get(id);
   if (!v) return;
@@ -1014,81 +1383,138 @@ function openDetail(id) {
        </div>
        ${depotInfo.items.length>DEPOT_PAGE ? `<button class="filter-clear" style="margin-top:10px" onclick="document.querySelector('#depot-list .depot-overflow').style.display='contents'; this.remove();">показать все ${depotInfo.items.length}</button>` : ""}`;
 
+  // хлебные крошки
+  const breadcrumbs = `
+    <div class="breadcrumbs">
+      <a onclick="clearFilters();go('catalog')" tabindex="0" role="button">Главная</a><span class="sep">/</span>
+      <a onclick="clearFilters();go('catalog')" tabindex="0" role="button">Каталог</a><span class="sep">/</span>
+      <a onclick="setType('${v.typeId}');go('catalog')" tabindex="0" role="button">${meta.name}</a><span class="sep">/</span>
+      ${kn ? `${kn}<span class="sep">/</span>` : ""}
+      модель ${v.model}
+    </div>`;
+
+  // покупка: основной контакт завода для карточки вагона
+  const mfrContacts = MFR_CONTACTS[v.mfrId] || [];
+  const salesContact = mfrContacts.find(c => c.primary);
+
+  // контейнеры
+  const containerNames = (v.containerIds || []).map(id => CONTAINER_BY_ID.get(id)).filter(Boolean);
+
+  // ремонт: сводные числа поверх уже собранного списка депо
+  const distinctDepots = new Set(depotInfo.items.map(i => i.depotId)).size;
+  const distinctRailways = new Set(depotInfo.items.map(i => DEPOT_BY_ID.get(i.depotId)?.railway_id).filter(Boolean)).size;
+
+  const heroMedia = v.photo
+    ? `<img src="${v.photo}" alt="${meta.name} ${v.model}" loading="lazy">`
+    : ICONS[v.typeId];
+
   document.getElementById("detail-content").innerHTML = `
-    ${v.photo ? `<div class="detail-photo"><img src="${v.photo}" alt="${meta.name} ${v.model}" loading="lazy"></div>` : ""}
-    <div class="detail-head">
-      <div class="detail-icon">${v.photoThumb ? `<img src="${v.photoThumb}" alt="${meta.name} ${v.model}" loading="lazy">` : ICONS[v.typeId]}</div>
-      <div class="detail-title">
-        <h1 class="display">${meta.name} <span class="num">${v.model}</span></h1>
-        <div class="detail-tags">
-          <span class="tag">${kn || meta.name}</span>
-          <span class="tag link" onclick="openManufacturer('${v.mfrId}')" tabindex="0" role="button">завод: ${mfrShort(v.mfrId)}</span>
-          ${v.requiresAuth ? `<span class="pill warn">требуется авторизация</span>` : ""}
-          ${cert ? `<span class="pill ${pillClass}">${cert.status}</span>` : ""}
-        </div>
-      </div>
-    </div>
-    <div class="rail-rule" style="margin:0 0 -1px"></div>
+    ${breadcrumbs}
+    <div class="bento">
 
-    <div class="detail-body">
-      <nav class="jump-nav">
-        <a href="#s-char">Характеристики</a>
-        <a href="#s-bogie">Тележка</a>
-        <a href="#s-parts">Чертежи и запчасти</a>
-        <a href="#s-overhaul">Сроки ремонта</a>
-        <a href="#s-features">Особенности</a>
-        <a href="#s-cargo">Грузы</a>
-        <a href="#s-depots">Депо для ремонта</a>
-      </nav>
-
-      <div>
-        <div class="dsection" id="s-char">
-          <h2>Характеристики</h2>
-          <div class="spec-table">
-            ${specRows.map(([k,val]) => `<div class="row"><dt>${k}</dt><dd>${val}</dd></div>`).join("")}
+      <div class="bcard bcard-hero span3">
+        <div class="hero-media">${heroMedia}</div>
+        <div class="hero-copy">
+          <h1 class="display">${meta.name} <span class="num">${v.model}</span></h1>
+          <p class="kind">${kn || meta.name}</p>
+          <div class="detail-tags">
+            ${v.requiresAuth ? `<span class="pill warn">требуется авторизация</span>` : ""}
+            ${cert ? `<span class="pill ${pillClass}">${cert.status}</span>` : ""}
           </div>
         </div>
+      </div>
 
-        <div class="dsection" id="s-bogie">
-          <h2>Тележка</h2>
-          ${bogie ? `
-            <div class="bogie-card">
-              <div><div class="name">Модель ${bogie.model}</div><div class="note">${bogie.model_note || "типовая"}</div></div>
-              <div class="load"><b>${bogie.axle_load_tf?bogie.axle_load_tf+' тс':'—'}</b><span>осевая нагрузка</span></div>
-            </div>` : `<p class="no-data">тележка не указана в источнике</p>`}
+      <div class="bcard">
+        <h3>Общие</h3>
+        <div class="spec-table">
+          <div class="row"><dt>Производитель</dt><dd><span class="tag link" onclick="openManufacturer('${v.mfrId}')" tabindex="0" role="button" style="display:inline-flex">${mfrShort(v.mfrId)}</span></dd></div>
+          ${v.kdNumber ? `<div class="row"><dt>Номер КД</dt><dd>${v.kdNumber}</dd></div>` : ""}
+          ${v.specialization ? `<div class="row"><dt>Учётная специализация</dt><dd>${v.specialization}</dd></div>` : ""}
         </div>
+        ${MFR_BY_ID.get(v.mfrId)?.website ? `<p style="margin:10px 0 0;font-size:12.5px;">${siteLink(MFR_BY_ID.get(v.mfrId).website)}</p>` : ""}
+      </div>
 
-        <div class="dsection" id="s-parts">
-          <h2>Чертежи и запчасти ${bogie?`<span class="n">— по Прил.Е РД 32 ЦВ 052-2009</span>`:""}</h2>
-          ${bogiePartsHTML(bogie)}
-        </div>
+      <div class="bcard">
+        <h3>Сертификат</h3>
+        ${cert ? `
+          <span class="pill ${pillClass}">${cert.status}</span>
+          <div class="spec-table" style="margin-top:12px">
+            <div class="row"><dt>№ сертификата</dt><dd style="text-align:left">${cert.number||"—"}</dd></div>
+            ${cert.to ? `<div class="row"><dt>Действует до</dt><dd>${fmtDate(cert.to)}</dd></div>` : ""}
+          </div>` : `<p class="no-data">сертификат не внесён в источник</p>`}
+      </div>
 
-        <div class="dsection" id="s-overhaul">
-          <h2>Межремонтные сроки</h2>
-          ${overhaulRows ? `
-          <div class="overhaul-wrap">
-            <table class="overhaul">
-              <thead><tr><th>Критерий</th><th>ДР после постройки</th><th>ДР после ДР</th><th>ДР после КР</th><th>КР после постройки, лет</th></tr></thead>
-              <tbody>${overhaulRows}</tbody>
-            </table>
-          </div>` : `<p class="no-data">данные по срокам обслуживания не внесены для этой модели</p>`}
-        </div>
+      <div class="bcard">
+        <h3>Тележка вагона</h3>
+        ${bogie ? `
+          <div style="font-size:15px;font-weight:600;margin-bottom:3px">${bogie.model}</div>
+          <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:12px">${mfrShort(bogie.manufacturer_id)||bogie.model_note||"типовая"}</div>
+          <div class="bstat-row"><div class="bstat"><b>${bogie.axle_load_tf?bogie.axle_load_tf+' тс':'—'}</b><span>осевая нагрузка</span></div></div>
+        ` : `<p class="no-data">тележка не указана в источнике</p>`}
+      </div>
 
-        <div class="dsection" id="s-features">
-          <h2>Особенности конструкции</h2>
-          ${(v.featureIds||[]).length ? `<div class="feature-list">${v.featureIds.map(id=>`<span class="feature-chip">${FEATURE_BY_ID.get(id)}</span>`).join("")}</div>` : `<p class="no-data">особенностей не отмечено</p>`}
-        </div>
+      ${salesContact ? `
+      <div class="bcard">
+        <h3>Покупка</h3>
+        <div class="contact-name">${salesContact.name}</div>
+        ${salesContact.phone ? `<div class="contact-line">${salesContact.phone}</div>` : ""}
+        ${salesContact.email ? `<div class="contact-line"><a href="mailto:${salesContact.email.split(',')[0].trim()}">${salesContact.email}</a></div>` : ""}
+      </div>` : ""}
 
-        <div class="dsection" id="s-cargo">
-          <h2>Грузы ${cargoIds.length ? `<span class="n">— ${cargoIds.length}</span>` : ""}</h2>
-          ${cargoBlock}
-        </div>
+      <div class="bcard">
+        <h3>Конструктивные особенности</h3>
+        ${(v.featureIds||[]).length ? `<div class="feature-list">${v.featureIds.map(id=>`<span class="feature-chip">${FEATURE_BY_ID.get(id)}</span>`).join("")}</div>` : `<p class="no-data">особенностей не отмечено</p>`}
+      </div>
 
-        <div class="dsection" id="s-depots">
-          <h2>Депо, авторизованные на ремонт ${depotInfo.items.length?`<span class="n">— ${depotInfo.items.length}</span>`:""}</h2>
-          ${depotsHTML}
+      <div class="bcard span2">
+        <h3>Межремонтные нормативы</h3>
+        ${overhaulRows ? `
+        <div class="overhaul-wrap">
+          <table class="overhaul">
+            <thead><tr><th>Критерий</th><th>ДР после постройки</th><th>ДР после ДР</th><th>ДР после КР</th><th>КР после постройки, лет</th></tr></thead>
+            <tbody>${overhaulRows}</tbody>
+          </table>
+        </div>` : `<p class="no-data">данные по срокам обслуживания не внесены для этой модели</p>`}
+      </div>
+
+      <div class="bcard">
+        <h3>Характеристики</h3>
+        <div class="spec-table">
+          ${specRows.map(([k,val]) => `<div class="row"><dt>${k}</dt><dd>${val}</dd></div>`).join("")}
         </div>
       </div>
+
+      <div class="bcard span2">
+        <h3>Перевозимые грузы ${cargoIds.length ? `<span class="n">— ${cargoIds.length}</span>` : ""}</h3>
+        ${cargoBlock}
+      </div>
+
+      <div class="bcard">
+        <h3>Перевозка контейнеров</h3>
+        ${containerNames.length ? `<div class="feature-list">${containerNames.map(n=>`<span class="feature-chip">${n}</span>`).join("")}</div>` : `<p class="no-data">нет данных в источнике</p>`}
+      </div>
+
+      <div class="bcard">
+        <h3>Ремонт</h3>
+        ${depotInfo.items.length ? `
+          <div class="bstat-row">
+            <div class="bstat"><b>${distinctDepots}</b><span>депо (${depotInfo.mode==="direct"?"авторизовано":"компетентно"})</span></div>
+            ${distinctRailways ? `<div class="bstat"><b>${distinctRailways}</b><span>дорог</span></div>` : ""}
+          </div>
+          <p class="muted-link" onclick="const d=document.getElementById('s-depots-detail'); d.open=true; d.scrollIntoView({behavior:'smooth'})" tabindex="0" role="button" style="margin-top:10px;color:var(--accent);cursor:pointer;font-size:12.5px;">подробнее ↓</p>
+        ` : `<p class="no-data">данные по авторизованным депо пока не внесены в источник</p>`}
+      </div>
+
+      <details class="bcard span3" id="s-depots-detail">
+        <summary><h3>Депо, авторизованные на ремонт ${depotInfo.items.length?`<span class="n">— ${depotInfo.items.length}</span>`:""}</h3><span class="chev">›</span></summary>
+        <div class="bcard-collapse-body">${depotsHTML}</div>
+      </details>
+
+      <details class="bcard span3">
+        <summary><h3>Чертежи и запчасти ${bogie?`<span class="n">— по Прил.Е РД 32 ЦВ 052-2009</span>`:""}</h3><span class="chev">›</span></summary>
+        <div class="bcard-collapse-body">${bogiePartsHTML(bogie)}</div>
+      </details>
+
     </div>
   `;
   go("detail", true);
@@ -1096,53 +1522,245 @@ function openDetail(id) {
 }
 
 /* ---------- manufacturer / depot overlays ---------- */
+function outputChartSVG(rows) {
+  if (!rows || !rows.length) return "";
+  const W = 560, H = 190, PAD_L = 30, PAD_R = 8, PAD_T = 16, PAD_B = 24;
+  const innerW = W-PAD_L-PAD_R, innerH = H-PAD_T-PAD_B;
+  const n = rows.length, gap = innerW/n, bw = Math.min(gap*0.5, 34);
+  const maxVol = Math.max(...rows.map(r=>r.volume||0), 1);
+  const maxShare = Math.max(...rows.map(r=>r.share||0), 1);
+  const xOf = i => PAD_L + i*gap + (gap-bw)/2;
+  const yVol = v => PAD_T + innerH - (v/maxVol)*innerH;
+  const yShare = v => PAD_T + innerH - (v/maxShare)*innerH;
+  const bars = rows.map((r,i) => {
+    if (r.volume == null) return "";
+    const x = xOf(i), y = yVol(r.volume), h = (PAD_T+innerH)-y;
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="var(--accent)" opacity=".82"/>`;
+  }).join("");
+  const linePts = rows.map((r,i) => r.share!=null ? `${(xOf(i)+bw/2).toFixed(1)},${yShare(r.share).toFixed(1)}` : null).filter(Boolean).join(" ");
+  const dots = rows.map((r,i) => r.share==null?"":`<circle cx="${(xOf(i)+bw/2).toFixed(1)}" cy="${yShare(r.share).toFixed(1)}" r="2.8" fill="var(--accent2)"/>`).join("");
+  const labels = rows.map((r,i) => `<text x="${(xOf(i)+bw/2).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="10" fill="var(--ink-faint)">${r.year}</text>`).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;overflow:visible" role="img" aria-label="Выпуск вагонов по годам">
+      ${bars}<polyline points="${linePts}" fill="none" stroke="var(--accent2)" stroke-width="2"/>${dots}${labels}
+    </svg>
+    <div style="display:flex;gap:18px;margin-top:6px;font-size:11.5px;color:var(--ink-soft);">
+      <span><span style="display:inline-block;width:8px;height:8px;background:var(--accent);border-radius:2px;margin-right:5px;"></span>тыс. вагонов/год</span>
+      <span><span style="display:inline-block;width:8px;height:8px;background:var(--accent2);border-radius:999px;margin-right:5px;"></span>доля рынка, %</span>
+    </div>`;
+}
+
 function openManufacturer(mfrId) {
   const m = MFR_BY_ID.get(mfrId);
-  const mask = document.getElementById("overlay-mask");
-  if (!m) { closeOverlay(); return; }
+  if (!m) return;
   const parent = m.parent_id ? MFR_BY_ID.get(m.parent_id) : null;
-  document.getElementById("overlay-content").innerHTML = `
-    <div class="overlay-eyebrow">Производитель</div>
-    <h3>${m.short_name || m.full_name}</h3>
-    <div class="overlay-sub">${m.full_name}${parent?` · входит в состав <span class="tag link" onclick="openManufacturer('${parent.id}')" tabindex="0" role="button" style="display:inline-flex">${parent.short_name}</span>`:""}</div>
-    <div class="spec-table">
-      <div class="row"><dt>Город</dt><dd>${m.city||"—"}</dd></div>
-      <div class="row"><dt>Регион</dt><dd>${m.region||"—"}</dd></div>
-      <div class="row"><dt>Тип</dt><dd>${m.enterprise_type||"—"}</dd></div>
-      ${m.capacity?`<div class="row"><dt>Мощность</dt><dd>${fmtNum(m.capacity)} тыс. ваг/год</dd></div>`:""}
-      ${m.staff?`<div class="row"><dt>Персонал</dt><dd>${fmtNum(m.staff)} тыс. чел.</dd></div>`:""}
-      <div class="row"><dt>Вагоны 25 тс</dt><dd>${m.produces_25tf_vagons||"н/д"}</dd></div>
-      <div class="row"><dt>Сайт</dt><dd>${siteLink(m.website)}</dd></div>
+  const children = DATA.manufacturers.filter(x => x.parent_id === mfrId);
+  const output = MFR_OUTPUT[mfrId] || [];
+  const contacts = MFR_CONTACTS[mfrId] || [];
+
+  const byDept = new Map();
+  contacts.forEach(c => {
+    const key = c.deptId || "_";
+    if (!byDept.has(key)) byDept.set(key, []);
+    byDept.get(key).push(c);
+  });
+  const deptOrder = [...DATA.manufacturerDepartments.map(d=>d.id), "_"];
+  const contactsHTML = contacts.length ? deptOrder.filter(k=>byDept.has(k)).map((k,i) => {
+    const name = k==="_" ? "Прочее" : MFR_DEPARTMENT_BY_ID.get(k) || "Прочее";
+    const list = byDept.get(k);
+    return `<details ${i===0?"open":""}>
+      <summary>${name} <span class="n">— ${list.length}</span></summary>
+      <div class="contact-dept-list">
+        ${list.map(c => `<div class="contact-dept-row">
+            <div class="contact-name">${c.name}</div>
+            ${c.phone?`<div class="contact-line">${c.phone}</div>`:""}
+            ${c.email?`<div class="contact-line">${c.email.split(",").map(e=>`<a href="mailto:${e.trim()}">${e.trim()}</a>`).join(", ")}</div>`:""}
+          </div>`).join("")}
+      </div>
+    </details>`;
+  }).join("") : `<p class="no-data">контакты не внесены в источник</p>`;
+
+  const vagonsHere = VAGONS.filter(v => v.mfrId === mfrId && v.cert);
+  const certCounts = {};
+  vagonsHere.forEach(v => { certCounts[v.cert.status] = (certCounts[v.cert.status]||0)+1; });
+  const certStat = (status, cls) => certCounts[status] ? `<div class="bstat"><b class="pill-num ${cls}">${certCounts[status]}</b><span>${status.toLowerCase()}</span></div>` : "";
+
+  document.getElementById("mfr-detail-content").innerHTML = `
+    <div class="breadcrumbs">
+      <a onclick="go('manufacturers')" tabindex="0" role="button">Главная</a><span class="sep">/</span>
+      <a onclick="go('manufacturers')" tabindex="0" role="button">Заводы</a><span class="sep">/</span>
+      ${m.short_name || m.full_name}
     </div>
-    ${m.vagonTypes&&m.vagonTypes.length?`<h4 style="font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);margin:0 0 9px;">Выпускает</h4><div class="feature-list">${m.vagonTypes.map(t=>`<span class="feature-chip">${t}</span>`).join("")}</div>`:""}
-    <div class="overlay-note">Клик по заводу в карточке вагона открывает эту панель.</div>
+    <div class="bento">
+
+      <div class="bcard span2">
+        <h3>Производитель</h3>
+        <h1 class="display" style="font-size:22px;margin:0 0 4px;">${m.short_name || m.full_name}</h1>
+        <p class="kind" style="margin-bottom:10px">${m.full_name}${parent?` · входит в состав <span class="tag link" onclick="openManufacturer('${parent.id}')" tabindex="0" role="button" style="display:inline-flex">${parent.short_name}</span>`:""}</p>
+        <div class="badges">
+          ${m.produces_25tf_vagons==="да"?`<span class="pill ok">есть компетенции по вагонам 25 тс</span>`:""}
+        </div>
+      </div>
+
+      <div class="bcard">
+        <h3>Общие</h3>
+        <div class="spec-table">
+          <div class="row"><dt>Страна</dt><dd>${m.country||"—"}</dd></div>
+          <div class="row"><dt>Регион</dt><dd>${m.region||"—"}</dd></div>
+          <div class="row"><dt>Город</dt><dd>${m.city||"—"}</dd></div>
+        </div>
+        ${m.website?`<p style="margin:10px 0 0;font-size:12.5px;">${siteLink(m.website)}</p>`:""}
+        ${(m.capacity||m.staff)?`<div class="bstat-row" style="margin-top:14px">
+          ${m.staff?`<div class="bstat"><b>${fmtNum(m.staff)} тыс.</b><span>человек</span></div>`:""}
+          ${m.capacity?`<div class="bstat"><b>${fmtNum(m.capacity)} тыс.</b><span>вагонов в год</span></div>`:""}
+        </div>`:""}
+      </div>
+
+      ${output.length ? `
+      <div class="bcard span3">
+        <h3>Выпуск вагонов в ретроспективе</h3>
+        ${outputChartSVG(output)}
+      </div>` : ""}
+
+      ${m.vagonTypeIds && m.vagonTypeIds.length ? `
+      <div class="bcard">
+        <h3>Типы выпускаемых вагонов</h3>
+        <div class="type-icon-grid">
+          ${m.vagonTypeIds.map(tid => `<div class="type-icon-item">${ICONS[tid]||""}<span>${TYPE_META[tid]?.name||tid}</span></div>`).join("")}
+        </div>
+      </div>` : ""}
+
+      ${children.length ? `
+      <div class="bcard span2">
+        <h3>Предприятия «${m.short_name}»</h3>
+        <table class="depot-table">
+          <thead><tr><th>Наименование</th><th>Город</th><th>Сфера деятельности</th></tr></thead>
+          <tbody>
+            ${children.map(c => `<tr onclick="openManufacturer('${c.id}')" style="cursor:pointer">
+              <td class="name">${c.short_name||c.full_name}</td><td>${c.city||"—"}</td><td style="white-space:normal">${c.enterprise_type||"—"}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>` : ""}
+
+      ${vagonsHere.length ? `
+      <div class="bcard">
+        <h3>Сертификаты на вагоны</h3>
+        <div class="bstat-row" style="flex-direction:column;gap:10px">
+          ${certStat("Действует","ok")}
+          ${certStat("Приостановлен","warn")}
+          ${certStat("Срок действия закончился","danger")}
+        </div>
+      </div>` : ""}
+
+      <div class="bcard span3">
+        <h3>Контакты</h3>
+        <div class="contact-accordion">${contactsHTML}</div>
+      </div>
+
+    </div>
   `;
-  mask.classList.add("show");
+  go("manufacturer", true);
+  window.scrollTo(0,0);
+}
+/* ---------- депо: карточка ---------- */
+function depotCompetencyGroups(depotId) {
+  const groups = new Map(); // typeId|kindId|note -> {typeId, kindId, note, repairTypeIds:Set}
+  DATA.depotCompetencies.filter(c => c.depot_id === depotId).forEach(c => {
+    const key = `${c.vagon_type_id}|${c.vagon_kind_id||""}|${c.note||""}`;
+    if (!groups.has(key)) groups.set(key, { typeId: c.vagon_type_id, kindId: c.vagon_kind_id, note: c.note, repairTypeIds: new Set() });
+    groups.get(key).repairTypeIds.add(c.repair_type_id);
+  });
+  return [...groups.values()].sort((a,b) => a.typeId.localeCompare(b.typeId) || (a.kindId||"").localeCompare(b.kindId||"", "ru"));
 }
 function openDepot(depotId) {
   const d = DEPOT_BY_ID.get(depotId);
-  const mask = document.getElementById("overlay-mask");
   if (!d) return;
   const holding = d.holding_id ? HOLDING_BY_ID.get(d.holding_id) : null;
   const railway = d.railway_id ? RAILWAY_BY_ID.get(d.railway_id) : null;
-  const mapLink = (d.latitude && d.longitude) ? `<a href="https://yandex.ru/maps/?pt=${d.longitude},${d.latitude}&z=13" target="_blank" rel="noopener">${d.latitude.toFixed(4)}, ${d.longitude.toFixed(4)} — открыть на карте</a>` : "—";
-  document.getElementById("overlay-content").innerHTML = `
-    <div class="overlay-eyebrow">Депо</div>
-    <h3>${d.name}</h3>
-    <div class="overlay-sub">${holding?`Ремонтный холдинг «${holding.short_name}»`:"Холдинг не указан"}</div>
-    <div class="spec-table">
-      <div class="row"><dt>Дорога</dt><dd>${railway||"—"}</dd></div>
-      <div class="row"><dt>Станция примыкания</dt><dd>${d.adjoining_station||"—"}</dd></div>
-      <div class="row"><dt>Код станции</dt><dd>${d.station_code||"—"}</dd></div>
-      <div class="row"><dt>Клеймо депо</dt><dd>${d.stamp_code||"—"}</dd></div>
-      <div class="row"><dt>Координаты</dt><dd>${mapLink}</dd></div>
-      <div class="row"><dt>Сайт</dt><dd>${siteLink(d.website)}</dd></div>
+  const mapLink = (d.latitude && d.longitude) ? `<a href="https://yandex.ru/maps/?pt=${d.longitude},${d.latitude}&z=13" target="_blank" rel="noopener noreferrer">${d.latitude.toFixed(4)}, ${d.longitude.toFixed(4)} — открыть на карте</a>` : "—";
+
+  const compGroups = depotCompetencyGroups(depotId);
+  const distinctTypes = new Set(compGroups.map(g => g.typeId)).size;
+  const compHTML = compGroups.length ? `<div class="depot-comp-list">` + compGroups.map(g => {
+    const typeName = TYPE_META[g.typeId]?.name || g.typeId;
+    const kindName = g.kindId ? (KIND_BY_ID.get(g.kindId)?.name || null) : null;
+    const repairNames = [...g.repairTypeIds].map(id => REPAIR_TYPE_BY_ID.get(id)).filter(Boolean);
+    return `<div class="depot-comp-row">
+      <div class="label">${typeName}${kindName ? ` <span class="n">— ${kindName}${g.note?` (${g.note})`:""}</span>` : ""}</div>
+      <div class="chips">${repairNames.map(n => `<span class="feature-chip">${n}</span>`).join("")}</div>
+    </div>`;
+  }).join("") + `</div>` : `<p class="no-data">компетенции по видам вагонов не внесены в источник</p>`;
+
+  const directAuths = DATA.depotAuthorizations.filter(a => a.depot_id === depotId);
+  const authHTML = directAuths.length ? `<div class="feature-list">` + directAuths.map(a => {
+    const v = VAGON_BY_ID.get(a.vagon_id);
+    if (!v) return "";
+    const repairName = REPAIR_TYPE_BY_ID.get(a.repair_type_id) || "";
+    return `<span class="feature-chip cargo-pick" onclick="openDetail('${a.vagon_id}')" tabindex="0" role="button" title="${repairName}">${v.model}</span>`;
+  }).join("") + `</div>` : `<p class="no-data">точечной авторизации на конкретные модели в источнике нет — см. компетенции по видам вагонов выше</p>`;
+
+  const holdingContacts = holding ? (REPAIR_HOLDING_CONTACTS[holding.id] || []) : [];
+
+  document.getElementById("depot-detail-content").innerHTML = `
+    <div class="breadcrumbs">
+      <a onclick="go('depots')" tabindex="0" role="button">Главная</a><span class="sep">/</span>
+      <a onclick="go('depots')" tabindex="0" role="button">Депо</a><span class="sep">/</span>
+      ${d.name}
     </div>
-    <div class="overlay-note">Полная карточка депо — список компетенций по всем типам вагонов и контакты — следующий экран.</div>
+    <div class="bento">
+
+      <div class="bcard span2">
+        <h3>Депо</h3>
+        <h1 class="display" style="font-size:22px;margin:0 0 4px;">${d.name}</h1>
+        <p class="kind" style="margin-bottom:10px">${holding ? `Ремонтный холдинг <span class="tag" style="display:inline-flex">${holding.short_name||holding.full_name}</span>` : "холдинг не указан"}</p>
+        <div class="bstat-row">
+          <div class="bstat"><b>${distinctTypes}</b><span>типов вагонов</span></div>
+          <div class="bstat"><b>${compGroups.length}</b><span>компетенций</span></div>
+          ${directAuths.length ? `<div class="bstat"><b>${directAuths.length}</b><span>прямых допусков</span></div>` : ""}
+        </div>
+      </div>
+
+      <div class="bcard">
+        <h3>Общие</h3>
+        <div class="spec-table">
+          <div class="row"><dt>Дорога</dt><dd>${railway||"—"}</dd></div>
+          <div class="row"><dt>Станция примыкания</dt><dd>${d.adjoining_station||"—"}</dd></div>
+          <div class="row"><dt>Код станции</dt><dd>${d.station_code||"—"}</dd></div>
+          <div class="row"><dt>Клеймо депо</dt><dd>${d.stamp_code||"—"}</dd></div>
+          <div class="row"><dt>Координаты</dt><dd>${mapLink}</dd></div>
+        </div>
+        ${d.website?`<p style="margin:10px 0 0;font-size:12.5px;">${siteLink(d.website)}</p>`:""}
+      </div>
+
+      <div class="bcard span3">
+        <h3>Компетенции по видам вагонов ${compGroups.length?`<span class="n">— ${compGroups.length}</span>`:""}</h3>
+        ${compHTML}
+      </div>
+
+      <div class="bcard span2">
+        <h3>Прямая авторизация на конкретные модели ${directAuths.length?`<span class="n">— ${directAuths.length}</span>`:""}</h3>
+        ${authHTML}
+      </div>
+
+      <div class="bcard">
+        <h3>Холдинг</h3>
+        ${holding ? `
+          <div style="font-size:15px;font-weight:600;margin-bottom:3px">${holding.short_name||holding.full_name}</div>
+          <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px">${holding.full_name}${holding.country?` · ${holding.country}`:""}${holding.enterprise_type?` · ${holding.enterprise_type}`:""}</div>
+          ${holding.website?`<p style="margin:0 0 10px;font-size:12.5px;">${siteLink(holding.website)}</p>`:""}
+          ${holdingContacts.map(c => `
+            <div class="contact-name">${c.name||"Контакт"}</div>
+            ${c.phone?`<div class="contact-line">${c.phone}</div>`:""}
+            ${c.email?`<div class="contact-line"><a href="mailto:${c.email.split(',')[0].trim()}">${c.email}</a></div>`:""}
+          `).join("")}
+        ` : `<p class="no-data">холдинг не указан в источнике</p>`}
+      </div>
+
+    </div>
   `;
-  mask.classList.add("show");
+  go("depot", true);
+  window.scrollTo(0,0);
 }
-function closeOverlay() { document.getElementById("overlay-mask").classList.remove("show"); }
 
 /* ---------- compare ---------- */
 function toggleCompare(id) {
@@ -1320,12 +1938,14 @@ function go(view, fromDetail) {
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
   document.getElementById("view-"+view).classList.add("active");
   document.getElementById("nav-catalog").classList.toggle("active", view==="catalog");
-  document.getElementById("nav-manufacturers").classList.toggle("active", view==="manufacturers");
-  document.getElementById("nav-depots").classList.toggle("active", view==="depots");
+  document.getElementById("nav-manufacturers").classList.toggle("active", view==="manufacturers"||view==="manufacturer");
+  document.getElementById("nav-depots").classList.toggle("active", view==="depots"||view==="depot");
+  document.getElementById("nav-parts").classList.toggle("active", view==="parts");
   document.getElementById("nav-compare").classList.toggle("active", view==="compare");
   if (view === "compare") renderCompare();
   if (view === "manufacturers") renderManufacturers();
   if (view === "depots") renderDepotsPage();
+  if (view === "parts") renderParts();
   updateCompareTray();
   if (!fromDetail) window.scrollTo(0,0);
 }
@@ -1334,21 +1954,29 @@ document.getElementById("search").addEventListener("input", e => { state.search 
 document.getElementById("cap-min").addEventListener("input", e => { state.capMin = e.target.value? +e.target.value : null; renderCatalog(); });
 document.getElementById("cap-max").addEventListener("input", e => { state.capMax = e.target.value? +e.target.value : null; renderCatalog(); });
 document.getElementById("only-auth").addEventListener("change", e => { state.onlyAuth = e.target.checked; renderCatalog(); });
+document.getElementById("parts-search").addEventListener("input", e => { state.partsSearch = e.target.value; renderParts(); });
 
-const cargoInput = document.getElementById("cargo-search");
-cargoInput.addEventListener("input", renderCargoSuggest);
-cargoInput.addEventListener("focus", renderCargoSuggest);
-cargoInput.addEventListener("keydown", e => {
-  const box = document.getElementById("cargo-suggest");
-  const items = [...box.querySelectorAll(".cargo-suggest-item")];
-  if (!items.length) return;
-  if (e.key === "ArrowDown") { e.preventDefault(); cargoHi = Math.min(cargoHi+1, items.length-1); items.forEach((el,i)=>el.classList.toggle("hi", i===cargoHi)); items[cargoHi].scrollIntoView({block:"nearest"}); }
-  else if (e.key === "ArrowUp") { e.preventDefault(); cargoHi = Math.max(cargoHi-1, 0); items.forEach((el,i)=>el.classList.toggle("hi", i===cargoHi)); items[cargoHi].scrollIntoView({block:"nearest"}); }
-  else if (e.key === "Enter") { e.preventDefault(); const el = items[cargoHi] || items[0]; if (el) addCargoFilter(el.dataset.id); }
-  else if (e.key === "Escape") { box.classList.remove("show"); }
-});
+function wireCargoInput(inputId, boxId, renderFn) {
+  const input = document.getElementById(inputId);
+  input.addEventListener("input", renderFn);
+  input.addEventListener("focus", renderFn);
+  input.addEventListener("keydown", e => {
+    const box = document.getElementById(boxId);
+    const items = [...box.querySelectorAll(".cargo-suggest-item")];
+    if (!items.length) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); cargoHi = Math.min(cargoHi+1, items.length-1); items.forEach((el,i)=>el.classList.toggle("hi", i===cargoHi)); items[cargoHi].scrollIntoView({block:"nearest"}); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); cargoHi = Math.max(cargoHi-1, 0); items.forEach((el,i)=>el.classList.toggle("hi", i===cargoHi)); items[cargoHi].scrollIntoView({block:"nearest"}); }
+    else if (e.key === "Enter") { e.preventDefault(); const el = items[cargoHi] || items[0]; if (el) addCargoFilter(el.dataset.id, inputId, boxId); }
+    else if (e.key === "Escape") { box.classList.remove("show"); }
+  });
+}
+wireCargoInput("cargo-search", "cargo-suggest", renderCargoSuggest);
+wireCargoInput("gate-cargo-search", "gate-cargo-suggest", renderGateCargoSuggest);
 document.addEventListener("click", e => {
-  if (!e.target.closest(".cargo-search")) document.getElementById("cargo-suggest").classList.remove("show");
+  if (!e.target.closest(".cargo-search")) {
+    document.getElementById("cargo-suggest").classList.remove("show");
+    document.getElementById("gate-cargo-suggest").classList.remove("show");
+  }
 });
 
 // клавиатурная активация элементов, помеченных role="button" (депо/грузы/завод — кликабельные
@@ -1358,18 +1986,18 @@ document.addEventListener("keydown", e => {
     e.preventDefault();
     e.target.click();
   }
-  if (e.key === "Escape" && document.getElementById("overlay-mask").classList.contains("show")) {
-    closeOverlay();
-  }
 });
 
 /* ---------- загрузка данных и старт ---------- */
-document.getElementById("catalog-grid").innerHTML = `<div class="empty-state" style="grid-column:1/-1">Загрузка каталога…<div class="rail-rule" style="max-width:220px;margin:14px auto 0"></div></div>`;
+console.log("%c🚃 Вагонотека", "font:700 20px Oswald,sans-serif;color:#bb4d0a;");
+console.log("%cЗаглянул под капот — уважаем. Если чинишь вагон, а не сайт: вкладка «Чертежи и запчасти» в карточке вагона.", "color:#00707f;font-size:12px;");
+
+document.getElementById("catalog-grid").innerHTML = `<div class="empty-state" style="grid-column:1/-1">Сверяем номера…<div class="rail-rule" style="max-width:220px;margin:14px auto 0"></div></div>`;
 fetch("data/catalog_data.json")
   .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
   .then(data => {
     initFromData(data);
-    typeTabs(); mfrFilters(); renderCargoChips(); renderCatalog(); depotFilters();
+    typeTabs(); mfrFilters(); renderCargoChips(); renderCatalog(); depotFilters(); renderGateTypeGrid();
   })
   .catch(err => {
     document.getElementById("catalog-grid").innerHTML =

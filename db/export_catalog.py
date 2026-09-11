@@ -83,6 +83,11 @@ def main():
     railways = rows("SELECT id, name FROM railways")
     repair_types = rows("SELECT id, name FROM repair_types")
     repair_holdings = rows("SELECT id, full_name, short_name, country, enterprise_type, website, telegram FROM repair_holdings")
+    repair_holding_contacts = {}  # holdingId -> [{name, phone, email}]
+    for r in rows("SELECT holding_id, contact_name, phone, email FROM repair_holding_contacts"):
+        repair_holding_contacts.setdefault(r["holding_id"], []).append({
+            "name": r["contact_name"], "phone": r["phone"], "email": r["email"],
+        })
     features = rows("SELECT id, name FROM vagon_features")
     container_sizes = rows("SELECT id, name FROM container_sizes")
 
@@ -93,15 +98,35 @@ def main():
     """)
     mfr_cap = {r["manufacturer_id"]: r for r in rows("SELECT * FROM manufacturer_capacity")}
     mfr_types = {}
-    for r in rows("""SELECT mvt.manufacturer_id, vt.name FROM manufacturer_vagon_types mvt
+    mfr_type_ids = {}
+    for r in rows("""SELECT mvt.manufacturer_id, vt.id as type_id, vt.name FROM manufacturer_vagon_types mvt
                       JOIN vagon_types vt ON vt.id = mvt.vagon_type_id"""):
         mfr_types.setdefault(r["manufacturer_id"], []).append(r["name"])
+        mfr_type_ids.setdefault(r["manufacturer_id"], []).append(r["type_id"])
     for m in manufacturers:
         cap = mfr_cap.get(m["id"])
         m["capacity"] = cap["capacity_thousand_vagons_year"] if cap else None
         m["staff"] = cap["staff_thousand"] if cap else None
         m["capYear"] = cap["data_year"] if cap else None
         m["vagonTypes"] = mfr_types.get(m["id"], [])
+        m["vagonTypeIds"] = mfr_type_ids.get(m["id"], [])
+
+    manufacturer_departments = rows("SELECT id, name, sort_order FROM manufacturer_departments ORDER BY sort_order")
+
+    manufacturer_output = {}  # mfrId -> [{year, volume, share}]
+    for r in rows("""SELECT manufacturer_id, year, volume_thousand_vagons, share_percent
+                      FROM manufacturer_output ORDER BY manufacturer_id, year"""):
+        manufacturer_output.setdefault(r["manufacturer_id"], []).append({
+            "year": r["year"], "volume": r["volume_thousand_vagons"], "share": r["share_percent"],
+        })
+
+    manufacturer_contacts = {}  # mfrId -> [{deptId, name, phone, email, primaryForVagonCard}]
+    for r in rows("""SELECT manufacturer_id, department_id, contact_name, phone, email, is_primary_for_vagon_card
+                      FROM manufacturer_contacts ORDER BY manufacturer_id"""):
+        manufacturer_contacts.setdefault(r["manufacturer_id"], []).append({
+            "deptId": r["department_id"], "name": r["contact_name"], "phone": r["phone"], "email": r["email"],
+            "primary": r["is_primary_for_vagon_card"] == "да",
+        })
 
     bogies = rows("""SELECT id, model, model_note, manufacturer_id, axle_load_tf, axle_load_kn,
                              rd9246_manufacturer_label FROM bogies""")
@@ -215,11 +240,15 @@ def main():
         "vagonTypes": vagon_types,
         "vagonKinds": vagon_kinds,
         "manufacturers": manufacturers,
+        "manufacturerDepartments": manufacturer_departments,
+        "manufacturerOutput": manufacturer_output,
+        "manufacturerContacts": manufacturer_contacts,
         "bogies": bogies,
         "depots": depots,
         "railways": railways,
         "repairTypes": repair_types,
         "repairHoldings": repair_holdings,
+        "repairHoldingContacts": repair_holding_contacts,
         "depotCompetencies": depot_competencies,
         "depotAuthorizations": depot_authorizations,
         "features": features,

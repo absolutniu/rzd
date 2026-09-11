@@ -183,6 +183,27 @@
   .catalog-body { display: grid; grid-template-columns: 216px 1fr; gap: 26px; align-items: start; margin-top: 14px; }
   @media (max-width: 800px) { .catalog-body { grid-template-columns: 1fr; } }
 
+  /* ===== каталог: вход (выбор типа/груза до показа списка) ===== */
+  .gate-lead { color: var(--ink-soft); font-size: 14px; margin: 24px 0 18px; max-width: 62ch; }
+  .gate-type-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 12px; }
+  .gate-tile {
+    display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;
+    padding: 22px 14px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line);
+    cursor: pointer; font: inherit; color: inherit;
+    transition: transform .25s var(--ease-spring), box-shadow .25s var(--ease-smooth), border-color .2s ease;
+  }
+  .gate-tile:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--accent); }
+  .gate-tile .gt-icon svg { width: 46px; height: 32px; color: var(--steel); }
+  .gate-tile .gt-name { font-size: 13.5px; font-weight: 600; }
+  .gate-tile .gt-count { font-size: 11px; color: var(--ink-faint); font-family: "Cascadia Code",Consolas,monospace; }
+  .gate-or { display: flex; align-items: center; gap: 12px; margin: 26px 0 18px; color: var(--ink-faint); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+  .gate-or::before, .gate-or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .gate-cargo { max-width: 420px; }
+  .gate-skip { display: block; margin: 26px 0 8px; background: none; border: none; color: var(--ink-faint); font-size: 12.5px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; padding: 0; }
+  .gate-skip:hover { color: var(--accent); }
+  .gate-back { display: inline-block; font-size: 12.5px; color: var(--accent); cursor: pointer; margin: 18px 0 2px; }
+  .gate-back:hover { text-decoration: underline; }
+
   /* ===== manufacturers page ===== */
   .mfr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
   .mfr-card {
@@ -426,6 +447,12 @@
     margin: 0 0 13px; font-weight: 600; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
   }
   .bcard h3 .n { text-transform: none; letter-spacing: 0; font-weight: 400; }
+  .bcard > summary { cursor: pointer; list-style: none; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .bcard > summary::-webkit-details-marker { display: none; }
+  .bcard > summary h3 { margin: 0; }
+  .bcard > summary .chev { color: var(--ink-faint); font-size: 18px; transition: transform .2s ease; flex-shrink: 0; }
+  .bcard[open] > summary .chev { transform: rotate(90deg); }
+  .bcard-collapse-body { margin-top: 13px; }
   .bcard-hero { display: flex; gap: 26px; align-items: flex-start; flex-wrap: wrap; }
   @media (max-width: 640px) { .bcard-hero { flex-direction: column; } }
   .hero-media {
@@ -616,7 +643,7 @@
           <p>27 заводов — мощность, выпуск по годам, контакты по отделам.</p>
           <span class="hc-arrow">→</span>
         </button>
-        <button class="hub-card" onclick="go('catalog'); setTimeout(()=>document.getElementById('cargo-search').focus(), 60);">
+        <button class="hub-card" onclick="go('catalog'); setTimeout(()=>{ const el = document.getElementById(state.catalogUnlocked ? 'cargo-search' : 'gate-cargo-search'); if (el) el.focus(); }, 60);">
           <svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v9l9 5 9-5V8"/><path d="M12 13v9"/></svg>
           <h3>Что везти?</h3>
           <p>Поиск по 1 870 видам груза — какой вагон допущен под ваш груз.</p>
@@ -642,41 +669,61 @@
       <h1 class="display" style="font-size:26px;margin:20px 0 0;">Грузовые вагоны</h1>
       <p style="color:var(--ink-soft);font-size:13.5px;margin:6px 0 0;max-width:56ch;">Характеристики, тележка и запчасти, сроки ремонта, допустимые грузы и депо — по каждой модели в одном месте.</p>
       <div class="rail-rule"></div>
-      <div class="type-tabs" id="type-tabs"></div>
 
-      <div class="catalog-body">
-        <aside class="filters">
-          <div class="filter-group cargo-filter-group">
-            <h4>Что нужно перевезти <span class="filter-hint">1 870 видов груза</span></h4>
-            <div class="cargo-search">
-              <input id="cargo-search" type="text" placeholder="например, «бензин» или «зерно»" autocomplete="off" />
-              <div class="cargo-suggest" id="cargo-suggest"></div>
-            </div>
-            <div class="cargo-chips" id="cargo-chips"></div>
+      <!-- ===== вход: выбор типа или груза, прежде чем вываливать все 256 ===== -->
+      <div id="catalog-gate">
+        <p class="gate-lead">Чем везти? Выберите тип вагона — или сразу укажите, что нужно перевезти, ниже.</p>
+        <div class="gate-type-grid" id="gate-type-grid"></div>
+        <div class="gate-or"><span>или</span></div>
+        <div class="gate-cargo">
+          <div class="cargo-search">
+            <input id="gate-cargo-search" type="text" placeholder="что везём — например, «бензин» или «зерно»" autocomplete="off" />
+            <div class="cargo-suggest" id="gate-cargo-suggest"></div>
           </div>
-          <div class="filter-group">
-            <h4>Грузоподъёмность, т</h4>
-            <div class="filter-range">
-              <input id="cap-min" type="number" placeholder="от" min="0" />
-              <span>—</span>
-              <input id="cap-max" type="number" placeholder="до" min="0" />
-            </div>
-          </div>
-          <div class="filter-group">
-            <h4>Производитель</h4>
-            <div class="filter-check-list" id="mfr-filters"></div>
-          </div>
-          <div class="filter-group">
-            <label class="filter-toggle"><input id="only-auth" type="checkbox" /> Требуется авторизация</label>
-          </div>
-          <button class="filter-clear" onclick="clearFilters()">Сбросить фильтры</button>
-        </aside>
+        </div>
+        <button class="gate-skip" onclick="unlockAll()">Показать все <span id="gate-total-count">0</span> моделей без фильтра →</button>
+      </div>
 
-        <div>
-          <div class="result-meta">
-            <div class="count">Найдено: <b id="result-count">0</b></div>
+      <!-- ===== результат: табы типов, фильтры, сетка карточек ===== -->
+      <div id="catalog-main" hidden>
+        <p class="gate-back" onclick="backToGate()" tabindex="0" role="button">← выбрать другой тип или груз</p>
+        <div class="type-tabs" id="type-tabs"></div>
+
+        <div class="catalog-body">
+          <aside class="filters">
+            <div class="filter-group cargo-filter-group">
+              <h4>Что нужно перевезти <span class="filter-hint">1 870 видов груза</span></h4>
+              <div class="cargo-search">
+                <input id="cargo-search" type="text" placeholder="например, «бензин» или «зерно»" autocomplete="off" />
+                <div class="cargo-suggest" id="cargo-suggest"></div>
+              </div>
+              <div class="cargo-chips" id="cargo-chips"></div>
+            </div>
+            <div class="filter-group">
+              <h4>Грузоподъёмность, т</h4>
+              <div class="filter-range">
+                <input id="cap-min" type="number" placeholder="от" min="0" />
+                <span>—</span>
+                <input id="cap-max" type="number" placeholder="до" min="0" />
+              </div>
+            </div>
+            <div id="spec-filters"></div>
+            <div class="filter-group">
+              <h4>Производитель</h4>
+              <div class="filter-check-list" id="mfr-filters"></div>
+            </div>
+            <div class="filter-group">
+              <label class="filter-toggle"><input id="only-auth" type="checkbox" /> Требуется авторизация</label>
+            </div>
+            <button class="filter-clear" onclick="clearFilters()">Сбросить фильтры</button>
+          </aside>
+
+          <div>
+            <div class="result-meta">
+              <div class="count">Найдено: <b id="result-count">0</b></div>
+            </div>
+            <div class="grid" id="catalog-grid"></div>
           </div>
-          <div class="grid" id="catalog-grid"></div>
         </div>
       </div>
     </section>
@@ -888,7 +935,9 @@ const FIELD_LABELS = {
 const FIELD_ORDER = Object.keys(FIELD_LABELS);
 
 /* ---------- состояние ---------- */
-const state = { type: "ALL", search: "", capMin: null, capMax: null, mfrs: new Set(), onlyAuth: false, compare: new Set(), cargo: new Set(), partsSearch: "" };
+const state = { type: "ALL", search: "", capMin: null, capMax: null, mfrs: new Set(), onlyAuth: false, compare: new Set(), cargo: new Set(), partsSearch: "", catalogUnlocked: false, specFilters: {} };
+// поля-значения (не диапазон, а перечисление) среди характеристик — фильтруются чекбоксами, а не "от—до"
+const CATEGORICAL_SPEC_FIELDS = new Set(["gauge", "end_walls", "temp_range_c"]);
 
 function fmtNum(n) {
   if (n === null || n === undefined) return "—";
@@ -918,24 +967,29 @@ function cargoSuggestions(query) {
   }
   return starts.concat(contains).slice(0, 12);
 }
-function renderCargoSuggest() {
-  const box = document.getElementById("cargo-suggest");
-  const q = document.getElementById("cargo-search").value;
+function renderCargoSuggestInto(inputId, boxId) {
+  const box = document.getElementById(boxId);
+  const q = document.getElementById(inputId).value;
   const items = cargoSuggestions(q);
   cargoHi = items.length ? 0 : -1;
   if (!q.trim()) { box.classList.remove("show"); box.innerHTML = ""; return; }
   box.innerHTML = items.length ? items.map((c,i) => `
-      <div class="cargo-suggest-item ${i===0?'hi':''}" data-id="${c.id}" onclick="addCargoFilter('${c.id}')">
+      <div class="cargo-suggest-item ${i===0?'hi':''}" data-id="${c.id}" onclick="addCargoFilter('${c.id}','${inputId}','${boxId}')">
         <span class="t">${c.name}</span>
         <span class="code">${CARGO_VAGON_IDS.has(c.id) ? (CARGO_VAGON_IDS.get(c.id).size+' ваг.') : (c.etsng_code||'')}</span>
       </div>`).join("")
     : `<div class="cargo-suggest-empty">Ничего не нашлось среди ${CARGO_TYPES.length} видов груза</div>`;
   box.classList.add("show");
 }
-function addCargoFilter(cargoId) {
+function renderCargoSuggest() { renderCargoSuggestInto("cargo-search", "cargo-suggest"); }
+function renderGateCargoSuggest() { renderCargoSuggestInto("gate-cargo-search", "gate-cargo-suggest"); }
+function addCargoFilter(cargoId, inputId, boxId) {
+  inputId = inputId || "cargo-search";
+  boxId = boxId || "cargo-suggest";
   state.cargo.add(cargoId);
-  document.getElementById("cargo-search").value = "";
-  document.getElementById("cargo-suggest").classList.remove("show");
+  const inp = document.getElementById(inputId); if (inp) inp.value = "";
+  const box = document.getElementById(boxId); if (box) box.classList.remove("show");
+  if (!state.catalogUnlocked) { unlockCatalog(); typeTabs(); mfrFilters(); renderSpecFilters(); }
   renderCargoChips(); renderCatalog();
 }
 function removeCargoFilter(cargoId) { state.cargo.delete(cargoId); renderCargoChips(); renderCatalog(); }
@@ -947,10 +1001,12 @@ function renderCargoChips() {
 }
 function jumpToCargo(cargoId) {
   state.type="ALL"; state.search=""; state.capMin=null; state.capMax=null; state.mfrs.clear(); state.onlyAuth=false;
+  state.specFilters = {};
   state.cargo = new Set([cargoId]);
   document.getElementById("search").value=""; document.getElementById("cap-min").value=""; document.getElementById("cap-max").value="";
   document.getElementById("only-auth").checked=false;
-  typeTabs(); mfrFilters(); renderCargoChips(); renderCatalog();
+  unlockCatalog();
+  typeTabs(); mfrFilters(); renderCargoChips(); renderSpecFilters(); renderCatalog();
   go("catalog");
 }
 
@@ -968,6 +1024,42 @@ function depotsForVagon(v) {
     byDepot.get(c.depot_id).add(c.repair_type_id);
   });
   return { mode: "competency", items: [...byDepot.entries()].map(([depotId, set]) => ({ depotId, repairTypeIds: [...set] })) };
+}
+
+/* ---------- каталог: вход (выбор типа/груза до показа списка) ---------- */
+function renderGateTypeGrid() {
+  const box = document.getElementById("gate-type-grid");
+  if (!box) return;
+  const types = Object.keys(TYPE_META).filter(t => VAGONS.some(v => v.typeId === t));
+  box.innerHTML = types.map(t => {
+    const count = VAGONS.filter(v => v.typeId === t).length;
+    return `<button class="gate-tile" onclick="chooseType('${t}')">
+      <span class="gt-icon">${ICONS[t]}</span>
+      <span class="gt-name">${TYPE_META[t].name}</span>
+      <span class="gt-count">${count}</span>
+    </button>`;
+  }).join("");
+  const totalEl = document.getElementById("gate-total-count");
+  if (totalEl) totalEl.textContent = VAGONS.length;
+}
+function unlockCatalog() {
+  state.catalogUnlocked = true;
+  document.getElementById("catalog-gate").hidden = true;
+  document.getElementById("catalog-main").hidden = false;
+}
+function chooseType(t) {
+  state.type = t;
+  state.specFilters = {};
+  unlockCatalog();
+  typeTabs(); mfrFilters(); renderCargoChips(); renderSpecFilters(); renderCatalog();
+  window.scrollTo(0,0);
+}
+function unlockAll() { clearFilters(); } // «показать все без фильтра» = полный сброс + снять гейт
+function backToGate() {
+  state.catalogUnlocked = false;
+  document.getElementById("catalog-gate").hidden = false;
+  document.getElementById("catalog-main").hidden = true;
+  window.scrollTo(0,0);
 }
 
 /* ---------- фильтры каталога ---------- */
@@ -990,12 +1082,81 @@ function mfrFilters() {
     </label>`).join("");
 }
 function toggleMfr(id) { state.mfrs.has(id) ? state.mfrs.delete(id) : state.mfrs.add(id); renderCatalog(); }
-function setType(t) { state.type = t; renderCatalog(); typeTabs(); }
+function setType(t) {
+  state.type = t;
+  state.specFilters = {};
+  if (!state.catalogUnlocked) unlockCatalog();
+  renderCatalog(); typeTabs(); renderSpecFilters();
+}
 function clearFilters() {
   state.type="ALL"; state.search=""; state.capMin=null; state.capMax=null; state.mfrs.clear(); state.onlyAuth=false; state.cargo.clear();
+  state.specFilters = {};
+  unlockCatalog();
   document.getElementById("search").value=""; document.getElementById("cap-min").value=""; document.getElementById("cap-max").value="";
   document.getElementById("only-auth").checked=false; document.getElementById("cargo-search").value="";
-  typeTabs(); mfrFilters(); renderCargoChips(); renderCatalog();
+  typeTabs(); mfrFilters(); renderCargoChips(); renderSpecFilters(); renderCatalog();
+}
+
+/* ---------- фильтры по характеристикам конкретного типа (площадь пола, объём котла и т.п.) ---------- */
+function specFieldStats(typeId) {
+  if (typeId === "ALL") return [];
+  const items = VAGONS.filter(v => v.typeId === typeId);
+  if (!items.length) return [];
+  const out = [];
+  for (const key of FIELD_ORDER) {
+    if (key === "capacity_t") continue; // уже есть отдельный фильтр «Грузоподъёмность»
+    const vals = items.map(v => v.specs[key]).filter(v => v != null);
+    if (!vals.length) continue;
+    const [label, unit] = FIELD_LABELS[key];
+    if (CATEGORICAL_SPEC_FIELDS.has(key)) {
+      const options = [...new Set(vals)].sort((a,b)=>String(a).localeCompare(String(b),'ru'));
+      if (options.length < 2) continue; // одно и то же значение у всех — фильтр бесполезен
+      out.push({ key, label, unit, kind: "select", options });
+    } else if (typeof vals[0] === "number") {
+      const min = Math.min(...vals), max = Math.max(...vals);
+      if (min === max) continue;
+      out.push({ key, label, unit, kind: "range", min, max });
+    }
+  }
+  return out;
+}
+function renderSpecFilters() {
+  const box = document.getElementById("spec-filters");
+  if (!box) return;
+  const fields = specFieldStats(state.type);
+  if (!fields.length) { box.innerHTML = ""; return; }
+  box.innerHTML = `<div class="filter-group"><h4>Характеристики ${TYPE_META[state.type]?('— '+TYPE_META[state.type].name):''}</h4></div>` + fields.map(f => {
+    if (f.kind === "range") {
+      const cur = state.specFilters[f.key] || {};
+      return `<div class="filter-group">
+        <h4>${f.label}${f.unit ? ` <span class="filter-hint">${f.unit.trim()}</span>` : ""}</h4>
+        <div class="filter-range">
+          <input type="number" placeholder="от ${fmtNum(f.min)}" value="${cur.min ?? ""}" oninput="setSpecRange('${f.key}','min',this.value)" />
+          <span>—</span>
+          <input type="number" placeholder="до ${fmtNum(f.max)}" value="${cur.max ?? ""}" oninput="setSpecRange('${f.key}','max',this.value)" />
+        </div>
+      </div>`;
+    }
+    const cur = state.specFilters[f.key] instanceof Set ? state.specFilters[f.key] : new Set();
+    return `<div class="filter-group">
+      <h4>${f.label}</h4>
+      <div class="filter-check-list">
+        ${f.options.map(opt => `<label class="filter-check"><input type="checkbox" ${cur.has(opt)?"checked":""} onchange="toggleSpecOption('${f.key}', this.dataset.opt)" data-opt="${opt}" /> ${opt}</label>`).join("")}
+      </div>
+    </div>`;
+  }).join("");
+}
+function setSpecRange(key, edge, val) {
+  const cur = { ...(state.specFilters[key] || {}) };
+  cur[edge] = val ? +val : undefined;
+  state.specFilters[key] = cur;
+  renderCatalog();
+}
+function toggleSpecOption(key, opt) {
+  const set = state.specFilters[key] instanceof Set ? state.specFilters[key] : new Set();
+  set.has(opt) ? set.delete(opt) : set.add(opt);
+  state.specFilters[key] = set;
+  renderCatalog();
 }
 function filteredVagons() {
   return VAGONS.filter(v => {
@@ -1006,6 +1167,19 @@ function filteredVagons() {
     const cap = v.specs.capacity_t;
     if (state.capMin != null && (cap == null || cap < state.capMin)) return false;
     if (state.capMax != null && (cap == null || cap > state.capMax)) return false;
+    for (const key in state.specFilters) {
+      const f = state.specFilters[key];
+      const val = v.specs[key];
+      if (f instanceof Set) {
+        if (f.size && !f.has(val)) return false;
+      } else {
+        if (f.min != null || f.max != null) {
+          if (val == null) return false;
+          if (f.min != null && val < f.min) return false;
+          if (f.max != null && val > f.max) return false;
+        }
+      }
+    }
     if (state.search) {
       const s = state.search.toLowerCase();
       const mfrName = mfrShort(v.mfrId).toLowerCase();
@@ -1334,19 +1508,19 @@ function openDetail(id) {
             <div class="bstat"><b>${distinctDepots}</b><span>депо (${depotInfo.mode==="direct"?"авторизовано":"компетентно"})</span></div>
             ${distinctRailways ? `<div class="bstat"><b>${distinctRailways}</b><span>дорог</span></div>` : ""}
           </div>
-          <p class="muted-link" onclick="document.getElementById('s-depots-detail').scrollIntoView({behavior:'smooth'})" tabindex="0" role="button" style="margin-top:10px;color:var(--accent);cursor:pointer;font-size:12.5px;">подробнее ↓</p>
+          <p class="muted-link" onclick="const d=document.getElementById('s-depots-detail'); d.open=true; d.scrollIntoView({behavior:'smooth'})" tabindex="0" role="button" style="margin-top:10px;color:var(--accent);cursor:pointer;font-size:12.5px;">подробнее ↓</p>
         ` : `<p class="no-data">данные по авторизованным депо пока не внесены в источник</p>`}
       </div>
 
-      <div class="bcard span3" id="s-depots-detail">
-        <h3>Депо, авторизованные на ремонт ${depotInfo.items.length?`<span class="n">— ${depotInfo.items.length}</span>`:""}</h3>
-        ${depotsHTML}
-      </div>
+      <details class="bcard span3" id="s-depots-detail">
+        <summary><h3>Депо, авторизованные на ремонт ${depotInfo.items.length?`<span class="n">— ${depotInfo.items.length}</span>`:""}</h3><span class="chev">›</span></summary>
+        <div class="bcard-collapse-body">${depotsHTML}</div>
+      </details>
 
-      <div class="bcard span3">
-        <h3>Чертежи и запчасти ${bogie?`<span class="n">— по Прил.Е РД 32 ЦВ 052-2009</span>`:""}</h3>
-        ${bogiePartsHTML(bogie)}
-      </div>
+      <details class="bcard span3">
+        <summary><h3>Чертежи и запчасти ${bogie?`<span class="n">— по Прил.Е РД 32 ЦВ 052-2009</span>`:""}</h3><span class="chev">›</span></summary>
+        <div class="bcard-collapse-body">${bogiePartsHTML(bogie)}</div>
+      </details>
 
     </div>
   `;
@@ -1714,20 +1888,27 @@ document.getElementById("cap-max").addEventListener("input", e => { state.capMax
 document.getElementById("only-auth").addEventListener("change", e => { state.onlyAuth = e.target.checked; renderCatalog(); });
 document.getElementById("parts-search").addEventListener("input", e => { state.partsSearch = e.target.value; renderParts(); });
 
-const cargoInput = document.getElementById("cargo-search");
-cargoInput.addEventListener("input", renderCargoSuggest);
-cargoInput.addEventListener("focus", renderCargoSuggest);
-cargoInput.addEventListener("keydown", e => {
-  const box = document.getElementById("cargo-suggest");
-  const items = [...box.querySelectorAll(".cargo-suggest-item")];
-  if (!items.length) return;
-  if (e.key === "ArrowDown") { e.preventDefault(); cargoHi = Math.min(cargoHi+1, items.length-1); items.forEach((el,i)=>el.classList.toggle("hi", i===cargoHi)); items[cargoHi].scrollIntoView({block:"nearest"}); }
-  else if (e.key === "ArrowUp") { e.preventDefault(); cargoHi = Math.max(cargoHi-1, 0); items.forEach((el,i)=>el.classList.toggle("hi", i===cargoHi)); items[cargoHi].scrollIntoView({block:"nearest"}); }
-  else if (e.key === "Enter") { e.preventDefault(); const el = items[cargoHi] || items[0]; if (el) addCargoFilter(el.dataset.id); }
-  else if (e.key === "Escape") { box.classList.remove("show"); }
-});
+function wireCargoInput(inputId, boxId, renderFn) {
+  const input = document.getElementById(inputId);
+  input.addEventListener("input", renderFn);
+  input.addEventListener("focus", renderFn);
+  input.addEventListener("keydown", e => {
+    const box = document.getElementById(boxId);
+    const items = [...box.querySelectorAll(".cargo-suggest-item")];
+    if (!items.length) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); cargoHi = Math.min(cargoHi+1, items.length-1); items.forEach((el,i)=>el.classList.toggle("hi", i===cargoHi)); items[cargoHi].scrollIntoView({block:"nearest"}); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); cargoHi = Math.max(cargoHi-1, 0); items.forEach((el,i)=>el.classList.toggle("hi", i===cargoHi)); items[cargoHi].scrollIntoView({block:"nearest"}); }
+    else if (e.key === "Enter") { e.preventDefault(); const el = items[cargoHi] || items[0]; if (el) addCargoFilter(el.dataset.id, inputId, boxId); }
+    else if (e.key === "Escape") { box.classList.remove("show"); }
+  });
+}
+wireCargoInput("cargo-search", "cargo-suggest", renderCargoSuggest);
+wireCargoInput("gate-cargo-search", "gate-cargo-suggest", renderGateCargoSuggest);
 document.addEventListener("click", e => {
-  if (!e.target.closest(".cargo-search")) document.getElementById("cargo-suggest").classList.remove("show");
+  if (!e.target.closest(".cargo-search")) {
+    document.getElementById("cargo-suggest").classList.remove("show");
+    document.getElementById("gate-cargo-suggest").classList.remove("show");
+  }
 });
 
 // клавиатурная активация элементов, помеченных role="button" (депо/грузы/завод — кликабельные
@@ -1751,7 +1932,7 @@ fetch("data/catalog_data.json")
   .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
   .then(data => {
     initFromData(data);
-    typeTabs(); mfrFilters(); renderCargoChips(); renderCatalog(); depotFilters();
+    typeTabs(); mfrFilters(); renderCargoChips(); renderCatalog(); depotFilters(); renderGateTypeGrid();
   })
   .catch(err => {
     document.getElementById("catalog-grid").innerHTML =

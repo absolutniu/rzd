@@ -181,6 +181,7 @@
 
   /* ===== catalog layout ===== */
   .catalog-body { display: grid; grid-template-columns: 216px 1fr; gap: 26px; align-items: start; margin-top: 14px; }
+  .catalog-body > * { min-width: 0; } /* та же защита, что у .depot-page-body — длинный текст в фильтрах/карточках не должен распирать колонку */
   @media (max-width: 800px) { .catalog-body { grid-template-columns: 1fr; } }
 
   /* ===== каталог: вход (выбор типа/груза до показа списка) ===== */
@@ -219,6 +220,7 @@
 
   /* ===== depots page ===== */
   .depot-page-body { display: grid; grid-template-columns: 216px 1fr; gap: 26px; align-items: start; margin-top: 14px; }
+  .depot-page-body > * { min-width: 0; } /* иначе nowrap-таблица депо распирает грид-колонку сайдбара, несмотря на overflow-x:auto у обёртки */
   @media (max-width: 800px) { .depot-page-body { grid-template-columns: 1fr; } }
   .depot-map-frame {
     position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
@@ -525,24 +527,13 @@
 
   .no-data { color: var(--ink-faint); font-size: 13px; font-style: italic; }
 
-  /* ===== overlay panel (manufacturer / depot) ===== */
-  .overlay-mask {
-    position: fixed; inset: 0; background: rgba(10,12,14,.4); z-index: 50; display: none;
-    opacity: 0; transition: opacity .25s var(--ease-smooth);
-  }
-  .overlay-mask.show { display: block; opacity: 1; }
-  .overlay-panel {
-    position: fixed; top: 0; right: 0; height: 100%; width: min(380px, 92vw); background: var(--panel);
-    z-index: 51; box-shadow: var(--shadow-lg); transform: translateX(100%); transition: transform .4s var(--ease-spring);
-    padding: 22px; overflow-y: auto; overflow-x: hidden;
-  }
-  .overlay-mask.show .overlay-panel { transform: translateX(0); }
-  .overlay-close { position: absolute; top: 18px; right: 18px; background: none; border: none; color: var(--ink-faint); cursor: pointer; }
-  .overlay-eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: .09em; color: var(--accent); font-weight: 600; margin-bottom: 8px; }
-  .overlay-panel h3 { font-size: 19px; margin: 0 0 4px; text-wrap: balance; }
-  .overlay-sub { color: var(--ink-soft); font-size: 13px; margin-bottom: 18px; }
-  .overlay-panel .spec-table { margin-bottom: 16px; }
-  .overlay-note { font-size: 12px; color: var(--ink-faint); border-top: 1px solid var(--line); padding-top: 12px; margin-top: 16px; }
+  /* ===== депо: компетенции по видам вагонов ===== */
+  .depot-comp-list { display: flex; flex-direction: column; gap: 0; }
+  .depot-comp-row { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .depot-comp-row:last-child { border-bottom: none; }
+  .depot-comp-row .label { font-size: 13px; flex: 1 1 200px; }
+  .depot-comp-row .label .n { color: var(--ink-faint); font-size: 12px; font-weight: 400; }
+  .depot-comp-row .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 
   /* ===== compare view ===== */
   .compare-wrap { overflow-x: auto; margin-top: 18px; }
@@ -802,6 +793,15 @@
       </div>
     </section>
 
+    <!-- ===================== DEPOT (single) ===================== -->
+    <section id="view-depot" class="view">
+      <button class="back-btn" onclick="go('depots')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Все депо
+      </button>
+      <div id="depot-detail-content"></div>
+    </section>
+
     <!-- ===================== PARTS (комплектующие) ===================== -->
     <section id="view-parts" class="view">
       <h1 class="display" style="font-size:26px;margin:20px 0 0;">Комплектующие тележек</h1>
@@ -825,14 +825,6 @@
     <button class="go" onclick="go('compare')">Сравнить →</button>
   </div>
 
-  <div class="overlay-mask" id="overlay-mask" onclick="if(event.target===this) closeOverlay()">
-    <div class="overlay-panel">
-      <button class="overlay-close" onclick="closeOverlay()" aria-label="Закрыть">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
-      </button>
-      <div id="overlay-content"></div>
-    </div>
-  </div>
 </div>
 
 <script>
@@ -845,7 +837,7 @@ let DATA, KIND_BY_ID, MFR_BY_ID, BOGIE_BY_ID, DEPOT_BY_ID, RAILWAY_BY_ID, REPAIR
     HOLDING_BY_ID, FEATURE_BY_ID, CONTAINER_BY_ID, CARGO_TYPES, CARGO_BY_ID, DEPOT_COMPETENCIES,
     DEPOT_AUTHORIZATIONS, VAGONS, VAGON_BY_ID, CARGO_VAGON_IDS,
     COMPONENT_TYPE_BY_ID, BOGIE_ASSEMBLY_DRAWINGS, BOGIE_COMPONENT_DRAWINGS, COMPONENT_REPAIR_DRAWINGS,
-    MFR_DEPARTMENT_BY_ID, MFR_OUTPUT, MFR_CONTACTS;
+    MFR_DEPARTMENT_BY_ID, MFR_OUTPUT, MFR_CONTACTS, REPAIR_HOLDING_CONTACTS;
 
 function initFromData(data) {
   DATA = data;
@@ -869,6 +861,7 @@ function initFromData(data) {
   MFR_DEPARTMENT_BY_ID = new Map(DATA.manufacturerDepartments.map(d => [d.id, d.name]));
   MFR_OUTPUT = DATA.manufacturerOutput;
   MFR_CONTACTS = DATA.manufacturerContacts;
+  REPAIR_HOLDING_CONTACTS = DATA.repairHoldingContacts;
   VAGONS = DATA.vagons;
   VAGON_BY_ID = new Map(VAGONS.map(v => [v.id, v]));
   VAGONS.forEach(v => { v.cargoSet = new Set(v.cargoIds || []); });
@@ -1669,30 +1662,105 @@ function openManufacturer(mfrId) {
   go("manufacturer", true);
   window.scrollTo(0,0);
 }
+/* ---------- депо: карточка ---------- */
+function depotCompetencyGroups(depotId) {
+  const groups = new Map(); // typeId|kindId|note -> {typeId, kindId, note, repairTypeIds:Set}
+  DATA.depotCompetencies.filter(c => c.depot_id === depotId).forEach(c => {
+    const key = `${c.vagon_type_id}|${c.vagon_kind_id||""}|${c.note||""}`;
+    if (!groups.has(key)) groups.set(key, { typeId: c.vagon_type_id, kindId: c.vagon_kind_id, note: c.note, repairTypeIds: new Set() });
+    groups.get(key).repairTypeIds.add(c.repair_type_id);
+  });
+  return [...groups.values()].sort((a,b) => a.typeId.localeCompare(b.typeId) || (a.kindId||"").localeCompare(b.kindId||"", "ru"));
+}
 function openDepot(depotId) {
   const d = DEPOT_BY_ID.get(depotId);
-  const mask = document.getElementById("overlay-mask");
   if (!d) return;
   const holding = d.holding_id ? HOLDING_BY_ID.get(d.holding_id) : null;
   const railway = d.railway_id ? RAILWAY_BY_ID.get(d.railway_id) : null;
-  const mapLink = (d.latitude && d.longitude) ? `<a href="https://yandex.ru/maps/?pt=${d.longitude},${d.latitude}&z=13" target="_blank" rel="noopener">${d.latitude.toFixed(4)}, ${d.longitude.toFixed(4)} — открыть на карте</a>` : "—";
-  document.getElementById("overlay-content").innerHTML = `
-    <div class="overlay-eyebrow">Депо</div>
-    <h3>${d.name}</h3>
-    <div class="overlay-sub">${holding?`Ремонтный холдинг «${holding.short_name}»`:"Холдинг не указан"}</div>
-    <div class="spec-table">
-      <div class="row"><dt>Дорога</dt><dd>${railway||"—"}</dd></div>
-      <div class="row"><dt>Станция примыкания</dt><dd>${d.adjoining_station||"—"}</dd></div>
-      <div class="row"><dt>Код станции</dt><dd>${d.station_code||"—"}</dd></div>
-      <div class="row"><dt>Клеймо депо</dt><dd>${d.stamp_code||"—"}</dd></div>
-      <div class="row"><dt>Координаты</dt><dd>${mapLink}</dd></div>
-      <div class="row"><dt>Сайт</dt><dd>${siteLink(d.website)}</dd></div>
+  const mapLink = (d.latitude && d.longitude) ? `<a href="https://yandex.ru/maps/?pt=${d.longitude},${d.latitude}&z=13" target="_blank" rel="noopener noreferrer">${d.latitude.toFixed(4)}, ${d.longitude.toFixed(4)} — открыть на карте</a>` : "—";
+
+  const compGroups = depotCompetencyGroups(depotId);
+  const distinctTypes = new Set(compGroups.map(g => g.typeId)).size;
+  const compHTML = compGroups.length ? `<div class="depot-comp-list">` + compGroups.map(g => {
+    const typeName = TYPE_META[g.typeId]?.name || g.typeId;
+    const kindName = g.kindId ? (KIND_BY_ID.get(g.kindId)?.name || null) : null;
+    const repairNames = [...g.repairTypeIds].map(id => REPAIR_TYPE_BY_ID.get(id)).filter(Boolean);
+    return `<div class="depot-comp-row">
+      <div class="label">${typeName}${kindName ? ` <span class="n">— ${kindName}${g.note?` (${g.note})`:""}</span>` : ""}</div>
+      <div class="chips">${repairNames.map(n => `<span class="feature-chip">${n}</span>`).join("")}</div>
+    </div>`;
+  }).join("") + `</div>` : `<p class="no-data">компетенции по видам вагонов не внесены в источник</p>`;
+
+  const directAuths = DATA.depotAuthorizations.filter(a => a.depot_id === depotId);
+  const authHTML = directAuths.length ? `<div class="feature-list">` + directAuths.map(a => {
+    const v = VAGON_BY_ID.get(a.vagon_id);
+    if (!v) return "";
+    const repairName = REPAIR_TYPE_BY_ID.get(a.repair_type_id) || "";
+    return `<span class="feature-chip cargo-pick" onclick="openDetail('${a.vagon_id}')" tabindex="0" role="button" title="${repairName}">${v.model}</span>`;
+  }).join("") + `</div>` : `<p class="no-data">точечной авторизации на конкретные модели в источнике нет — см. компетенции по видам вагонов выше</p>`;
+
+  const holdingContacts = holding ? (REPAIR_HOLDING_CONTACTS[holding.id] || []) : [];
+
+  document.getElementById("depot-detail-content").innerHTML = `
+    <div class="breadcrumbs">
+      <a onclick="go('depots')" tabindex="0" role="button">Главная</a><span class="sep">/</span>
+      <a onclick="go('depots')" tabindex="0" role="button">Депо</a><span class="sep">/</span>
+      ${d.name}
     </div>
-    <div class="overlay-note">Полная карточка депо — список компетенций по всем типам вагонов и контакты — следующий экран.</div>
+    <div class="bento">
+
+      <div class="bcard span2">
+        <h3>Депо</h3>
+        <h1 class="display" style="font-size:22px;margin:0 0 4px;">${d.name}</h1>
+        <p class="kind" style="margin-bottom:10px">${holding ? `Ремонтный холдинг <span class="tag" style="display:inline-flex">${holding.short_name||holding.full_name}</span>` : "холдинг не указан"}</p>
+        <div class="bstat-row">
+          <div class="bstat"><b>${distinctTypes}</b><span>типов вагонов</span></div>
+          <div class="bstat"><b>${compGroups.length}</b><span>компетенций</span></div>
+          ${directAuths.length ? `<div class="bstat"><b>${directAuths.length}</b><span>прямых допусков</span></div>` : ""}
+        </div>
+      </div>
+
+      <div class="bcard">
+        <h3>Общие</h3>
+        <div class="spec-table">
+          <div class="row"><dt>Дорога</dt><dd>${railway||"—"}</dd></div>
+          <div class="row"><dt>Станция примыкания</dt><dd>${d.adjoining_station||"—"}</dd></div>
+          <div class="row"><dt>Код станции</dt><dd>${d.station_code||"—"}</dd></div>
+          <div class="row"><dt>Клеймо депо</dt><dd>${d.stamp_code||"—"}</dd></div>
+          <div class="row"><dt>Координаты</dt><dd>${mapLink}</dd></div>
+        </div>
+        ${d.website?`<p style="margin:10px 0 0;font-size:12.5px;">${siteLink(d.website)}</p>`:""}
+      </div>
+
+      <div class="bcard span3">
+        <h3>Компетенции по видам вагонов ${compGroups.length?`<span class="n">— ${compGroups.length}</span>`:""}</h3>
+        ${compHTML}
+      </div>
+
+      <div class="bcard span2">
+        <h3>Прямая авторизация на конкретные модели ${directAuths.length?`<span class="n">— ${directAuths.length}</span>`:""}</h3>
+        ${authHTML}
+      </div>
+
+      <div class="bcard">
+        <h3>Холдинг</h3>
+        ${holding ? `
+          <div style="font-size:15px;font-weight:600;margin-bottom:3px">${holding.short_name||holding.full_name}</div>
+          <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px">${holding.full_name}${holding.country?` · ${holding.country}`:""}${holding.enterprise_type?` · ${holding.enterprise_type}`:""}</div>
+          ${holding.website?`<p style="margin:0 0 10px;font-size:12.5px;">${siteLink(holding.website)}</p>`:""}
+          ${holdingContacts.map(c => `
+            <div class="contact-name">${c.name||"Контакт"}</div>
+            ${c.phone?`<div class="contact-line">${c.phone}</div>`:""}
+            ${c.email?`<div class="contact-line"><a href="mailto:${c.email.split(',')[0].trim()}">${c.email}</a></div>`:""}
+          `).join("")}
+        ` : `<p class="no-data">холдинг не указан в источнике</p>`}
+      </div>
+
+    </div>
   `;
-  mask.classList.add("show");
+  go("depot", true);
+  window.scrollTo(0,0);
 }
-function closeOverlay() { document.getElementById("overlay-mask").classList.remove("show"); }
 
 /* ---------- compare ---------- */
 function toggleCompare(id) {
@@ -1871,7 +1939,7 @@ function go(view, fromDetail) {
   document.getElementById("view-"+view).classList.add("active");
   document.getElementById("nav-catalog").classList.toggle("active", view==="catalog");
   document.getElementById("nav-manufacturers").classList.toggle("active", view==="manufacturers"||view==="manufacturer");
-  document.getElementById("nav-depots").classList.toggle("active", view==="depots");
+  document.getElementById("nav-depots").classList.toggle("active", view==="depots"||view==="depot");
   document.getElementById("nav-parts").classList.toggle("active", view==="parts");
   document.getElementById("nav-compare").classList.toggle("active", view==="compare");
   if (view === "compare") renderCompare();
@@ -1917,9 +1985,6 @@ document.addEventListener("keydown", e => {
   if ((e.key === "Enter" || e.key === " ") && e.target.matches('[role="button"]')) {
     e.preventDefault();
     e.target.click();
-  }
-  if (e.key === "Escape" && document.getElementById("overlay-mask").classList.contains("show")) {
-    closeOverlay();
   }
 });
 

@@ -83,6 +83,11 @@ def main():
     railways = rows("SELECT id, name FROM railways")
     repair_types = rows("SELECT id, name FROM repair_types")
     repair_holdings = rows("SELECT id, full_name, short_name, country, enterprise_type, website, telegram FROM repair_holdings")
+    repair_holding_contacts = {}  # holdingId -> [{name, phone, email}]
+    for r in rows("SELECT holding_id, contact_name, phone, email FROM repair_holding_contacts"):
+        repair_holding_contacts.setdefault(r["holding_id"], []).append({
+            "name": r["contact_name"], "phone": r["phone"], "email": r["email"],
+        })
     features = rows("SELECT id, name FROM vagon_features")
     container_sizes = rows("SELECT id, name FROM container_sizes")
 
@@ -243,6 +248,7 @@ def main():
         "railways": railways,
         "repairTypes": repair_types,
         "repairHoldings": repair_holdings,
+        "repairHoldingContacts": repair_holding_contacts,
         "depotCompetencies": depot_competencies,
         "depotAuthorizations": depot_authorizations,
         "features": features,

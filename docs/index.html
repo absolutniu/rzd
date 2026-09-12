@@ -455,10 +455,9 @@
   .bcard > summary .chev { color: var(--ink-faint); font-size: 18px; transition: transform .2s ease; flex-shrink: 0; }
   .bcard[open] > summary .chev { transform: rotate(90deg); }
   .bcard-collapse-body { margin-top: 13px; }
-  .bcard-hero { display: flex; gap: 26px; align-items: flex-start; flex-wrap: wrap; }
-  @media (max-width: 640px) { .bcard-hero { flex-direction: column; } }
+  .bcard-hero { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
   .hero-media {
-    width: 300px; max-width: 100%; flex-shrink: 0; border-radius: 9px; overflow: hidden;
+    width: 240px; max-width: 100%; flex-shrink: 0; border-radius: 9px; overflow: hidden;
     background: var(--panel-sunken); display: flex; align-items: center; justify-content: center; color: var(--steel);
   }
   .hero-media img { width: 100%; display: block; }
@@ -1246,38 +1245,48 @@ function bogiePartsHTML(bogie) {
     return `<span class="feature-chip" title="${title}">${drawingNumber}${mfrNames.length ? ` <b>· ${mfrNames[0]}</b>` : ""}</span>`;
   };
 
-  let html = "";
+  const sections = [];
   if (assembly.length) {
-    html += `<div class="part-block">
-      <h4>Тележка в сборе<span class="n">— чертежи, применявшиеся при производстве модели «${bogie.model}»</span></h4>
-      <div class="feature-list">${assembly.map(d => `<span class="feature-chip">${d}</span>`).join("")}</div>
-    </div>`;
+    sections.push({
+      name: "Тележка в сборе",
+      count: assembly.length,
+      body: `
+        <div class="part-sub-label" style="margin-top:0">Чертежи, применявшиеся при производстве модели «${bogie.model}»</div>
+        <div class="feature-list">${assembly.map(d => `<span class="feature-chip">${d}</span>`).join("")}</div>`,
+    });
   }
 
   for (const [typeId, typeName] of COMPONENT_TYPE_BY_ID) {
     const prod = byType.get(typeId);
     const repair = COMPONENT_REPAIR_DRAWINGS[typeId] || [];
     if (!prod && !repair.length) continue;
-    const uid = `parts-${typeId}`;
-    html += `<div class="part-block">
-      <h4>${typeName}</h4>
-      ${prod ? `
-        <div class="part-sub-label">При производстве этой модели</div>
-        <div class="feature-list">${prod.map(d => `<span class="feature-chip">${d}</span>`).join("")}</div>
-      ` : `<p class="no-data">чертёж при производстве этой модели не указан</p>`}
-      ${repair.length ? `
-        <div class="part-sub-label">Допустимо применить при ремонте <span class="n">— ${repair.length}, ГОСТ 9246 тип 2 с боковыми скользунами зазорного типа</span></div>
-        <div class="feature-list" id="${uid}">
-          ${repair.slice(0, REPAIR_PAGE).map(r => repairChip(r.drawingNumber, r.bogieIds)).join("")}
-          <span class="repair-overflow" style="display:none">${repair.slice(REPAIR_PAGE).map(r => repairChip(r.drawingNumber, r.bogieIds)).join("")}</span>
-        </div>
-        ${repair.length > REPAIR_PAGE ? `<button class="filter-clear" style="margin-top:8px" onclick="document.querySelector('#${uid} .repair-overflow').style.display='contents'; this.remove();">показать все ${repair.length}</button>` : ""}
-      ` : ""}
-    </div>`;
+    const uid = `parts-${bogie.id}-${typeId}`;
+    sections.push({
+      name: typeName,
+      count: (prod?.length || 0) + repair.length,
+      body: `
+        ${prod ? `
+          <div class="part-sub-label" style="margin-top:0">При производстве этой модели</div>
+          <div class="feature-list">${prod.map(d => `<span class="feature-chip">${d}</span>`).join("")}</div>
+        ` : `<p class="no-data">чертёж при производстве этой модели не указан</p>`}
+        ${repair.length ? `
+          <div class="part-sub-label">Допустимо применить при ремонте <span class="n">— ${repair.length}, ГОСТ 9246 тип 2 с боковыми скользунами зазорного типа</span></div>
+          <div class="feature-list" id="${uid}">
+            ${repair.slice(0, REPAIR_PAGE).map(r => repairChip(r.drawingNumber, r.bogieIds)).join("")}
+            <span class="repair-overflow" style="display:none">${repair.slice(REPAIR_PAGE).map(r => repairChip(r.drawingNumber, r.bogieIds)).join("")}</span>
+          </div>
+          ${repair.length > REPAIR_PAGE ? `<button class="filter-clear" style="margin-top:8px" onclick="document.querySelector('#${uid} .repair-overflow').style.display='contents'; this.remove();">показать все ${repair.length}</button>` : ""}
+        ` : ""}`,
+    });
   }
 
-  html += `<p style="color:var(--ink-faint);font-size:12px;margin-top:4px;">Источник: Прил.Е (обязательное) РД 32 ЦВ 052-2009 «Ремонт тележек грузовых вагонов тип 2 по ГОСТ 9246 с боковыми скользунами зазорного типа». Завод указан там, где чертёж совпадает с производственным чертежом одной из моделей тележек этого приложения.</p>`;
-  return html;
+  const accordion = `<div class="contact-accordion">` + sections.map((s, i) => `
+    <details ${i===0?"open":""}>
+      <summary>${s.name} <span class="n">— ${s.count}</span></summary>
+      <div class="contact-dept-list">${s.body}</div>
+    </details>`).join("") + `</div>`;
+
+  return accordion + `<p style="color:var(--ink-faint);font-size:12px;margin-top:12px;">Источник: Прил.Е (обязательное) РД 32 ЦВ 052-2009 «Ремонт тележек грузовых вагонов тип 2 по ГОСТ 9246 с боковыми скользунами зазорного типа». Завод указан там, где чертёж совпадает с производственным чертежом одной из моделей тележек этого приложения.</p>`;
 }
 
 /* ---------- parts (standalone) ---------- */
@@ -1413,7 +1422,6 @@ function openDetail(id) {
     <div class="bento">
 
       <div class="bcard bcard-hero span3">
-        <div class="hero-media">${heroMedia}</div>
         <div class="hero-copy">
           <h1 class="display">${meta.name} <span class="num">${v.model}</span></h1>
           <p class="kind">${kn || meta.name}</p>
@@ -1422,6 +1430,7 @@ function openDetail(id) {
             ${cert ? `<span class="pill ${pillClass}">${cert.status}</span>` : ""}
           </div>
         </div>
+        <div class="hero-media">${heroMedia}</div>
       </div>
 
       <div class="bcard">
@@ -1510,10 +1519,10 @@ function openDetail(id) {
         <div class="bcard-collapse-body">${depotsHTML}</div>
       </details>
 
-      <details class="bcard span3">
-        <summary><h3>Чертежи и запчасти ${bogie?`<span class="n">— по Прил.Е РД 32 ЦВ 052-2009</span>`:""}</h3><span class="chev">›</span></summary>
-        <div class="bcard-collapse-body">${bogiePartsHTML(bogie)}</div>
-      </details>
+      <div class="bcard span3">
+        <h3>Чертежи и запчасти ${bogie?`<span class="n">— по Прил.Е РД 32 ЦВ 052-2009</span>`:""}</h3>
+        ${bogiePartsHTML(bogie)}
+      </div>
 
     </div>
   `;

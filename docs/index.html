@@ -249,12 +249,17 @@
   table.depot-table tbody tr:last-child td { border-bottom: none; }
   table.depot-table td.name { font-weight: 600; }
 
-  .filters { position: sticky; top: 74px; display: flex; flex-direction: column; gap: 20px; }
+  .filters { position: sticky; top: 74px; display: flex; flex-direction: column; gap: 16px; }
+  .filter-group {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    padding: 16px 18px 19px; box-shadow: var(--shadow);
+    transition: border-color .2s ease, box-shadow .25s var(--ease-smooth);
+  }
+  .filter-group:focus-within, .filter-group:hover { border-color: var(--accent2); box-shadow: var(--shadow-lg); }
   .filter-group h4 {
     font-size: 11.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint);
-    margin: 0 0 9px; font-weight: 600;
+    margin: 0 0 12px; font-weight: 700; padding-bottom: 10px; border-bottom: 1px solid var(--line);
   }
-  .cargo-filter-group { padding-bottom: 18px; border-bottom: 1px solid var(--line); }
   .filter-hint { text-transform: none; letter-spacing: 0; color: var(--ink-faint); font-weight: 400; font-size: 11px; }
   .cargo-search { position: relative; }
   .cargo-search input {
@@ -455,13 +460,15 @@
   .bcard > summary .chev { color: var(--ink-faint); font-size: 18px; transition: transform .2s ease; flex-shrink: 0; }
   .bcard[open] > summary .chev { transform: rotate(90deg); }
   .bcard-collapse-body { margin-top: 13px; }
-  /* плитка с фото — узкая, слева, на высоту двух строк грида; остальные 4 карточки
-     (Общие/Сертификат/Тележка/Покупка) сами встают справа блоком 2×2 через авто-раскладку грида */
-  .bcard-hero { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; grid-row: span 2; }
-  @media (max-width: 900px) { .bcard-hero { grid-column: span 2; grid-row: span 1; } }
-  @media (max-width: 600px) { .bcard-hero { grid-column: span 1; grid-row: span 1; } }
+  /* верхний блок карточки вагона: слева фото крупно (3/5 ширины), справа
+     Общие/Сертификат/Тележка/Покупка блоком 2×2 (2/5 ширины) */
+  .hero-row { display: grid; grid-template-columns: 3fr 2fr; gap: 16px; margin-top: 16px; }
+  @media (max-width: 900px) { .hero-row { grid-template-columns: 1fr; } }
+  .hero-side-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  @media (max-width: 480px) { .hero-side-grid { grid-template-columns: 1fr; } }
+  .bcard-hero { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
   .hero-media {
-    width: 100%; max-width: 240px; flex-shrink: 0; border-radius: 9px; overflow: hidden;
+    width: 100%; flex-shrink: 0; border-radius: 9px; overflow: hidden;
     background: var(--panel-sunken); display: flex; align-items: center; justify-content: center; color: var(--steel);
   }
   .hero-media img { width: 100%; display: block; }
@@ -476,6 +483,16 @@
   .contact-line { font-size: 13px; margin-top: 2px; }
   .contact-line a { color: var(--accent2); text-decoration: none; }
   .contact-line a:hover { text-decoration: underline; }
+
+  /* стопка "подпись сверху — жирное значение снизу", без таблицы и заливки — Общие/Сертификат в карточке вагона */
+  .kv-list { display: flex; flex-direction: column; gap: 14px; margin: 0; }
+  .kv-list .kv dt { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-faint); margin: 0 0 3px; }
+  .kv-list .kv dd { font-size: 15px; font-weight: 700; color: var(--ink); margin: 0; }
+  .kv-list .kv dd a { color: inherit; text-decoration: none; }
+  .kv-list .kv dd a:hover { color: var(--accent); }
+  .cert-status-row { display: flex; align-items: center; gap: 8px; }
+  .cert-status-row .dot { width: 9px; height: 9px; border-radius: 999px; background: currentColor; flex-shrink: 0; }
+  .cert-status-row.ok { color: var(--ok); } .cert-status-row.warn { color: var(--warn); } .cert-status-row.danger { color: var(--danger); }
 
   .spec-table { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
   .spec-table .row { display: contents; }
@@ -562,8 +579,9 @@
   .hub-hero h1 { font-size: 32px; margin: 8px 0 0; }
   .hub-hero p { color: var(--ink-soft); font-size: 14px; max-width: 52ch; margin: 10px auto 0; }
   .hub-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-top: 30px; }
+  @media (min-width: 900px) { .hub-grid { grid-template-columns: repeat(5, 1fr); } } /* все 5 плиток в один ряд на десктопе */
   .hub-card {
-    display: flex; flex-direction: column; align-items: flex-start; gap: 9px; text-align: left;
+    display: flex; flex-direction: column; align-items: center; gap: 9px; text-align: center;
     padding: 26px 22px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line);
     cursor: pointer; font: inherit; color: inherit; position: relative; overflow: hidden;
     transition: transform .25s var(--ease-spring), box-shadow .25s var(--ease-smooth), border-color .2s ease;
@@ -1424,8 +1442,8 @@ function openDetail(id) {
 
   document.getElementById("detail-content").innerHTML = `
     ${breadcrumbs}
-    <div class="bento">
 
+    <div class="hero-row">
       <div class="bcard bcard-hero">
         <div class="hero-copy">
           <h1 class="display">${meta.name} <span class="num">${v.model}</span></h1>
@@ -1438,42 +1456,47 @@ function openDetail(id) {
         <div class="hero-media">${heroMedia}</div>
       </div>
 
-      <div class="bcard">
-        <h3>Общие</h3>
-        <div class="spec-table">
-          <div class="row"><dt>Производитель</dt><dd><span class="tag link" onclick="openManufacturer('${v.mfrId}')" tabindex="0" role="button" style="display:inline-flex">${mfrShort(v.mfrId)}</span></dd></div>
-          ${v.kdNumber ? `<div class="row"><dt>Номер КД</dt><dd>${v.kdNumber}</dd></div>` : ""}
-          ${v.specialization ? `<div class="row"><dt>Учётная специализация</dt><dd>${v.specialization}</dd></div>` : ""}
+      <div class="hero-side-grid">
+        <div class="bcard">
+          <h3>Общие</h3>
+          <dl class="kv-list">
+            <div class="kv"><dt>Производитель</dt><dd><span class="tag link" onclick="openManufacturer('${v.mfrId}')" tabindex="0" role="button" style="display:inline-flex">${mfrShort(v.mfrId)}</span></dd></div>
+            ${v.kdNumber ? `<div class="kv"><dt>Номер КД</dt><dd>${v.kdNumber}</dd></div>` : ""}
+            ${v.specialization ? `<div class="kv"><dt>Учётная специализация</dt><dd>${v.specialization}</dd></div>` : ""}
+          </dl>
+          ${MFR_BY_ID.get(v.mfrId)?.website ? `<p style="margin:12px 0 0;font-size:12.5px;">${siteLink(MFR_BY_ID.get(v.mfrId).website)}</p>` : ""}
         </div>
-        ${MFR_BY_ID.get(v.mfrId)?.website ? `<p style="margin:10px 0 0;font-size:12.5px;">${siteLink(MFR_BY_ID.get(v.mfrId).website)}</p>` : ""}
-      </div>
 
-      <div class="bcard">
-        <h3>Сертификат</h3>
-        ${cert ? `
-          <span class="pill ${pillClass}">${cert.status}</span>
-          <div class="spec-table" style="margin-top:12px">
-            <div class="row"><dt>№ сертификата</dt><dd style="text-align:left">${cert.number||"—"}</dd></div>
-            ${cert.to ? `<div class="row"><dt>Действует до</dt><dd>${fmtDate(cert.to)}</dd></div>` : ""}
-          </div>` : `<p class="no-data">сертификат не внесён в источник</p>`}
-      </div>
+        <div class="bcard">
+          <h3>Сертификат</h3>
+          ${cert ? `
+            <dl class="kv-list">
+              <div class="kv"><dt>Статус</dt><dd><span class="cert-status-row ${pillClass}"><span class="dot"></span>${cert.status.toLowerCase()}</span></dd></div>
+              <div class="kv"><dt>№ сертификата</dt><dd>${cert.number||"—"}</dd></div>
+              ${cert.to ? `<div class="kv"><dt>Действует до</dt><dd>${fmtDate(cert.to)}</dd></div>` : ""}
+            </dl>` : `<p class="no-data">сертификат не внесён в источник</p>`}
+        </div>
 
-      <div class="bcard">
-        <h3>Тележка вагона</h3>
-        ${bogie ? `
-          <div style="font-size:15px;font-weight:600;margin-bottom:3px">${bogie.model}</div>
-          <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:12px">${mfrShort(bogie.manufacturer_id)||bogie.model_note||"типовая"}</div>
-          <div class="bstat-row"><div class="bstat"><b>${bogie.axle_load_tf?bogie.axle_load_tf+' тс':'—'}</b><span>осевая нагрузка</span></div></div>
-        ` : `<p class="no-data">тележка не указана в источнике</p>`}
-      </div>
+        <div class="bcard">
+          <h3>Тележка вагона</h3>
+          ${bogie ? `
+            <div style="font-size:15px;font-weight:600;margin-bottom:3px">${bogie.model}</div>
+            <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:12px">${mfrShort(bogie.manufacturer_id)||bogie.model_note||"типовая"}</div>
+            <div class="bstat-row"><div class="bstat"><b>${bogie.axle_load_tf?bogie.axle_load_tf+' тс':'—'}</b><span>осевая нагрузка</span></div></div>
+          ` : `<p class="no-data">тележка не указана в источнике</p>`}
+        </div>
 
-      ${salesContact ? `
-      <div class="bcard">
-        <h3>Покупка</h3>
-        <div class="contact-name">${salesContact.name}</div>
-        ${salesContact.phone ? `<div class="contact-line">${salesContact.phone}</div>` : ""}
-        ${salesContact.email ? `<div class="contact-line"><a href="mailto:${salesContact.email.split(',')[0].trim()}">${salesContact.email}</a></div>` : ""}
-      </div>` : ""}
+        ${salesContact ? `
+        <div class="bcard">
+          <h3>Покупка</h3>
+          <div class="contact-name">${salesContact.name}</div>
+          ${salesContact.phone ? `<div class="contact-line">${salesContact.phone}</div>` : ""}
+          ${salesContact.email ? `<div class="contact-line"><a href="mailto:${salesContact.email.split(',')[0].trim()}">${salesContact.email}</a></div>` : ""}
+        </div>` : ""}
+      </div>
+    </div>
+
+    <div class="bento">
 
       <div class="bcard">
         <h3>Конструктивные особенности</h3>

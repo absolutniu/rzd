@@ -19,6 +19,7 @@ BASE = Path(__file__).parent
 DB_PATH = BASE / "rzd.db"
 OUT_PATH = BASE.parent / "docs" / "data" / "catalog_data.json"
 PHOTOS_DIR = BASE.parent / "docs" / "photos"
+LOGOS_MANIFEST = BASE.parent / "docs" / "logos" / "manifest.json"  # пишет build_logos.py
 
 # таблица характеристик -> её "тип семейства" (T00x), для приоритета при разборе конфликтов
 CHAR_TABLES = {
@@ -103,6 +104,7 @@ def main():
                       JOIN vagon_types vt ON vt.id = mvt.vagon_type_id"""):
         mfr_types.setdefault(r["manufacturer_id"], []).append(r["name"])
         mfr_type_ids.setdefault(r["manufacturer_id"], []).append(r["type_id"])
+    logos = json.loads(LOGOS_MANIFEST.read_text(encoding="utf-8")) if LOGOS_MANIFEST.exists() else {}
     for m in manufacturers:
         cap = mfr_cap.get(m["id"])
         m["capacity"] = cap["capacity_thousand_vagons_year"] if cap else None
@@ -110,6 +112,9 @@ def main():
         m["capYear"] = cap["data_year"] if cap else None
         m["vagonTypes"] = mfr_types.get(m["id"], [])
         m["vagonTypeIds"] = mfr_type_ids.get(m["id"], [])
+        logo = logos.get(m["id"])
+        m["logo"] = logo["file"] if logo else None
+        m["logoPlate"] = logo["plate"] if logo else None
 
     manufacturer_departments = rows("SELECT id, name, sort_order FROM manufacturer_departments ORDER BY sort_order")
 
@@ -289,7 +294,7 @@ def main():
     size_kb = OUT_PATH.stat().st_size / 1024
     photos_count = sum(1 for v in vagons if v["photo"])
     print(f"vagons: {len(vagons)} (с фото: {photos_count})")
-    print(f"manufacturers: {len(manufacturers)}")
+    print(f"manufacturers: {len(manufacturers)} (с логотипом: {sum(1 for m in manufacturers if m['logo'])})")
     print(f"depots: {len(depots)}")
     print(f"cargoTypes: {len(cargo_types)}, vagonCargoLinks: {len(vagon_cargo)}")
     print(f"depotCompetencies: {len(depot_competencies)}, depotAuthorizations: {len(depot_authorizations)}")

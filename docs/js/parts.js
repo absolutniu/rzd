@@ -127,5 +127,4 @@ function renderParts() {
     <div class="parts-tiles">${PART_TILES.map(([id, label]) => `<a class="parts-tile${tab === id ? " on" : ""}" href="${tab === id ? "#/parts" : "#/parts/" + id}" style="text-decoration:none">${tab === id ? `<span class="x">✕</span>` : ""}${label}</a>`).join("")}</div>
     ${!tab ? `<p class="cat-intro" style="padding:40px 0 0">Выберите раздел — тележки, автосцепка, тормозное оборудование или кузов и рама.</p>` : tab === "Z001" ? bogieTabHTML() : vagonPartTabHTML(tab)}
   </div>`;
-  if (tab === "Z001" && partsState.id) document.querySelector(".kit")?.setAttribute("open", "");
 }

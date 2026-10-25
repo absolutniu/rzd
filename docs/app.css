@@ -498,13 +498,20 @@ table.grid-table tbody tr.click:hover td { background: var(--accent-soft); }
 .acc details { border-radius: 8px; }
 .acc details:nth-child(even) > summary { background: var(--panel-sunken); }
 .acc summary {
-  list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  padding: 11px 12px; font-size: 17px; font-weight: 700; color: var(--ink-soft); border-radius: 8px;
+  list-style: none; cursor: pointer; display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; font-size: 15.5px; font-weight: 700; color: var(--ink-soft); border-radius: 8px;
 }
+.acc summary:hover { color: var(--ink); }
 .acc summary::-webkit-details-marker { display: none; }
-.acc summary .chev { transition: transform .2s ease; font-size: 18px; color: var(--ink-faint); }
+.acc summary .t { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 8px; }
+.acc summary .n {
+  font-size: 11.5px; font-weight: 700; color: var(--ink-faint); background: var(--panel-sunken);
+  border-radius: 999px; padding: 1px 8px; font-family: var(--mono);
+}
+.acc details:nth-child(even) > summary .n { background: var(--panel); }
+.acc summary .chev { width: 18px; height: 18px; flex-shrink: 0; color: var(--ink-faint); transition: transform .2s ease; }
 .acc details[open] > summary .chev { transform: rotate(180deg); }
-.acc summary .n { font-size: 12px; font-weight: 400; color: var(--ink-faint); margin-left: 6px; }
+.acc details[open] > summary { color: var(--ink); }
 .acc-body { padding: 4px 4px 14px 22px; }
 table.contacts { width: 100%; border-collapse: collapse; font-size: 13.5px; table-layout: fixed; }
 table.contacts td { padding: 8px 6px; border-bottom: 1px solid var(--line-strong); vertical-align: top; overflow-wrap: anywhere; }
@@ -692,3 +699,10 @@ select.text-input { appearance: none; background-image: linear-gradient(45deg, t
   .top-inner { padding: 12px 16px; }
   .compare-tray { width: calc(100% - 32px); justify-content: space-between; }
 }
+/* логотип на подложке фиксированного цвета (не из темы): белая — для обычных,
+   тёмная — для белых логотипов на прозрачном фоне (build_logos.py, plate=dark) */
+.mfr-logo.img { background: #fff; padding: 8px 10px; border: 1px solid var(--line); }
+.mfr-logo.img.dark { background: #1a1f23; border-color: transparent; }
+.mfr-logo.img img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
+.mfr-logo.img { width: 176px; height: 78px; }
+.mfr-logo.img.lg { width: 260px; height: 120px; padding: 12px 16px; }

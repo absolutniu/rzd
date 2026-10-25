@@ -1,0 +1,72 @@
+{
+ "M100": {
+  "file": "logos/M100.png",
+  "plate": "light",
+  "w": 540,
+  "h": 300
+ },
+ "M1000": {
+  "file": "logos/M1000.svg",
+  "plate": "light"
+ },
+ "M130": {
+  "file": "logos/M130.png",
+  "plate": "light",
+  "w": 600,
+  "h": 104
+ },
+ "M200": {
+  "file": "logos/M200.png",
+  "plate": "light",
+  "w": 600,
+  "h": 89
+ },
+ "M2000": {
+  "file": "logos/M2000.png",
+  "plate": "dark",
+  "w": 153,
+  "h": 91
+ },
+ "M300": {
+  "file": "logos/M300.png",
+  "plate": "light",
+  "w": 600,
+  "h": 89
+ },
+ "M3000": {
+  "file": "logos/M3000.svg",
+  "plate": "light"
+ },
+ "M400": {
+  "file": "logos/M400.svg",
+  "plate": "light"
+ },
+ "M4000": {
+  "file": "logos/M4000.svg",
+  "plate": "light"
+ },
+ "M500": {
+  "file": "logos/M500.png",
+  "plate": "dark",
+  "w": 240,
+  "h": 240
+ },
+ "M700": {
+  "file": "logos/M700.png",
+  "plate": "light",
+  "w": 56,
+  "h": 56
+ },
+ "M800": {
+  "file": "logos/M800.png",
+  "plate": "dark",
+  "w": 600,
+  "h": 151
+ },
+ "M900": {
+  "file": "logos/M900.png",
+  "plate": "light",
+  "w": 177,
+  "h": 40
+ }
+}

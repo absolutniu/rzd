@@ -1,7 +1,8 @@
 -- ============================================================================
--- RZD.md -> SQLite schema
--- Источник: D:\Projects\claude\RZD\RZD.md (выгрузка из Excel, справочник вагонов,
---           вагоностроительных заводов, тележек, ремонтных депо и грузов)
+-- Excel-основа БД -> SQLite schema
+-- Источник: db/sources/osnova_bd.xlsx («Основа БД_Интеллек поиск вагонов»: справочник вагонов,
+--           вагоностроительных заводов, тележек, запчастей, ремонтных депо и грузов);
+--           RZD.md в корне — текстовое зеркало этого Excel (пишется build_db.py)
 -- Не перенесены как отдельные таблицы:
 --   "Справочник_ID" - это легенда префиксов ID (документация, не данные)
 --   "Лист2"         - черновой дублирующий лист без собственной структуры
@@ -100,7 +101,8 @@ CREATE TABLE vagons ( -- ID вагоны_общ
   kd_number                    TEXT,  -- номер конструкторской документации
   accounting_specialization    TEXT,
   europallet_count              INTEGER,
-  requires_authorization       TEXT   -- да/нет
+  requires_authorization       TEXT,  -- да/нет («Ремонт по авторизации»)
+  axle_load_25                 TEXT   -- да/нет («Повышенная осевая нагрузка 25 тс»)
 );
 
 CREATE TABLE bogies ( -- ID тележки_общ (+ модели, добавленные из Прил.Е РД 32 ЦВ 052-2009, см. sources/)
@@ -377,7 +379,10 @@ CREATE TABLE depots ( -- Депо_Характер
   station_code      TEXT,
   latitude          REAL,
   longitude         REAL,
-  website           TEXT
+  website           TEXT,
+  registration_date TEXT,
+  inn               TEXT,
+  address           TEXT   -- адрес производства
 );
 
 CREATE TABLE depot_competencies ( -- Депо_Компетенц (какой вид ремонта каких вагонов делает депо)
@@ -393,17 +398,19 @@ CREATE TABLE depot_authorizations ( -- Депо_Авторизац (депо а�
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
   depot_id       TEXT NOT NULL REFERENCES depots(id),
   repair_type_id TEXT NOT NULL REFERENCES repair_types(id),
-  vagon_id       TEXT NOT NULL REFERENCES vagons(id)
+  vagon_id       TEXT NOT NULL REFERENCES vagons(id),
+  note           TEXT
 );
 
-CREATE TABLE depot_services ( -- ID услуги депо (в источнике пока нет строк)
+CREATE TABLE depot_services ( -- ID услуги депо
   id   TEXT PRIMARY KEY,
   name TEXT NOT NULL
 );
 
-CREATE TABLE depot_service_links ( -- Услуги-Депо (в источнике пока нет строк)
+CREATE TABLE depot_service_links ( -- Услуги-Депо
   depot_id   TEXT NOT NULL REFERENCES depots(id),
   service_id TEXT NOT NULL REFERENCES depot_services(id),
+  note       TEXT,
   PRIMARY KEY (depot_id, service_id)
 );
 
@@ -416,38 +423,80 @@ CREATE TABLE depot_contacts ( -- Депо-Контакты (в источник�
 );
 
 -- ========================================================================
--- Комплектующие тележки
+-- Запчасти и комплектующие: часть вагона (Z) -> комплект (ZT) -> деталь (X),
+-- чертежи (YU), допустимые к установке при ремонте, и их привязка к тележкам/вагонам
 -- ========================================================================
 
-CREATE TABLE component_types ( -- ID комплект (тип)
+CREATE TABLE vagon_parts ( -- ID часть вагона (тележка, автосцепка, тормоз, кузов и рама)
   id   TEXT PRIMARY KEY,  -- Z001
   name TEXT NOT NULL
 );
 
-CREATE TABLE bogie_components ( -- Тележ-Комплект (+ чертежи детали ПРИ ПРОИЗВОДСТВЕ конкретной модели
-                                 -- тележки из Прил.Е РД 32 ЦВ 052-2009 — см. sources/prilozhenie_e_telezhki.md)
-  id                 TEXT PRIMARY KEY,  -- X001
+CREATE TABLE part_kits ( -- ID комплект (колёсная пара, боковая рама, автосцепка СА-3...)
+  id      TEXT PRIMARY KEY,  -- ZT001
+  part_id TEXT NOT NULL REFERENCES vagon_parts(id),
+  name    TEXT NOT NULL
+);
+
+CREATE TABLE part_details ( -- ID детали (цельнокатаное колесо, ось чистовая, пружина наружная...)
+  id     TEXT PRIMARY KEY,  -- X001
+  kit_id TEXT NOT NULL REFERENCES part_kits(id),
+  name   TEXT NOT NULL
+);
+
+CREATE TABLE drawings ( -- ID черт + Комплект + Произ (чертёж, допустимый к установке при ремонте)
+  id                 TEXT PRIMARY KEY,  -- YU001
+  part_id            TEXT REFERENCES vagon_parts(id),
+  kit_id             TEXT REFERENCES part_kits(id),
+  detail_id          TEXT REFERENCES part_details(id),
+  number             TEXT NOT NULL,
+  title              TEXT,
+  manufacturer_id    TEXT REFERENCES manufacturers(id),
+  manufacturer_label TEXT  -- производитель текстом, если его нет в справочнике заводов
+);
+
+CREATE TABLE bogie_kit_drawings ( -- Тележ-Комплект (черт): какие чертежи допустимы для тележки
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  bogie_id          TEXT NOT NULL REFERENCES bogies(id),
+  kit_id            TEXT NOT NULL REFERENCES part_kits(id),
+  detail_id         TEXT REFERENCES part_details(id),
+  drawing_id        TEXT NOT NULL REFERENCES drawings(id),
+  from_manufacturer INTEGER NOT NULL DEFAULT 0  -- 1 = от производителя тележки
+);
+
+CREATE TABLE vagon_kit_drawings ( -- Вагон-Комплект (черт): автосцепка, тормоз, кузов и рама по модели вагона
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  vagon_id          TEXT NOT NULL REFERENCES vagons(id),
+  part_id           TEXT REFERENCES vagon_parts(id),
+  kit_id            TEXT NOT NULL REFERENCES part_kits(id),
+  detail_id         TEXT REFERENCES part_details(id),
+  drawing_id        TEXT NOT NULL REFERENCES drawings(id),
+  from_manufacturer INTEGER NOT NULL DEFAULT 0  -- 1 = от производителя вагона
+);
+
+CREATE TABLE bogie_components ( -- чертежи комплекта ПРИ ПРОИЗВОДСТВЕ конкретной модели тележки
+                                 -- (Прил.Е РД 32 ЦВ 052-2009 — см. sources/prilozhenie_e_telezhki.md)
+  id                 TEXT PRIMARY KEY,  -- P0001
   bogie_id           TEXT NOT NULL REFERENCES bogies(id),
-  component_type_id  TEXT NOT NULL REFERENCES component_types(id),
-  name               TEXT,
+  kit_id             TEXT NOT NULL REFERENCES part_kits(id),
+  detail_id          TEXT REFERENCES part_details(id),
   drawing_number     TEXT,
   sort_order         INTEGER  -- порядок чертежа в источнике (последовательные модификации по времени)
 );
 
-CREATE TABLE bogie_drawings ( -- Тележка-чертеж (+ из Прил.Е РД 32 ЦВ 052-2009, раздел "Чертеж тележки")
+CREATE TABLE bogie_drawings ( -- чертёж тележки в сборе (Прил.Е РД 32 ЦВ 052-2009, раздел "Чертеж тележки")
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
   bogie_id       TEXT NOT NULL REFERENCES bogies(id),
   drawing_number TEXT NOT NULL
 );
 
-CREATE TABLE component_repair_drawings ( -- Прил.Е (обязательное) РД 32 ЦВ 052-2009 "Ремонт тележек грузовых
-  -- вагонов тип 2 по ГОСТ 9246 с боковыми скользунами зазорного типа", столбец 21 "Применение комплектующих
-  -- при ремонте тележек тип 2 по ГОСТ 9246 с боковыми скользунами зазорного типа".
-  -- Список чертежей ПО ТИПУ КОМПОНЕНТА (не привязан к конкретной модели тележки) — все эти чертежи
-  -- взаимозаменяемы и допустимы при ремонте ЛЮБОЙ тележки тип 2 по ГОСТ 9246 данной конструкции скользунов,
-  -- независимо от того, для какой модели тележки чертёж изначально разрабатывался при производстве.
+CREATE TABLE component_repair_drawings ( -- Прил.Е (обязательное) РД 32 ЦВ 052-2009, столбец 21 «Применение
+  -- комплектующих при ремонте тележек тип 2 по ГОСТ 9246 с боковыми скользунами зазорного типа».
+  -- Список по комплекту (не по модели тележки) — запасной вариант для тележек, которых нет
+  -- в листе «Тележ-Комплект (черт)» Excel-основы.
   id                 INTEGER PRIMARY KEY AUTOINCREMENT,
-  component_type_id  TEXT NOT NULL REFERENCES component_types(id),
+  kit_id             TEXT NOT NULL REFERENCES part_kits(id),
+  detail_id          TEXT REFERENCES part_details(id),
   drawing_number     TEXT NOT NULL,
   sort_order         INTEGER
 );
@@ -480,5 +529,7 @@ CREATE INDEX idx_depot_authorizations_depot  ON depot_authorizations(depot_id);
 CREATE INDEX idx_depot_authorizations_vagon  ON depot_authorizations(vagon_id);
 CREATE INDEX idx_depot_contacts_depot        ON depot_contacts(depot_id);
 CREATE INDEX idx_bogie_components_bogie      ON bogie_components(bogie_id);
-CREATE INDEX idx_bogie_components_type       ON bogie_components(component_type_id);
+CREATE INDEX idx_bogie_components_kit        ON bogie_components(kit_id);
+CREATE INDEX idx_bogie_kit_drawings_bogie    ON bogie_kit_drawings(bogie_id);
+CREATE INDEX idx_vagon_kit_drawings_vagon    ON vagon_kit_drawings(vagon_id);
 CREATE INDEX idx_bogie_drawings_bogie        ON bogie_drawings(bogie_id);

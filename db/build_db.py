@@ -1,36 +1,42 @@
 # -*- coding: utf-8 -*-
 """
-Парсит D:\\Projects\\claude\\RZD\\RZD.md (markdown-таблицы, экспорт из Excel) плюс
-sources/prilozhenie_e_telezhki.md (Прил.Е РД 32 ЦВ 052-2009 про чертежи тележек тип 2
-по ГОСТ 9246 при производстве/ремонте) и загружает всё в SQLite по схеме schema.sql.
+Читает Excel-основу БД (sources/osnova_bd.xlsx, «Основа БД_Интеллек поиск вагонов»)
+плюс sources/prilozhenie_e_telezhki.md (Прил.Е РД 32 ЦВ 052-2009 про чертежи тележек
+тип 2 по ГОСТ 9246 при производстве) и загружает всё в SQLite по схеме schema.sql.
+Попутно пишет ../RZD.md — текстовое зеркало Excel, чтобы изменения в источнике было
+видно в git diff.
 
 Запуск:  python build_db.py
 Результат: D:\\Projects\\claude\\RZD\\db\\rzd.db
 """
+import datetime
 import re
 import sqlite3
 import sys
 from pathlib import Path
 
+import openpyxl
+
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
 BASE = Path(__file__).parent
+XLSX_PATH = BASE / "sources" / "osnova_bd.xlsx"
 MD_PATH = BASE.parent / "RZD.md"
 SCHEMA_PATH = BASE / "schema.sql"
 DB_PATH = BASE / "rzd.db"
 PRILOZHENIE_E_PATH = BASE / "sources" / "prilozhenie_e_telezhki.md"
 
-# Заголовки блоков Прил.Е -> component_types.id ("BOGIE" - особый случай, весь чертёж
-# тележки в сборе, идёт в bogie_drawings, а не в component_repair_drawings)
+# Заголовки блоков Прил.Е -> (комплект ZT, деталь X) из справочника «43. ID комплект» /
+# «44. ID детали» ("BOGIE" - особый случай, весь чертёж тележки в сборе -> bogie_drawings)
 PRILOZHENIE_E_COMPONENT_MAP = [
     ("Чертеж тележки", "BOGIE"),
-    ("боковой рамы", "Z002"),
-    ("надрессорной балки", "Z003"),
-    ("триангеля", "Z006"),
-    ("Колесная пара", "Z001"),
-    ("Пружина наружная", "Z004"),
-    ("Пружина внутренняя", "Z005"),
+    ("боковой рамы", ("ZT002", None)),
+    ("надрессорной балки", ("ZT003", None)),
+    ("триангеля", ("ZT005", None)),
+    ("Колесная пара", ("ZT001", None)),
+    ("Пружина наружная", ("ZT004", "X010")),
+    ("Пружина внутренняя", ("ZT004", "X011")),
 ]
 # уверенные сопоставления сокращённого завода из РД с нашим справочником manufacturers;
 # остальные сокращения ("Промтрактор", "КВСЗ", "ГСКБВ", "Казахстан" и т.п.) неоднозначны
@@ -65,6 +71,59 @@ def parse_sections(text):
             rows.append(dict(zip(header, cells)))
         sections[name] = (header, rows)
     return sections
+
+
+def cell_str(v):
+    """Значение ячейки openpyxl -> строка (как в прежнем markdown-экспорте), "" для пустых."""
+    if v is None:
+        return ""
+    if isinstance(v, datetime.datetime):
+        return v.date().isoformat()
+    if isinstance(v, datetime.date):
+        return v.isoformat()
+    if isinstance(v, float) and v.is_integer():
+        return str(int(v))
+    return str(v).replace("\r", " ").replace("\n", " ").strip()
+
+
+def parse_xlsx(path):
+    """{имя_листа_без_номера: (header_list, [row_dict, ...])} — та же форма, что у parse_sections.
+    Номер-префикс листа («11. ID вагоны_общ») отрезается, заголовки столбцов — strip()."""
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    sections = {}
+    for ws in wb.worksheets:
+        name = re.sub(r"^\d+\.\s*", "", ws.title).strip()
+        it = ws.iter_rows(values_only=True)
+        first = next(it, None)
+        if first is None:
+            sections[name] = ([], [])
+            continue
+        header = [cell_str(h) for h in first]
+        while header and header[-1] == "":
+            header.pop()
+        rows = []
+        for raw in it:
+            cells = [cell_str(v) for v in raw[:len(header)]]
+            if not any(cells):
+                continue
+            rows.append(dict(zip(header, cells)))
+        sections[name] = (header, rows)
+    return sections
+
+
+def write_md_mirror(sections, path):
+    """Текстовое зеркало Excel (## Лист + markdown-таблица) — для git diff, не для чтения кодом."""
+    esc = lambda s: s.replace("|", "\\|")
+    out = []
+    for name, (header, rows) in sections.items():
+        out.append(f"## {name}")
+        if header:
+            out.append("| " + " | ".join(esc(h) for h in header) + " |")
+            out.append("| " + " | ".join("---" for _ in header) + " |")
+            for r in rows:
+                out.append("| " + " | ".join(esc(r.get(h, "")) for h in header) + " |")
+        out.append("")
+    path.write_text("\n".join(out), encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -173,8 +232,8 @@ def load_prilozhenie_e(conn, cur):
     bogie_drawing_n = 0
     production_n = 0
     repair_n = 0
-    repair_sort = {}  # component_type_id -> следующий sort_order
-    prod_sort = {}    # (bogie_id, component_type_id) -> следующий sort_order
+    repair_sort = {}  # (kit_id, detail_id) -> следующий sort_order
+    prod_sort = {}    # (bogie_id, (kit_id, detail_id)) -> следующий sort_order
     component = None
     for row in data_rows:
         label = row[0]
@@ -197,6 +256,7 @@ def load_prilozhenie_e(conn, cur):
                     bogie_drawing_n += 1
             continue
 
+        kit_id, detail_id = component
         for model, val in zip(models, values):
             if not val:
                 continue
@@ -204,17 +264,17 @@ def load_prilozhenie_e(conn, cur):
             key = (bid, component)
             order = prod_sort.get(key, 0)
             prod_sort[key] = order + 1
-            xid = f"X{x_num:03d}"
+            pid = f"P{x_num:04d}"
             x_num += 1
-            cur.execute("""INSERT INTO bogie_components (id, bogie_id, component_type_id, drawing_number, sort_order)
-                           VALUES (?, ?, ?, ?, ?)""", (xid, bid, component, val, order))
+            cur.execute("""INSERT INTO bogie_components (id, bogie_id, kit_id, detail_id, drawing_number, sort_order)
+                           VALUES (?, ?, ?, ?, ?, ?)""", (pid, bid, kit_id, detail_id, val, order))
             production_n += 1
 
         if repair_val:
             order = repair_sort.get(component, 0)
             repair_sort[component] = order + 1
-            cur.execute("""INSERT INTO component_repair_drawings (component_type_id, drawing_number, sort_order)
-                           VALUES (?, ?, ?)""", (component, repair_val, order))
+            cur.execute("""INSERT INTO component_repair_drawings (kit_id, detail_id, drawing_number, sort_order)
+                           VALUES (?, ?, ?, ?)""", (kit_id, detail_id, repair_val, order))
             repair_n += 1
 
     print(f"  Прил.Е РД 32 ЦВ 052-2009            -> {len(models):3d} моделей тележек "
@@ -227,8 +287,8 @@ def load_prilozhenie_e(conn, cur):
 # ---------------------------------------------------------------------------
 
 def main():
-    text = MD_PATH.read_text(encoding="utf-8")
-    sec = parse_sections(text)
+    sec = parse_xlsx(XLSX_PATH)
+    write_md_mirror(sec, MD_PATH)
 
     if DB_PATH.exists():
         DB_PATH.unlink()
@@ -312,12 +372,13 @@ def main():
     load("ID вагоны_общ",
          """INSERT INTO vagons
             (id, vagon_type_id, vagon_kind_id, model, model_note, manufacturer_id, kd_number,
-             accounting_specialization, europallet_count, requires_authorization)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+             accounting_specialization, europallet_count, requires_authorization, axle_load_25)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
          lambda r: (r["ID вагона"], r["ID тип вагона"], c(r["ID род вагона"]), c(r["Модель"]),
                     c(r["Примечание к модели"]), c(r["ID производителя"]), c(r["Номер КД"]),
                     c(r["Учетная специализация"]), i(r["Количество европаллет, шт."]),
-                    c(r["Требуется авторизация"])))
+                    c(r.get("Ремонт по авторизации", r.get("Требуется авторизация"))),
+                    c(r.get("Повышенная осевая нагрузка 25 тс"))))
 
     load("ID тележки_общ",
          """INSERT INTO bogies (id, model, model_note, manufacturer_id, axle_load_tf, axle_load_kn)
@@ -416,7 +477,7 @@ def main():
          lambda r: (r["ID вагона"], f(r["Грузоподъемность, тонн"]), f(r["Объем кузова, м3"]),
                     f(r["Площадь пола, м2"]), i(r["Длина кузова вн., мм"]), i(r["Ширина кузова вн., мм"]),
                     i(r["Высота кузова вн., мм"]), f(r["Масса тары, тонн"]), i(r["Длина вагона, мм"]),
-                    c(r["Раб. диапазон t, °C"]), f(r["К-т теплопередачи, Вт/(м2\\*К)"]),
+                    c(r["Раб. диапазон t, °C"]), f(r["К-т теплопередачи, Вт/(м2*К)"]),
                     f(r["Срок перевозки, сут."]), i(r["Срок службы, лет"]), c(r["Габарит"])))
 
     load("Самосвалы_Характер",
@@ -488,10 +549,12 @@ def main():
 
     load("Депо_Характер",
          """INSERT INTO depots (id, holding_id, name, stamp_code, railway_id, adjoining_station,
-            station_code, latitude, longitude, website) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            station_code, latitude, longitude, website, registration_date, inn, address)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
          lambda r: (r["ID депо"], c(r["ID ремонт. холдинга"]), r["Наименование депо"],
-                    c(r["Клеймо депо"]), c(r["Дорога"]), c(r["Станция примыкания"]),
-                    c(r["Код станции"]), f(r["Широта"]), f(r["Долгота"]), c(r["Сайт"])),
+                    code(r["Клеймо депо"]), c(r["Дорога"]), c(r["Станция примыкания"]),
+                    code(r["Код станции"]), f(r["Широта"]), f(r["Долгота"]), c(r["Сайт"]),
+                    d(r.get("Дата регистрации")), code(r.get("ИНН")), c(r.get("Адрес производства"))),
          skip_if=lambda r: not c(r.get("ID депо")))
 
     load("Депо_Компетенц",
@@ -502,37 +565,59 @@ def main():
          skip_if=lambda r: not c(r.get("ID депо")) or not c(r.get("Вид ремонта")) or not c(r.get("Тип вагона")))
 
     load("Депо_Авторизац",
-         "INSERT INTO depot_authorizations (depot_id, repair_type_id, vagon_id) VALUES (?, ?, ?)",
-         lambda r: (r["ID депо"], r["Вид ремонта"], r["ID вагона"]))
+         "INSERT INTO depot_authorizations (depot_id, repair_type_id, vagon_id, note) VALUES (?, ?, ?, ?)",
+         lambda r: (r["ID депо"], r["Вид ремонта"], r["ID вагона"], c(r.get("Примечание"))))
 
     load("ID услуги депо",
          "INSERT INTO depot_services (id, name) VALUES (?, ?)",
-         lambda r: (r["ID услуги"], r["Наименование"]))
+         lambda r: (r["ID услуги"], r["Наименование"]),
+         skip_if=lambda r: not c(r.get("Наименование")))  # в источнике заведены пустые ID-заготовки RUS012..018
 
     load("Услуги-Депо",
-         "INSERT INTO depot_service_links (depot_id, service_id) VALUES (?, ?)",
-         lambda r: (r["ID вагона"], r["ID услуги"]))  # в источнике колонка названа "ID вагона", по смыслу - ID депо
+         "INSERT INTO depot_service_links (depot_id, service_id, note) VALUES (?, ?, ?)",
+         lambda r: (r.get("ID депо") or r.get("ID вагона"), r["ID услуги"], c(r.get("Примечание"))))
 
     load("Депо-Контакты",
          "INSERT INTO depot_contacts (depot_id, contact_name, phone, email) VALUES (?, ?, ?, ?)",
          lambda r: (r["ID депо"], c(r["Наименование контакта"]), c(r["Телефон"]), c(r["E-mail"])))
 
-    print("Комплектующие тележки:")
-    load("ID комплект (тип)",
-         "INSERT INTO component_types (id, name) VALUES (?, ?)",
-         lambda r: (r["ID типа"], r["Наименование"]))
+    print("Запчасти и комплектующие:")
+    load("ID часть вагона",
+         "INSERT INTO vagon_parts (id, name) VALUES (?, ?)",
+         lambda r: (r["ID части"], r["Наименование"]))
 
-    load("Тележ-Комплект",
-         """INSERT INTO bogie_components (id, bogie_id, component_type_id, name, drawing_number)
+    load("ID комплект",
+         "INSERT INTO part_kits (id, part_id, name) VALUES (?, ?, ?)",
+         lambda r: (r["ID комплект"], r["ID части"], r["Наименование"]))
+
+    load("ID детали",
+         "INSERT INTO part_details (id, kit_id, name) VALUES (?, ?, ?)",
+         lambda r: (r["ID детали"], r["ID комплект"], r["Наименование"]))
+
+    def drawing_mfr(v):
+        v = c(v)
+        return (None, None) if v is None or v == "н/д" else ((v, None) if re.fullmatch(r"M\d+", v) else (None, v))
+    load("ID черт + Комплект + Произ",
+         """INSERT INTO drawings (id, part_id, kit_id, detail_id, number, title, manufacturer_id, manufacturer_label)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+         lambda r: (r["ID чертежа"], c(r["ID части"]), c(r["ID комплект"]), c(r["ID детали"]),
+                    r["№ чертежа, допустимый к установке при ремонте"], c(r.get("Название")),
+                    *drawing_mfr(r.get("Производитель 1"))),
+         skip_if=lambda r: not c(r.get("ID чертежа")) or not c(r.get("№ чертежа, допустимый к установке при ремонте")))
+
+    load("Тележ-Комплект (черт)",
+         """INSERT INTO bogie_kit_drawings (bogie_id, kit_id, detail_id, drawing_id, from_manufacturer)
             VALUES (?, ?, ?, ?, ?)""",
-         lambda r: (r["ID комплектующего"], r["ID тележки"], r["ID типа"], c(r["Наименование"]),
-                    c(r["№ чертежа"])),
-         skip_if=lambda r: not c(r.get("ID комплектующего")))
+         lambda r: (r["ID тележки"], r["ID комплект"], c(r["ID детали"]), r["ID чертежа"],
+                    1 if c(r.get("От производителя")) == "да" else 0),
+         skip_if=lambda r: not c(r.get("ID тележки")) or not c(r.get("ID чертежа")))
 
-    load("Тележка-чертеж",
-         "INSERT INTO bogie_drawings (bogie_id, drawing_number) VALUES (?, ?)",
-         lambda r: (r["ID тележки"], r["№ чертежа"]),
-         skip_if=lambda r: not c(r.get("ID тележки")) or not c(r.get("№ чертежа")))
+    load("Вагон-Комплект (черт)",
+         """INSERT INTO vagon_kit_drawings (vagon_id, part_id, kit_id, detail_id, drawing_id, from_manufacturer)
+            VALUES (?, ?, ?, ?, ?, ?)""",
+         lambda r: (r["ID вагона"], c(r["ID части"]), r["ID комплект"], c(r["ID детали"]), r["ID чертежа"],
+                    1 if c(r.get("От производителя")) == "да" else 0),
+         skip_if=lambda r: not c(r.get("ID вагона")) or not c(r.get("ID чертежа")))
 
     load_prilozhenie_e(conn, cur)
 

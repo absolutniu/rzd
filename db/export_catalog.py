@@ -134,41 +134,52 @@ def main():
     for r in rows("SELECT vagon_id, bogie_id FROM vagon_bogies"):
         vagon_bogie.setdefault(r["vagon_id"], []).append(r["bogie_id"])
 
-    # ---- чертежи тележек: производство/ремонт (Прил.Е РД 32 ЦВ 052-2009) ----
-    component_types = rows("SELECT id, name FROM component_types")
+    # ---- запчасти: часть (Z) -> комплект (ZT) -> деталь (X), чертежи (YU) ----
+    vagon_parts = rows("SELECT id, name FROM vagon_parts ORDER BY id")
+    part_kits = rows("SELECT id, part_id AS partId, name FROM part_kits ORDER BY id")
+    part_details = rows("SELECT id, kit_id AS kitId, name FROM part_details ORDER BY id")
+    drawings = {}  # YU -> {n, kit, det, mfrId, mfr}
+    for r in rows("""SELECT id, kit_id, detail_id, number, manufacturer_id, manufacturer_label
+                      FROM drawings ORDER BY id"""):
+        drawings[r["id"]] = {"n": r["number"], "kit": r["kit_id"], "det": r["detail_id"],
+                             "mfrId": r["manufacturer_id"], "mfr": r["manufacturer_label"]}
+    bogie_kit_drawings = {}  # bogie_id -> [[drawingId, fromManufacturer(0/1)], ...]
+    for r in rows("SELECT bogie_id, drawing_id, from_manufacturer FROM bogie_kit_drawings ORDER BY id"):
+        bogie_kit_drawings.setdefault(r["bogie_id"], []).append([r["drawing_id"], r["from_manufacturer"]])
+    vagon_kit_drawings = {}  # vagon_id -> [[drawingId, fromManufacturer], ...]
+    for r in rows("SELECT vagon_id, drawing_id, from_manufacturer FROM vagon_kit_drawings ORDER BY id"):
+        vagon_kit_drawings.setdefault(r["vagon_id"], []).append([r["drawing_id"], r["from_manufacturer"]])
 
+    # Прил.Е РД 32 ЦВ 052-2009: чертежи при производстве конкретной модели тележки (это и есть
+    # «от производителя тележки») + чертёж тележки в сборе + общий ремонтный список по комплекту
+    # (запасной вариант для тележек, которых нет в «Тележ-Комплект (черт)» Excel-основы)
     bogie_assembly_drawings = {}
     for r in rows("SELECT bogie_id, drawing_number FROM bogie_drawings ORDER BY bogie_id, id"):
         bogie_assembly_drawings.setdefault(r["bogie_id"], []).append(r["drawing_number"])
-
-    bogie_component_drawings = {}  # bogie_id -> [{componentTypeId, drawingNumber}]
-    for r in rows("""SELECT bogie_id, component_type_id, drawing_number FROM bogie_components
-                      ORDER BY bogie_id, component_type_id, sort_order"""):
-        bogie_component_drawings.setdefault(r["bogie_id"], []).append({
-            "componentTypeId": r["component_type_id"], "drawingNumber": r["drawing_number"],
-        })
-
-    # для каждого чертежа, допустимого при ремонте, находим, у какой модели тележки (и какого
-    # завода) он значится как производственный - чтобы показать "этот чертёж делает завод X"
-    prod_by_component = {}  # component_type_id -> {drawing_number: [bogie_id,...]}
-    for r in rows("SELECT bogie_id, component_type_id, drawing_number FROM bogie_components"):
-        prod_by_component.setdefault(r["component_type_id"], {}).setdefault(r["drawing_number"], []).append(r["bogie_id"])
-
-    component_repair_drawings = {}  # component_type_id -> [{drawingNumber, bogieIds}]
-    for r in rows("""SELECT component_type_id, drawing_number FROM component_repair_drawings
-                      ORDER BY component_type_id, sort_order"""):
-        bogie_ids = prod_by_component.get(r["component_type_id"], {}).get(r["drawing_number"], [])
-        component_repair_drawings.setdefault(r["component_type_id"], []).append({
-            "drawingNumber": r["drawing_number"], "bogieIds": bogie_ids,
-        })
+    bogie_production = {}  # bogie_id -> [[kitId, detailId|null, drawingNumber], ...]
+    for r in rows("""SELECT bogie_id, kit_id, detail_id, drawing_number FROM bogie_components
+                      ORDER BY bogie_id, kit_id, detail_id, sort_order"""):
+        bogie_production.setdefault(r["bogie_id"], []).append([r["kit_id"], r["detail_id"], r["drawing_number"]])
+    repair_fallback = {}  # "ZT001" | "ZT004/X010" -> [drawingNumber, ...]
+    for r in rows("""SELECT kit_id, detail_id, drawing_number FROM component_repair_drawings
+                      ORDER BY kit_id, detail_id, sort_order"""):
+        key = r["kit_id"] + (f"/{r['detail_id']}" if r["detail_id"] else "")
+        repair_fallback.setdefault(key, []).append(r["drawing_number"])
 
     depots = rows("""
         SELECT id, holding_id, name, stamp_code, railway_id, adjoining_station, station_code,
-               latitude, longitude, website
+               latitude, longitude, website, registration_date, inn, address
         FROM depots
     """)
     depot_competencies = rows("SELECT depot_id, repair_type_id, vagon_type_id, vagon_kind_id, note FROM depot_competencies")
-    depot_authorizations = rows("SELECT depot_id, repair_type_id, vagon_id FROM depot_authorizations")
+    depot_authorizations = rows("SELECT depot_id, repair_type_id, vagon_id, note FROM depot_authorizations")
+    depot_services = rows("SELECT id, name FROM depot_services ORDER BY id")
+    depot_service_links = rows("SELECT depot_id, service_id, note FROM depot_service_links")
+    depot_contacts = {}
+    for r in rows("SELECT depot_id, contact_name, phone, email FROM depot_contacts ORDER BY id"):
+        depot_contacts.setdefault(r["depot_id"], []).append({
+            "name": r["contact_name"], "phone": r["phone"], "email": r["email"],
+        })
 
     feature_links = {}
     for r in rows("SELECT vagon_id, feature_id FROM vagon_feature_links"):
@@ -202,7 +213,7 @@ def main():
     vagons = []
     for v in rows("""
         SELECT id, vagon_type_id, vagon_kind_id, model, model_note, manufacturer_id, kd_number,
-               accounting_specialization, europallet_count, requires_authorization
+               accounting_specialization, europallet_count, requires_authorization, axle_load_25
         FROM vagons ORDER BY id
     """):
         table, specs = specs_by_vagon.get(v["id"], (None, {}))
@@ -219,8 +230,10 @@ def main():
             "specialization": v["accounting_specialization"],
             "europallets": v["europallet_count"],
             "requiresAuth": v["requires_authorization"] == "да",
+            "axle25": v["axle_load_25"] == "да",
             "specs": specs,
             "bogieId": bogie_ids[0] if bogie_ids else None,
+            "bogieIds": bogie_ids,
             "featureIds": feature_links.get(v["id"], []),
             "cert": certs.get(v["id"]),
             "overhaul": overhaul.get(v["id"], []),
@@ -251,15 +264,23 @@ def main():
         "repairHoldingContacts": repair_holding_contacts,
         "depotCompetencies": depot_competencies,
         "depotAuthorizations": depot_authorizations,
+        "depotServices": depot_services,
+        "depotServiceLinks": depot_service_links,
+        "depotContacts": depot_contacts,
         "features": features,
         "containerSizes": container_sizes,
         "cargoTypes": cargo_types,
         "vagonCargoLinks": vagon_cargo,
         "vagons": vagons,
-        "componentTypes": component_types,
+        "vagonParts": vagon_parts,
+        "partKits": part_kits,
+        "partDetails": part_details,
+        "drawings": drawings,
+        "bogieKitDrawings": bogie_kit_drawings,
+        "vagonKitDrawings": vagon_kit_drawings,
         "bogieAssemblyDrawings": bogie_assembly_drawings,
-        "bogieComponentDrawings": bogie_component_drawings,
-        "componentRepairDrawings": component_repair_drawings,
+        "bogieProduction": bogie_production,
+        "repairFallback": repair_fallback,
     }
 
     with open(OUT_PATH, "w", encoding="utf-8") as f:
@@ -272,8 +293,9 @@ def main():
     print(f"depots: {len(depots)}")
     print(f"cargoTypes: {len(cargo_types)}, vagonCargoLinks: {len(vagon_cargo)}")
     print(f"depotCompetencies: {len(depot_competencies)}, depotAuthorizations: {len(depot_authorizations)}")
-    print(f"bogies: {len(bogies)}, componentRepairDrawings: "
-          f"{sum(len(v) for v in component_repair_drawings.values())}")
+    print(f"bogies: {len(bogies)}, drawings: {len(drawings)}, bogieKitDrawings: "
+          f"{sum(len(v) for v in bogie_kit_drawings.values())}, vagonKitDrawings: "
+          f"{sum(len(v) for v in vagon_kit_drawings.values())}")
     print(f"-> {OUT_PATH}  ({size_kb:.0f} KB)")
 
 

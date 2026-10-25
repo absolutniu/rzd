@@ -21,6 +21,8 @@ RZD.md               текстовое зеркало Excel-основы (пи�
 db/
   sources/osnova_bd.xlsx  основа БД «Интеллектуальный поиск вагонов» (первоисточник)
   sources/prilozhenie_e_telezhki.md  Прил.Е РД 32 ЦВ 052-2009 (чертежи тележек)
+  sources/logos/       исходные логотипы заводов {ID}.svg|png|webp|jpg
+  build_logos.py       sources/logos -> docs/logos (+ manifest.json: файл и подложка)
   schema.sql          DDL — таблицы SQLite
   build_db.py          osnova_bd.xlsx (+ Прил.Е) -> rzd.db, заодно перезаписывает RZD.md
   export_catalog.py    rzd.db + docs/photos/ -> docs/data/catalog_data.json
@@ -55,6 +57,8 @@ docs/
    python export_catalog.py  # rzd.db -> ../docs/data/catalog_data.json
    ```
    `git diff RZD.md` покажет, что поменялось в источнике.
+   Если добавились логотипы — положить в `db/sources/logos/{ID}.svg|png` и перед
+   экспортом запустить `python build_logos.py`.
 3. Если добавились новые фото — сложить их в `docs/Photo/` (имя файла вида
    `<Категория> <Завод> <модель>.jpg`, как уже лежат) и пересобрать:
    ```bash

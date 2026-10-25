@@ -8,7 +8,8 @@ const mfrPageId = id => id;
 const mfrFamily = id => [id, ...DATA.manufacturers.filter(m => m.parent_id === id).map(m => m.id)];
 const mfrVagons = id => { const fam = new Set(mfrFamily(id)); return VAGONS.filter(v => fam.has(v.mfrId)); };
 function mfrLogoHTML(m, cls = "") {
-  // логотипов в источнике нет — фирменная плашка с кратким названием (см. НЕДОСТАЮЩИЕ_ДАННЫЕ.md)
+  if (m.logo) return `<div class="mfr-logo img ${m.logoPlate === "dark" ? "dark" : ""} ${cls}"><img src="${esc(m.logo)}" alt="${esc(m.short_name || m.full_name)}"></div>`;
+  // логотипа нет (db/sources/logos -> build_logos.py) — фирменная плашка с кратким названием
   const label = (m.short_name || m.full_name).replace(/^(НПК|АО|ООО|ПАО)\s+/i, "");
   return `<div class="mfr-logo ${cls}" title="Логотип не загружен — показано краткое название">${esc(label)}</div>`;
 }
@@ -86,11 +87,11 @@ function renderMfr(params) {
   contacts.forEach(c => { const k = c.deptId || "_"; if (!byDept.has(k)) byDept.set(k, []); byDept.get(k).push(c); });
   const deptOrder = [...DATA.manufacturerDepartments.map(d => d.id), "_"].filter(k => byDept.has(k));
   const deptName = k => k === "_" ? "Прочие" : (DATA.manufacturerDepartments.find(d => d.id === k)?.name || "Прочие");
-  const contactsHTML = deptOrder.length ? `<div class="acc" id="mfr-contacts">${deptOrder.map((k, i) => `<details${i === 0 ? " open" : ""}>
-      <summary>${i + 1}. ${esc(deptName(k))} <span class="n">${byDept.get(k).length}</span><span class="chev">⌄</span></summary>
+  const contactsHTML = deptOrder.length ? `<div class="acc" id="mfr-contacts">${deptOrder.map((k, i) => `<details>
+      <summary><span class="t">${i + 1}. ${esc(deptName(k))}<span class="n">${byDept.get(k).length}</span></span>${CHEV_SVG}</summary>
       <div class="acc-body"><table class="contacts">${byDept.get(k).map(c => `<tr><td>${esc(c.name || "")}</td><td class="ph">${esc(c.phone || "")}</td><td>${(c.email || "").split(/[,;]/).filter(e => e.trim()).map(e => `<a href="mailto:${esc(e.trim())}">${esc(e.trim())}</a>`).join("<br>")}</td></tr>`).join("")}</table></div>
     </details>`).join("")}</div>
-    <button class="more-link" style="font-style:italic;font-weight:700;color:var(--ink-soft)" onclick="document.querySelectorAll('#mfr-contacts details').forEach(d=>d.open=true)">показать все</button>`
+    <button class="more-link" onclick="const ds=[...document.querySelectorAll('#mfr-contacts details')]; const open=!ds.every(d=>d.open); ds.forEach(d=>d.open=open); this.textContent=open?'свернуть все':'показать все'">показать все</button>`
     : `<p class="no-data">контакты не внесены${parent ? ` — см. <a href="#/mfr/${parent.id}">${esc(parent.short_name)}</a>` : ""}</p>`;
 
   const crumbs = [["Главная", "#/"], ["Вагоностроительные предприятия России", "#/mfrs"]];

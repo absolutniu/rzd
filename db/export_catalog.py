@@ -173,7 +173,8 @@ def main():
 
     depots = rows("""
         SELECT id, holding_id, name, stamp_code, railway_id, adjoining_station, station_code,
-               latitude, longitude, website, registration_date, inn, address
+               latitude, longitude, website, registration_date, inn, address,
+               stamp_status, cert_number, cert_valid_until, cert_url
         FROM depots
     """)
     depot_competencies = rows("SELECT depot_id, repair_type_id, vagon_type_id, vagon_kind_id, note FROM depot_competencies")

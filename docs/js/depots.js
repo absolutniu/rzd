@@ -24,6 +24,7 @@ function depotRepairTypes(id) {
   return s;
 }
 const depotServices = id => DATA.depotServiceLinks.filter(l => l.depot_id === id);
+const stampOff = d => d.stamp_status && d.stamp_status !== "Действует"; // клеймо прекращено/приостановлено (реестр РС ФЖТ)
 
 function filteredDepots() {
   const v = depState.model ? VAGON_BY_ID.get(depState.model) : null;
@@ -133,10 +134,11 @@ function depotPanelHTML(d) {
           <div class="row"><dt>Дорога</dt><dd>${esc(railway || "—")}</dd></div>
           <div class="row"><dt>Станция примыкания</dt><dd>${esc(d.adjoining_station || "—")}</dd></div>
           <div class="row"><dt>Код станции</dt><dd>${esc(d.station_code || "—")}</dd></div>
-          <div class="row"><dt>Клеймо депо</dt><dd>${esc(d.stamp_code || "—")}</dd></div>
+          <div class="row"><dt>Клеймо депо</dt><dd>${esc(d.stamp_code || "—")}${stampOff(d) ? ` <span class="stamp-off">клеймо ${esc(d.stamp_status.toLowerCase())}о</span>` : ""}</dd></div>
+          ${d.cert_number ? `<div class="row"><dt>Свидетельство РС ФЖТ</dt><dd>${d.cert_url ? `<a href="${esc(d.cert_url)}" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">№ ${esc(d.cert_number)}</a>` : `№ ${esc(d.cert_number)}`}${d.cert_valid_until ? `, до ${fmtDate(d.cert_valid_until)}` : ""}</dd></div>` : ""}
           <div class="row"><dt>Координаты</dt><dd>${coords}</dd></div>
           ${d.inn ? `<div class="row"><dt>ИНН</dt><dd>${esc(d.inn)}</dd></div>` : ""}
-          ${d.address ? `<div class="row"><dt>Адрес</dt><dd style="font-family:inherit;text-align:left">${esc(d.address)}</dd></div>` : ""}
+          ${d.address ? `<div class="row"><dt>Адрес производства</dt><dd style="font-family:inherit;text-align:left">${esc(d.address)}</dd></div>` : ""}
           ${d.registration_date ? `<div class="row"><dt>Дата регистрации</dt><dd>${fmtDate(d.registration_date)}</dd></div>` : ""}
         </dl>
       </div>
@@ -210,7 +212,7 @@ function renderDepots() {
             <thead><tr><th>Дорога</th><th>Холдинг</th><th>Депо</th><th></th></tr></thead>
             <tbody>${rows.map(d => `<tr class="${d.id === depState.selected ? "sel" : ""}" onclick="nav('${d.id === depState.selected ? depotHash() : "#/depot/" + d.id}')">
               <td>${esc(RAILWAY_BY_ID.get(d.railway_id) || "—")}</td><td>${esc(HOLDING_BY_ID.get(d.holding_id)?.short_name || "—")}</td>
-              <td class="name">${esc(d.name)}</td><td class="more">${d.id === depState.selected ? "✕" : "подробнее"}</td></tr>`).join("") || `<tr><td colspan="4" class="empty-state">Нет депо с такими параметрами</td></tr>`}</tbody>
+              <td class="name">${esc(d.name)}${stampOff(d) ? ` <span class="stamp-off" title="Клеймо ${esc(d.stamp_status.toLowerCase())}о (реестр РС ФЖТ)">клеймо ${esc(d.stamp_status.toLowerCase())}о</span>` : ""}</td><td class="more">${d.id === depState.selected ? "✕" : "подробнее"}</td></tr>`).join("") || `<tr><td colspan="4" class="empty-state">Нет депо с такими параметрами</td></tr>`}</tbody>
           </table></div>
           ${sel ? depotPanelHTML(sel) : ""}
         </div>

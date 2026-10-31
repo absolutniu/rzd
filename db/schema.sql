@@ -382,7 +382,12 @@ CREATE TABLE depots ( -- Депо_Характер
   website           TEXT,
   registration_date TEXT,
   inn               TEXT,
-  address           TEXT   -- адрес производства
+  address           TEXT,  -- адрес производства
+  -- реестр клеймения РС ФЖТ (заполняет db/rsfgt.py)
+  stamp_status      TEXT,  -- Действует / Прекращен / Приостановлен
+  cert_number       TEXT,  -- № свидетельства о присвоении условного номера клеймения
+  cert_valid_until  TEXT,  -- срок подтверждения действия
+  cert_url          TEXT
 );
 
 CREATE TABLE depot_competencies ( -- Депо_Компетенц (какой вид ремонта каких вагонов делает депо)

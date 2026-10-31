@@ -17,6 +17,8 @@ from pathlib import Path
 
 import openpyxl
 
+from rsfgt import load_rsfgt
+
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
@@ -620,6 +622,7 @@ def main():
          skip_if=lambda r: not c(r.get("ID вагона")) or not c(r.get("ID чертежа")))
 
     load_prilozhenie_e(conn, cur)
+    load_rsfgt(conn, cur)  # компетенции депо из реестра клеймения РС ФЖТ (заменяют лист «Депо_Компетенц»)
 
     conn.commit()
 

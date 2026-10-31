@@ -218,6 +218,10 @@ footer.foot .wrap { padding-top: 22px; padding-bottom: 32px; display: flex; gap:
   display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 999px;
   background: var(--ink-faint); color: var(--panel); font-size: 10px; font-weight: 700; margin-left: 5px; cursor: help; vertical-align: 1px;
 }
+.stamp-off {
+  display: inline-block; padding: 1px 7px; border-radius: 999px; background: var(--danger-soft); color: var(--danger);
+  font: 600 11px/1.5 system-ui, sans-serif; white-space: nowrap; vertical-align: 1px; margin-left: 4px;
+}
 .no-data { color: var(--ink-faint); font-size: 13px; font-style: italic; margin: 0; }
 .more-link { background: none; border: none; color: var(--accent); font-size: 12.5px; padding: 0; cursor: pointer; margin-top: 10px; }
 .more-link:hover { text-decoration: underline; }

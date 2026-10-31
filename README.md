@@ -18,9 +18,13 @@ Excel-выгрузки, чтобы сотрудникам не приходил�
 ```
 RZD.md               текстовое зеркало Excel-основы (пишется build_db.py, для git diff)
 НЕДОСТАЮЩИЕ_ДАННЫЕ.md  что ещё не заполнено в источнике
+РЕЕСТР_КЛЕЙМЕНИЯ.md  отчёт сверки депо с реестром РС ФЖТ (пишется build_db.py)
 db/
   sources/osnova_bd.xlsx  основа БД «Интеллектуальный поиск вагонов» (первоисточник)
   sources/prilozhenie_e_telezhki.md  Прил.Е РД 32 ЦВ 052-2009 (чертежи тележек)
+  sources/rsfgt_registry.json  слепок реестра клеймения rsfgt.ru (депо трёх холдингов)
+  rsfgt.py             реестр клеймения -> компетенции, авторизации, услуги и реквизиты депо (из build_db.py)
+  rsfgt_receiver.py    приёмник выгрузки реестра из браузера -> sources/rsfgt_registry.json
   sources/logos/       исходные логотипы заводов {ID}.svg|png|webp|jpg
   build_logos.py       sources/logos -> docs/logos (+ manifest.json: файл и подложка)
   schema.sql          DDL — таблицы SQLite
@@ -57,6 +61,11 @@ docs/
    python export_catalog.py  # rzd.db -> ../docs/data/catalog_data.json
    ```
    `git diff RZD.md` покажет, что поменялось в источнике.
+   Компетенции и авторизации депо с действующим клеймом сборка берёт не из листов
+   «Депо_Компетенц» / «Депо_Авторизац», а из `db/sources/rsfgt_registry.json` (см. `РЕЕСТР_КЛЕЙМЕНИЯ.md`).
+   Слепок обновляется раз в месяц: `python rsfgt_receiver.py`, затем выгрузка реестра
+   https://rsfgt.ru/Stamps/IssuedCerts из браузера (код — в начале `rsfgt_receiver.py`):
+   сайт не отвечает на запросы скриптов.
    Если добавились логотипы — положить в `db/sources/logos/{ID}.svg|png` и перед
    экспортом запустить `python build_logos.py`.
 3. Если добавились новые фото — сложить их в `docs/Photo/` (имя файла вида

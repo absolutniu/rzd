@@ -10,6 +10,7 @@
 Результат: D:\\Projects\\claude\\RZD\\db\\rzd.db
 """
 import datetime
+import json
 import re
 import sqlite3
 import sys
@@ -17,7 +18,7 @@ from pathlib import Path
 
 import openpyxl
 
-from rsfgt import load_rsfgt
+from rsfgt import TOR_NOTE, load_rsfgt
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -28,6 +29,8 @@ MD_PATH = BASE.parent / "RZD.md"
 SCHEMA_PATH = BASE / "schema.sql"
 DB_PATH = BASE / "rzd.db"
 PRILOZHENIE_E_PATH = BASE / "sources" / "prilozhenie_e_telezhki.md"
+DEPOTS_LEGACY_PATH = BASE / "sources" / "depots_legacy.json"
+REMOVED_DEPOT_ID_BASE = 901  # ID для депо, удалённых из основы, но оставленных на сайте: D901, D902, …
 
 # Заголовки блоков Прил.Е -> (комплект ZT, деталь X) из справочника «43. ID комплект» /
 # «44. ID детали» ("BOGIE" - особый случай, весь чертёж тележки в сборе -> bogie_drawings)
@@ -90,11 +93,11 @@ def cell_str(v):
 
 def parse_xlsx(path):
     """{имя_листа_без_номера: (header_list, [row_dict, ...])} — та же форма, что у parse_sections.
-    Номер-префикс листа («11. ID вагоны_общ») отрезается, заголовки столбцов — strip()."""
+    Номер-префикс листа («11. ID вагоны_общ», «38-1. Депо_ТОР») отрезается, заголовки столбцов — strip()."""
     wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
     sections = {}
     for ws in wb.worksheets:
-        name = re.sub(r"^\d+\.\s*", "", ws.title).strip()
+        name = re.sub(r"^\d+(?:-\d+)?\.\s*", "", ws.title).strip()
         it = ws.iter_rows(values_only=True)
         first = next(it, None)
         if first is None:
@@ -549,15 +552,32 @@ def main():
             VALUES (?, ?, ?, ?)""",
          lambda r: (r["ID холдинга"], c(r["Наименование контакта"]), c(r["Телефон"]), c(r["E-mail"])))
 
+    # в основе 11.2026 нет станции примыкания и кода станции — берём из прежней основы по клейму
+    legacy = json.loads(DEPOTS_LEGACY_PATH.read_text(encoding="utf-8")) if DEPOTS_LEGACY_PATH.exists() else {}
+    stations = legacy.get("stations_by_stamp", {})
+    def st(r, col, legacy_key):
+        return c(r.get(col)) or stations.get(code(r["Клеймо депо"]) or "", {}).get(legacy_key)
     load("Депо_Характер",
          """INSERT INTO depots (id, holding_id, name, stamp_code, railway_id, adjoining_station,
-            station_code, latitude, longitude, website, registration_date, inn, address)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            station_code, latitude, longitude, website, registration_date, inn, address, map_icon)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
          lambda r: (r["ID депо"], c(r["ID ремонт. холдинга"]), r["Наименование депо"],
-                    code(r["Клеймо депо"]), c(r["Дорога"]), c(r["Станция примыкания"]),
-                    code(r["Код станции"]), f(r["Широта"]), f(r["Долгота"]), c(r["Сайт"]),
-                    d(r.get("Дата регистрации")), code(r.get("ИНН")), c(r.get("Адрес производства"))),
+                    code(r["Клеймо депо"]), c(r["Дорога"]), st(r, "Станция примыкания", "adjoining_station"),
+                    st(r, "Код станции", "station_code"), f(r["Широта"]), f(r["Долгота"]), c(r["Сайт"]),
+                    d(r.get("Дата регистрации")), code(r.get("ИНН")), c(r.get("Адрес производства")),
+                    c(r.get("Значок на карте")) or "●"),
          skip_if=lambda r: not c(r.get("ID депо")))
+    # депо, удалённые из основы (клеймо прекращено), — по решению оставлены на сайте с пометкой
+    have_stamps = {s for (s,) in cur.execute("SELECT stamp_code FROM depots")}
+    extra = [x for x in legacy.get("removed_depots", []) if x["stamp_code"] not in have_stamps]
+    cur.executemany(
+        """INSERT INTO depots (id, holding_id, name, stamp_code, railway_id, adjoining_station, station_code,
+           latitude, longitude, website, registration_date, inn, address, map_icon)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '●')""",
+        [(f"D{REMOVED_DEPOT_ID_BASE + i}", x["holding_id"], x["name"], x["stamp_code"], x["railway_id"],
+          x["adjoining_station"], x["station_code"], x["latitude"], x["longitude"], x["website"],
+          x["registration_date"], x["inn"], x["address"]) for i, x in enumerate(extra)])
+    print(f"  {'Депо из прежней основы':32s} -> {len(extra):6d} строк")
 
     load("Депо_Компетенц",
          """INSERT INTO depot_competencies (depot_id, repair_type_id, vagon_type_id, vagon_kind_id, note)
@@ -565,6 +585,13 @@ def main():
          lambda r: (r["ID депо"], r["Вид ремонта"], r["Тип вагона"], c(r["Род вагона"]),
                     c(r["Примечание"])),
          skip_if=lambda r: not c(r.get("ID депо")) or not c(r.get("Вид ремонта")) or not c(r.get("Тип вагона")))
+
+    # текущий ремонт (ТОР) — на все типы вагонов, как пункт «ТР-…» свидетельства без перечня вагонов
+    tor_types = [t for (t,) in cur.execute("SELECT id FROM vagon_types ORDER BY id")]
+    tor = sorted({(r["ID депо"], r["Вид ремонта ТОР"]) for r in rows("Депо_ТОР") if c(r.get("ID депо")) and c(r.get("Вид ремонта ТОР"))})
+    cur.executemany("INSERT INTO depot_competencies (depot_id, repair_type_id, vagon_type_id, vagon_kind_id, note) VALUES (?, ?, ?, NULL, ?)",
+                    [(dep, rt, t, TOR_NOTE) for dep, rt in tor for t in tor_types])
+    print(f"  {'Депо_ТОР':32s} -> {len(tor):6d} строк (x{len(tor_types)} типов)")
 
     load("Депо_Авторизац",
          "INSERT INTO depot_authorizations (depot_id, repair_type_id, vagon_id, note) VALUES (?, ?, ?, ?)",
@@ -576,7 +603,11 @@ def main():
          skip_if=lambda r: not c(r.get("Наименование")))  # в источнике заведены пустые ID-заготовки RUS012..018
 
     load("Услуги-Депо",
-         "INSERT INTO depot_service_links (depot_id, service_id, note) VALUES (?, ?, ?)",
+         # одна услуга у депо бывает дважды (напр. «с буксовыми узлами» / «без») — примечания склеиваем
+         """INSERT INTO depot_service_links (depot_id, service_id, note) VALUES (?, ?, ?)
+            ON CONFLICT (depot_id, service_id) DO UPDATE SET note = CASE
+              WHEN excluded.note IS NULL THEN note WHEN note IS NULL THEN excluded.note
+              ELSE note || '; ' || excluded.note END""",
          lambda r: (r.get("ID депо") or r.get("ID вагона"), r["ID услуги"], c(r.get("Примечание"))))
 
     load("Депо-Контакты",
@@ -622,7 +653,7 @@ def main():
          skip_if=lambda r: not c(r.get("ID вагона")) or not c(r.get("ID чертежа")))
 
     load_prilozhenie_e(conn, cur)
-    load_rsfgt(conn, cur)  # компетенции депо из реестра клеймения РС ФЖТ (заменяют лист «Депо_Компетенц»)
+    load_rsfgt(conn, cur)  # реестр клеймения РС ФЖТ: дополняет компетенции, авторизации и реквизиты депо
 
     conn.commit()
 

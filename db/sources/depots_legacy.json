@@ -1,0 +1,642 @@
+{
+ "note": "Из основы БД 18.10.2026: станции примыкания/коды станций (в основе 11.2026 колонок нет) и депо с прекращённым клеймом, удалённые из основы 11.2026 (оставлены на сайте с пометкой)",
+ "stations_by_stamp": {
+  "2523": {
+   "name": "ВРД Партизанск",
+   "adjoining_station": "Партизанск",
+   "station_code": "983800"
+  },
+  "671": {
+   "name": "ВРЗ Комсомольск",
+   "adjoining_station": "Комсомольск-на-Амуре",
+   "station_code": "960103"
+  },
+  "643": {
+   "name": "ВРД Чита",
+   "adjoining_station": "Чита-1",
+   "station_code": "940006"
+  },
+  "647": {
+   "name": "ВРД Иркутск",
+   "adjoining_station": "Иркутск-Сортировочный",
+   "station_code": "930004"
+  },
+  "443": {
+   "name": "ВРД Аскиз",
+   "adjoining_station": "Аскиз",
+   "station_code": "887001"
+  },
+  "809": {
+   "name": "ВРЗ Белово",
+   "adjoining_station": "Белово",
+   "station_code": "862305"
+  },
+  "749": {
+   "name": "ВРД Омск",
+   "adjoining_station": "Московка",
+   "station_code": "830003"
+  },
+  "630": {
+   "name": "ВРД Новокузнецк",
+   "adjoining_station": "Новокузнецк-Сортировочный",
+   "station_code": "860009"
+  },
+  "1016": {
+   "name": "ВРЗ Пермь",
+   "adjoining_station": "Пермь-Сортировочная",
+   "station_code": "760008"
+  },
+  "587": {
+   "name": "ВРД Серов",
+   "adjoining_station": "Серов-Сортировочный",
+   "station_code": "774706"
+  },
+  "600": {
+   "name": "ВРЗ Челябинск",
+   "adjoining_station": "Челябинск-Главный",
+   "station_code": "800008"
+  },
+  "368": {
+   "name": "ВРД Зуевка",
+   "adjoining_station": "Зуевка",
+   "station_code": "274006"
+  },
+  "1173": {
+   "name": "ВРД Зелецино",
+   "adjoining_station": "Зелецино",
+   "station_code": "269601"
+  },
+  "883": {
+   "name": "ВРД Уфа",
+   "adjoining_station": "Бензин",
+   "station_code": "654909"
+  },
+  "2080": {
+   "name": "ВРД Тольятти",
+   "adjoining_station": "Тольятти",
+   "station_code": "637301"
+  },
+  "388": {
+   "name": "ВРД Коноша",
+   "adjoining_station": "Коноша-1",
+   "station_code": "293007"
+  },
+  "391": {
+   "name": "ВРД Череповец",
+   "adjoining_station": "Череповец-1",
+   "station_code": "302304"
+  },
+  "382": {
+   "name": "ВРД Ярославль",
+   "adjoining_station": "Ярославль-Главный",
+   "station_code": "310005"
+  },
+  "345": {
+   "name": "ВРД Мурманск",
+   "adjoining_station": "Мурманск",
+   "station_code": "18409"
+  },
+  "341": {
+   "name": "ВРЗ Волховстрой",
+   "adjoining_station": "Волховстрой-1",
+   "station_code": "40008"
+  },
+  "323": {
+   "name": "ВРД Санкт-Петербург",
+   "adjoining_station": "Санкт-Петербург Сортировочный Витебский",
+   "station_code": "33061"
+  },
+  "406": {
+   "name": "ВРД Вязьма",
+   "adjoining_station": "Вязьма",
+   "station_code": "174306"
+  },
+  "482": {
+   "name": "ВРД Узловая",
+   "adjoining_station": "Узловая-1",
+   "station_code": "224204"
+  },
+  "357": {
+   "name": "ВРД Унеча",
+   "adjoining_station": "Унеча",
+   "station_code": "202008"
+  },
+  "301": {
+   "name": "ВРД Кочетовка",
+   "adjoining_station": "Кочетовка-1",
+   "station_code": "600006"
+  },
+  "492": {
+   "name": "ВРЗ Лиски",
+   "adjoining_station": "Лиски",
+   "station_code": "582005"
+  },
+  "481": {
+   "name": "ВРД Старый Оскол",
+   "adjoining_station": "Старый Оскол",
+   "station_code": "438506"
+  },
+  "682": {
+   "name": "ВРД Ершов",
+   "adjoining_station": "Ершово",
+   "station_code": "627206"
+  },
+  "771": {
+   "name": "ВРД Арчеда",
+   "adjoining_station": "Арчеда",
+   "station_code": "613805"
+  },
+  "562": {
+   "name": "ВРЗ Каменоломни",
+   "adjoining_station": "Каменоломни",
+   "station_code": "513109"
+  },
+  "561": {
+   "name": "ВРД Кавказская",
+   "adjoining_station": "Кавказская",
+   "station_code": "520009"
+  },
+  "514": {
+   "name": "ВРД Прохладная",
+   "adjoining_station": "Прохладная",
+   "station_code": "537601"
+  },
+  "2348": {
+   "name": "ВРЗ Орск",
+   "adjoining_station": "Орск",
+   "station_code": "810006"
+  },
+  "1580": {
+   "name": "ВРД Волгоград",
+   "adjoining_station": "Волгоград-2",
+   "station_code": "611405"
+  },
+  "668": {
+   "name": "ВЧДр Ружино",
+   "adjoining_station": "Ружино",
+   "station_code": "973705"
+  },
+  "670": {
+   "name": "ВЧДр Хабаровск",
+   "adjoining_station": "Хабаровск-2",
+   "station_code": "970001"
+  },
+  "1324": {
+   "name": "РВД Уссурийск",
+   "adjoining_station": "Уссурийск",
+   "station_code": "988306"
+  },
+  "640": {
+   "name": "ВЧДр Чернышевск",
+   "adjoining_station": "Чернышевск-Забайкальский",
+   "station_code": "949104"
+  },
+  "653": {
+   "name": "ВЧДр Улан-Удэ",
+   "adjoining_station": "Улан-Удэ",
+   "station_code": "935506"
+  },
+  "649": {
+   "name": "ВЧДр Нижнеудинск",
+   "adjoining_station": "Нижнеудинск",
+   "station_code": "921202"
+  },
+  "1372": {
+   "name": "Ремонтно-механическое депо «АЛЗАМАЙ»",
+   "adjoining_station": "Алзамай",
+   "station_code": "920708"
+  },
+  "651": {
+   "name": "ВЧДр Тайшет",
+   "adjoining_station": "Тайшет",
+   "station_code": "920002"
+  },
+  "635": {
+   "name": "ВЧДр Иланская",
+   "adjoining_station": "Иланская",
+   "station_code": "893708"
+  },
+  "621": {
+   "name": "ВЧДр Ленинск-Кузнецкий",
+   "adjoining_station": "Ленинск-Кузнецкий-1",
+   "station_code": "872504"
+  },
+  "615": {
+   "name": "ВЧДр Тайга",
+   "adjoining_station": "Тайга",
+   "station_code": "873308"
+  },
+  "626": {
+   "name": "ВЧДр Инская",
+   "adjoining_station": "Инская",
+   "station_code": "850007"
+  },
+  "1298": {
+   "name": "ВКМ Иртышское",
+   "adjoining_station": "Иртышское",
+   "station_code": "835007"
+  },
+  "605": {
+   "name": "ВЧДр Омск-Сортировочный",
+   "adjoining_station": "Омск-Северный",
+   "station_code": "831400"
+  },
+  "606": {
+   "name": "ВЧДр Ишим",
+   "adjoining_station": "Ишим",
+   "station_code": "791608"
+  },
+  "579": {
+   "name": "ВЧДр Свердловск-Сортировочный",
+   "adjoining_station": "Свердловск-Сортировочный",
+   "station_code": "780001"
+  },
+  "588": {
+   "name": "ВЧДр Чусовская",
+   "adjoining_station": "Чусовская",
+   "station_code": "767308"
+  },
+  "601": {
+   "name": "ВЧДр Магнитогорск",
+   "adjoining_station": "Магнитогорск-Грузовой",
+   "station_code": "817600"
+  },
+  "370": {
+   "name": "ВЧДр Лянгасово",
+   "adjoining_station": "Лянгасово",
+   "station_code": "270005"
+  },
+  "371": {
+   "name": "ВЧДр Горький-Сортировочный",
+   "adjoining_station": "Горький-Сортировочный",
+   "station_code": "260003"
+  },
+  "713": {
+   "name": "ВЧДр Кинель",
+   "adjoining_station": "Кинель",
+   "station_code": "657305"
+  },
+  "714": {
+   "name": "ВЧДр Сызрань",
+   "adjoining_station": "Сызрань-1",
+   "station_code": "635607"
+  },
+  "681": {
+   "name": "ВЧДр Пенза",
+   "adjoining_station": "Пенза-3",
+   "station_code": "630001"
+  },
+  "728": {
+   "name": "ВЧДр Сольвычегодск",
+   "adjoining_station": "Сольвычегодск",
+   "station_code": "280007"
+  },
+  "385": {
+   "name": "ВЧДр Вологда",
+   "adjoining_station": "Вологда-1",
+   "station_code": "300107"
+  },
+  "343": {
+   "name": "ВЧДр Петрозаводск",
+   "adjoining_station": "Петрозаводск",
+   "station_code": "10002"
+  },
+  "347": {
+   "name": "ВЧДр Кандалакша",
+   "adjoining_station": "Кандалакша",
+   "station_code": "14906"
+  },
+  "328": {
+   "name": "ВЧДр Псков",
+   "adjoining_station": "Псков-Товарный",
+   "station_code": "70501"
+  },
+  "1099": {
+   "name": "ВЧДр Тосно",
+   "adjoining_station": "Тосно",
+   "station_code": "31302"
+  },
+  "321": {
+   "name": "ВЧДр Санкт-Петербург-Московский",
+   "adjoining_station": "Санкт-Петербург Сортировочный Московский",
+   "station_code": "30006"
+  },
+  "398": {
+   "name": "ВЧДр Брянск-Льговский",
+   "adjoining_station": "Брянск-2-Льговский",
+   "station_code": "200002"
+  },
+  "307": {
+   "name": "ВЧДр Рыбное",
+   "adjoining_station": "Рыбное",
+   "station_code": "220006"
+  },
+  "309": {
+   "name": "ВЧДр Воскресенск",
+   "adjoining_station": "Воскресенск",
+   "station_code": "233608"
+  },
+  "333": {
+   "name": "ВЧДр Люблино",
+   "adjoining_station": "Люблино-Сортировочное",
+   "station_code": "190008"
+  },
+  "1132": {
+   "name": "ВЧДр Стойленская",
+   "adjoining_station": "Стойленская",
+   "station_code": "438406"
+  },
+  "677": {
+   "name": "ВЧДр Саратов",
+   "adjoining_station": "Саратов-2-Товарный",
+   "station_code": "620508"
+  },
+  "676": {
+   "name": "ВЧДр Астрахань",
+   "adjoining_station": "Астрахань-2",
+   "station_code": "616907"
+  },
+  "560": {
+   "name": "ВЧДр Батайск",
+   "adjoining_station": "Батайск",
+   "station_code": "510007"
+  },
+  "565": {
+   "name": "ВЧДр Краснодар",
+   "adjoining_station": "Краснодар-1",
+   "station_code": "524404"
+  },
+  "493": {
+   "name": "ВЧДр Поворино",
+   "adjoining_station": "Поворино",
+   "station_code": "584405"
+  },
+  "661": {
+   "name": "ВРД Белогорск",
+   "adjoining_station": "Белогорск-2",
+   "station_code": "950101"
+  },
+  "117": {
+   "name": "ВРД Свободненский",
+   "adjoining_station": "Михайло-Чесноковская",
+   "station_code": "953701"
+  },
+  "659": {
+   "name": "ВРД Магдагачи",
+   "adjoining_station": "Магдагачи",
+   "station_code": "952501"
+  },
+  "652": {
+   "name": "ВРП Черемхово",
+   "adjoining_station": "Черемхово",
+   "station_code": "930907"
+  },
+  "650": {
+   "name": "ВРД Зима",
+   "adjoining_station": "Зима",
+   "station_code": "923104"
+  },
+  "231": {
+   "name": "ВРД Вихоревка",
+   "adjoining_station": "Вихоревка",
+   "station_code": "924408"
+  },
+  "634": {
+   "name": "ВРД Ужур",
+   "adjoining_station": "Ужур",
+   "station_code": "885100"
+  },
+  "628": {
+   "name": "ВРД Топки",
+   "adjoining_station": "Топки",
+   "station_code": "871107"
+  },
+  "619": {
+   "name": "ВРД Кемерово",
+   "adjoining_station": "Предкомбинат",
+   "station_code": "871304"
+  },
+  "629": {
+   "name": "ВРД Болотная",
+   "adjoining_station": "Болотная",
+   "station_code": "854402"
+  },
+  "611": {
+   "name": "ВРД Барабинск",
+   "adjoining_station": "Барабинск",
+   "station_code": "833603"
+  },
+  "625": {
+   "name": "ВРД Рубцовск",
+   "adjoining_station": "Рубцовск",
+   "station_code": "843408"
+  },
+  "585": {
+   "name": "ВРД Егоршино",
+   "adjoining_station": "Егоршино",
+   "station_code": "785908"
+  },
+  "1590": {
+   "name": "ВРД Смычка",
+   "adjoining_station": "Смычка",
+   "station_code": "770005"
+  },
+  "582": {
+   "name": "ВРД Гороблагодатская",
+   "adjoining_station": "Гороблагодатская",
+   "station_code": "772607"
+  },
+  "590": {
+   "name": "ВРД Верещагино",
+   "adjoining_station": "Верещагино",
+   "station_code": "762304"
+  },
+  "595": {
+   "name": "ВРД Курган",
+   "adjoining_station": "Курган",
+   "station_code": "828501"
+  },
+  "598": {
+   "name": "ВРД Златоуст",
+   "adjoining_station": "Златоуст",
+   "station_code": "806201"
+  },
+  "602": {
+   "name": "ВРД Карталы",
+   "adjoining_station": "Карталы-1",
+   "station_code": "816203"
+  },
+  "599": {
+   "name": "ВРД Бердяуш",
+   "adjoining_station": "Бердяуш",
+   "station_code": "806606"
+  },
+  "423": {
+   "name": "ВРД Красноуфимск",
+   "adjoining_station": "Красноуфимск",
+   "station_code": "258906"
+  },
+  "415": {
+   "name": "ВРД Арзамас",
+   "adjoining_station": "Арзамас-2",
+   "station_code": "244208"
+  },
+  "414": {
+   "name": "ВРД Муром",
+   "adjoining_station": "Муром-1",
+   "station_code": "240000"
+  },
+  "712": {
+   "name": "ВРД Ульяновск",
+   "adjoining_station": "Ульяновск-Центральный",
+   "station_code": "644803"
+  },
+  "303": {
+   "name": "ВРД Рузаевка",
+   "adjoining_station": "Рузаевка",
+   "station_code": "640003"
+  },
+  "735": {
+   "name": "ВРД Сосногорск",
+   "adjoining_station": "Сосногорск",
+   "station_code": "285801"
+  },
+  "344": {
+   "name": "ВРД Кемь",
+   "adjoining_station": "Кемь",
+   "station_code": "13208"
+  },
+  "319": {
+   "name": "ВРД Бологое",
+   "adjoining_station": "Бологое-Московское",
+   "station_code": "50009"
+  },
+  "308": {
+   "name": "ВРД Сасово",
+   "adjoining_station": "Сасово",
+   "station_code": "222001"
+  },
+  "400": {
+   "name": "ВРД Калуга",
+   "adjoining_station": "Калуга-1",
+   "station_code": "188205"
+  },
+  "334": {
+   "name": "ВРД Тула",
+   "adjoining_station": "Тула-1-Курская",
+   "station_code": "210201"
+  },
+  "480": {
+   "name": "ВРД Елец",
+   "adjoining_station": "Елец",
+   "station_code": "593000"
+  },
+  "496": {
+   "name": "ВРД Россошь",
+   "adjoining_station": "Россошь",
+   "station_code": "585107"
+  },
+  "488": {
+   "name": "ВРД Валуйки",
+   "adjoining_station": "Валуйки",
+   "station_code": "438302"
+  },
+  "540": {
+   "name": "ВРД Белгород",
+   "adjoining_station": "Белгород",
+   "station_code": "434509"
+  },
+  "743": {
+   "name": "ВРД Нефтяная",
+   "adjoining_station": "Нефтяная",
+   "station_code": "621002"
+  },
+  "571": {
+   "name": "ВРД Сальск",
+   "adjoining_station": "Сальск",
+   "station_code": "518403"
+  },
+  "1082": {
+   "name": "ВРЗ Тюмень",
+   "adjoining_station": "Тюмень",
+   "station_code": "790003"
+  }
+ },
+ "removed_depots": [
+  {
+   "old_id": "D062",
+   "holding_id": "RH002",
+   "name": "ВЧДр Кандалакша",
+   "stamp_code": "347",
+   "railway_id": "RW011",
+   "adjoining_station": "Кандалакша",
+   "station_code": "14906",
+   "latitude": 67.16020966,
+   "longitude": 32.41910172,
+   "website": "https://1vrk.ru/geography/depo/vchdr-kandalaksha/",
+   "registration_date": "2024-06-18",
+   "inn": "7708737490",
+   "address": "184041, Мурманская обл., г. Кандалакша, ул. Кировская, д. 16"
+  },
+  {
+   "old_id": "D075",
+   "holding_id": "RH002",
+   "name": "ВЧДр Поворино",
+   "stamp_code": "493",
+   "railway_id": "RW013",
+   "adjoining_station": "Поворино",
+   "station_code": "584405",
+   "latitude": 51.19959259,
+   "longitude": 42.24600983,
+   "website": "https://1vrk.ru/geography/depo/vchdr-povorino/",
+   "registration_date": null,
+   "inn": null,
+   "address": null
+  },
+  {
+   "old_id": "D078",
+   "holding_id": "RH003",
+   "name": "ВРД Магдагачи",
+   "stamp_code": "659",
+   "railway_id": "RW002",
+   "adjoining_station": "Магдагачи",
+   "station_code": "952501",
+   "latitude": 53.4511261,
+   "longitude": 125.80718994,
+   "website": "https://omk.ru/units/omk-steel-way/",
+   "registration_date": "2022-11-30",
+   "inn": null,
+   "address": "676124, Амурская обл., Магдагачинский р-н, ПГТ Магдагачи, ул. К. Маркса, д. 45"
+  },
+  {
+   "old_id": "D084",
+   "holding_id": "RH003",
+   "name": "ВРД Кемерово",
+   "stamp_code": "619",
+   "railway_id": "RW005",
+   "adjoining_station": "Предкомбинат",
+   "station_code": "871304",
+   "latitude": 55.36027527,
+   "longitude": 86.030159,
+   "website": "https://omk.ru/units/omk-steel-way/",
+   "registration_date": "2020-12-30",
+   "inn": null,
+   "address": "652300, Кемеровская обл., г. Кемерово, ул. Станционная, д. 3"
+  },
+  {
+   "old_id": "D101",
+   "holding_id": "RH003",
+   "name": "ВРД Сосногорск",
+   "stamp_code": "735",
+   "railway_id": "RW010",
+   "adjoining_station": "Сосногорск",
+   "station_code": "285801",
+   "latitude": 63.60020065,
+   "longitude": 53.89945984,
+   "website": "https://omk.ru/units/omk-steel-way/",
+   "registration_date": "2021-10-22",
+   "inn": "7708737500",
+   "address": "169500, Республика Коми, г. Сосногорск, ул. Набережная, 151"
+  }
+ ]
+}

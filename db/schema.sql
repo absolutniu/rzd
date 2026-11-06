@@ -383,6 +383,7 @@ CREATE TABLE depots ( -- Депо_Характер
   registration_date TEXT,
   inn               TEXT,
   address           TEXT,  -- адрес производства
+  map_icon          TEXT,  -- значок на карте: ● депо / завод, ◆ участок / ТОР / ВКМ
   -- реестр клеймения РС ФЖТ (заполняет db/rsfgt.py)
   stamp_status      TEXT,  -- Действует / Прекращен / Приостановлен
   cert_number       TEXT,  -- № свидетельства о присвоении условного номера клеймения

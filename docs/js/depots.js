@@ -64,14 +64,20 @@ const MAP = (() => {
   const land = RUSSIA_OUTLINE.map(r => { let d = ""; for (let i = 0; i < r.length; i += 2) d += (i ? "L" : "M") + x(r[i]).toFixed(1) + " " + y(r[i + 1]).toFixed(1); return d + "Z"; }).join(" ");
   return { W, H, x, y, land };
 })();
-const holdingColor = id => `var(--map-${(DATA.repairHoldings.findIndex(h => h.id === id) % 3) + 1})`;
+const holdingColor = id => `var(--map-${(DATA.repairHoldings.findIndex(h => h.id === id) % 6) + 1})`;
+// значок на карте (лист «Депо_Характер», описание — «Справочник_ID»)
+const MAP_ICONS = [["●", "вагоноремонтное депо / завод"], ["◆", "вагонный участок / участок ТОР / ВКМ / колесно-роликовый участок"]];
 function depotMapHTML(visible) {
-  const dots = DATA.depots.filter(d => d.latitude != null && d.longitude != null).map(d =>
-    `<circle class="dot${visible.has(d.id) ? "" : " hidden"}${depState.selected === d.id ? " sel" : ""}" data-id="${d.id}" cx="${MAP.x(d.longitude).toFixed(1)}" cy="${MAP.y(d.latitude).toFixed(1)}" r="3.8" style="--dot:${holdingColor(d.holding_id)}" tabindex="0" role="button" aria-label="${esc(d.name)}"></circle>`).join("");
+  const dots = DATA.depots.filter(d => d.latitude != null && d.longitude != null).map(d => {
+    const x = MAP.x(d.longitude).toFixed(1), y = MAP.y(d.latitude).toFixed(1);
+    const attrs = `class="dot${d.map_icon === "◆" ? " dia" : ""}${visible.has(d.id) ? "" : " hidden"}${depState.selected === d.id ? " sel" : ""}" data-id="${d.id}" data-x="${x}" data-y="${y}" style="--dot:${holdingColor(d.holding_id)}" tabindex="0" role="button" aria-label="${esc(d.name)}"`;
+    return d.map_icon === "◆" ? `<rect ${attrs} x="${(x - 3.2).toFixed(1)}" y="${(y - 3.2).toFixed(1)}" width="6.4" height="6.4"></rect>` : `<circle ${attrs} cx="${x}" cy="${y}" r="3.8"></circle>`;
+  }).join("");
   return `<div class="depot-map-frame">
     <svg id="depot-map" viewBox="0 0 ${MAP.W} ${MAP.H}" preserveAspectRatio="xMidYMid meet"><path class="land" d="${MAP.land}" fill-rule="evenodd"/>${dots}</svg>
     <div class="depot-map-tip" id="depot-map-tip"></div>
     <div class="depot-map-legend">${DATA.repairHoldings.map(h => `<span class="map-legend-item"><span class="sw" style="background:${holdingColor(h.id)}"></span>${esc(h.short_name)}</span>`).join("")}</div>
+    <div class="depot-map-legend icons">${MAP_ICONS.map(([icon, label]) => `<span class="map-legend-item"><span class="ic">${icon}</span>${esc(label)}</span>`).join("")}</div>
   </div>`;
 }
 function wireDepotMap() {
@@ -80,8 +86,8 @@ function wireDepotMap() {
   const show = dot => {
     const r = svg.getBoundingClientRect();
     tip.textContent = DEPOT_BY_ID.get(dot.dataset.id).name;
-    tip.style.left = (r.width * dot.cx.baseVal.value / MAP.W) + "px";
-    tip.style.top = (r.height * dot.cy.baseVal.value / MAP.H) + "px";
+    tip.style.left = (r.width * dot.dataset.x / MAP.W) + "px";
+    tip.style.top = (r.height * dot.dataset.y / MAP.H) + "px";
     tip.classList.add("show");
   };
   svg.querySelectorAll(".dot").forEach(dot => {

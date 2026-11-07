@@ -34,7 +34,7 @@ function renderNearest() {
       <div><h2>Текущее депо</h2>
         ${from ? `<div style="margin-bottom:10px">${chipHTML(from.name, "nearState.from=null; renderNearest()", "lg")}</div>` : ""}
         ${suggestInputHTML("nearfrom", "например, ВЧДр Партизанск")}
-        ${from ? `<p class="caption" style="font-size:12.5px">${esc(RAILWAY_BY_ID.get(from.railway_id) || "")} · ст. ${esc(from.adjoining_station || "—")}</p>` : ""}
+        ${from ? `<p class="caption" style="font-size:12.5px">${esc(RAILWAY_BY_ID.get(from.railway_id) || "")}</p>` : ""}
       </div>
       <div><h2>Требуемые параметры</h2>
         <div class="near-params">

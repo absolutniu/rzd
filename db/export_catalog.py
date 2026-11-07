@@ -171,18 +171,20 @@ def main():
         key = r["kit_id"] + (f"/{r['detail_id']}" if r["detail_id"] else "")
         repair_fallback.setdefault(key, []).append(r["drawing_number"])
 
+    # скрытые депо (show_on_site = 0) остаются в базе, но на сайт не выгружаются — вместе со связанными строками
     depots = rows("""
         SELECT id, holding_id, name, stamp_code, railway_id, adjoining_station, station_code,
                latitude, longitude, website, registration_date, inn, address,
-               stamp_status, cert_number, cert_valid_until, cert_url
-        FROM depots
+               stamp_status, cert_number, cert_valid_until, cert_url, map_icon
+        FROM depots WHERE show_on_site = 1
     """)
-    depot_competencies = rows("SELECT depot_id, repair_type_id, vagon_type_id, vagon_kind_id, note FROM depot_competencies")
-    depot_authorizations = rows("SELECT depot_id, repair_type_id, vagon_id, note FROM depot_authorizations")
+    shown = "depot_id IN (SELECT id FROM depots WHERE show_on_site = 1)"
+    depot_competencies = rows(f"SELECT depot_id, repair_type_id, vagon_type_id, vagon_kind_id, note FROM depot_competencies WHERE {shown}")
+    depot_authorizations = rows(f"SELECT depot_id, repair_type_id, vagon_id, note FROM depot_authorizations WHERE {shown}")
     depot_services = rows("SELECT id, name FROM depot_services ORDER BY id")
-    depot_service_links = rows("SELECT depot_id, service_id, note FROM depot_service_links")
+    depot_service_links = rows(f"SELECT depot_id, service_id, note FROM depot_service_links WHERE {shown}")
     depot_contacts = {}
-    for r in rows("SELECT depot_id, contact_name, phone, email FROM depot_contacts ORDER BY id"):
+    for r in rows(f"SELECT depot_id, contact_name, phone, email FROM depot_contacts WHERE {shown} ORDER BY id"):
         depot_contacts.setdefault(r["depot_id"], []).append({
             "name": r["contact_name"], "phone": r["phone"], "email": r["email"],
         })

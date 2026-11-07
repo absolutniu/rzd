@@ -35,6 +35,8 @@ db/
   match_photos.py       docs/Photo/ -> photo_match_results.json (сопоставление файла с id вагона)
   build_photos.py       photo_match_results.json + docs/Photo/ -> docs/photos/
   rzd.db               собранная база (пересоздаётся build_db.py)
+  fetch_railmap_osm.py  OSM (пути, станции) + Natural Earth (границы) -> db/osm_cache/ (в git не попадает, ~200 МБ)
+  build_railmap.py      osm_cache + catalog_data.json -> docs/railmap/*.geojson (карта сети по 16 дорогам)
 docs/
   index.html            каркас страницы: шапка, разделы, подвал (без сборки)
   app.css               стили всех страниц, темы светлая/тёмная
@@ -48,6 +50,7 @@ docs/
   js/compare.js         сравнение
   js/misc.js            ближайшее депо, новинки, «О ресурсе», «Контакты», запуск
   data/catalog_data.json  выгрузка для сайта (генерируется export_catalog.py)
+  railmap/              карта ж/д сети (MapLibre): index.html + слои GeoJSON (генерирует build_railmap.py)
   Photo/                 сырые фото вагонов "как есть" (источник, в git не трогаем руками)
   photos/                фото под сайт: {id вагона}.jpg + thumb/{id}.jpg (генерируется build_photos.py)
 ```
@@ -122,3 +125,14 @@ python -m http.server 8000
 Главное: компетенции по ремонту внесены только для депо НВРК, прямая
 авторизация на ремонт — только для двух моделей (для остальных сайт
 показывает депо, компетентные по типу/роду вагона), логотипов заводов нет.
+
+## Карта ж/д сети (`docs/railmap/`)
+
+Пути и станции — OpenStreetMap, границы — Natural Earth; под картой обязательна подпись «© участники OpenStreetMap».
+Дорога станции — по первым двум цифрам кода ЕСР (таблица `ROADS` в `db/build_railmap.py`), станции без кода —
+по ближайшим соседям; территория дороги — области ближайших станций. Обновить (например, после новых депо):
+```bash
+cd db
+python fetch_railmap_osm.py   # один раз / при обновлении OSM: ~30 запросов к Overpass, 15–40 минут
+python build_railmap.py       # слои карты, депо берутся из docs/data/catalog_data.json
+```

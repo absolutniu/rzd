@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Карта железных дорог</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<style>
+  :root {
+    --bg: #eaf2fc; --land: #d6e4f7; --road: #bad3f7; --road-edge: #7f9fca; --track: #ffffff;
+    --ink: #2f4a6e; --ink-soft: #5b7090; --panel: #ffffff; --line: rgba(47,74,110,.14);
+    --depot: #a24ca8; --accent: #bb4d0a;
+    --h1: #bb4d0a; --h2: #00707f; --h3: #6a8a3f; --h4: #7a4fa3; --h5: #b0306a; --h6: #3a5f9c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10161d; --land: #1a2430; --road: #22344a; --road-edge: #4d6a8e; --track: #d9e6f5;
+      --ink: #dfe9f5; --ink-soft: #9fb2c8; --panel: #18202a; --line: rgba(223,233,245,.14); --depot: #d38bd8;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  #map { position: absolute; inset: 0; }
+  .bar { position: absolute; z-index: 2; left: 16px; right: 16px; top: 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; pointer-events: none; }
+  .bar > * { pointer-events: auto; }
+  .title { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px 14px; font-weight: 650; box-shadow: 0 4px 16px rgba(20,40,70,.08); }
+  .title small { display: block; font-weight: 400; color: var(--ink-soft); font-size: 12px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 999px; padding: 7px 13px; cursor: pointer; font: inherit; box-shadow: 0 2px 8px rgba(20,40,70,.06); }
+  .chip.on { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  .road-select { appearance: auto; padding-right: 10px; }
+  .search { position: relative; }
+  .search input { width: 240px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 999px; padding: 8px 14px; font: inherit; }
+  .search .res { position: absolute; top: 40px; left: 0; width: 320px; max-height: 320px; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 28px rgba(20,40,70,.16); display: none; }
+  .search .res div { padding: 8px 12px; cursor: pointer; display: flex; justify-content: space-between; gap: 10px; }
+  .search .res div:hover { background: var(--bg); }
+  .search .res span { color: var(--ink-soft); font-size: 12px; white-space: nowrap; }
+  .legend { position: absolute; z-index: 2; left: 16px; bottom: 28px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; font-size: 12.5px; color: var(--ink-soft); display: grid; gap: 5px; max-width: calc(100% - 32px); }
+  .legend .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .legend i { display: inline-block; vertical-align: -1px; margin-right: 5px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; }
+  .dia { width: 8px; height: 8px; transform: rotate(45deg); }
+  .info { position: absolute; z-index: 2; right: 16px; top: 76px; width: 300px; max-width: calc(100% - 32px); background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; box-shadow: 0 10px 28px rgba(20,40,70,.14); display: none; }
+  .info h3 { margin: 0 0 6px; font-size: 16px; }
+  .info .k { color: var(--ink-soft); font-size: 12px; }
+  .info a { color: var(--accent); }
+  .info .x { position: absolute; right: 10px; top: 8px; border: 0; background: none; font-size: 18px; color: var(--ink-soft); cursor: pointer; }
+  .maplibregl-ctrl-attrib { font-size: 11px; }
+  @media (max-width: 640px) { .search input { width: 100%; } .search { flex: 1 1 100%; } .info { top: auto; bottom: 120px; } }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="bar">
+  <div class="title">Железные дороги России <small>16 дорог · пути и станции по данным OpenStreetMap</small></div>
+  <select class="chip road-select" id="road" onchange="pickRoad(this.value)" aria-label="Дорога"></select>
+  <div class="search"><input id="q" placeholder="Станция или код ЕСР" autocomplete="off"><div class="res" id="res"></div></div>
+</div>
+<div class="info" id="info"><button class="x" onclick="hideInfo()">✕</button><div id="info-body"></div></div>
+<div class="legend" id="legend"></div>
+<script>
+const COLORS = ["--h1", "--h2", "--h3", "--h4", "--h5", "--h6"].map(v => getComputedStyle(document.documentElement).getPropertyValue(v).trim());
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const load = f => fetch(f, { cache: "no-cache" }).then(r => r.json());
+let state = { road: null }, stations = [], depots = [], meta = null, map = null;
+
+Promise.all(["meta.json", "lines.geojson", "roads.geojson", "stations.geojson", "depots.geojson", "land.geojson", "neighbors.geojson", "road_labels.geojson"].map(load))
+  .then(([m, lines, roads, st, dep, land, nb, roadLabels]) => {
+    meta = m; stations = st.features; depots = dep.features;
+    const holdColor = id => COLORS[Math.max(0, meta.holdings.findIndex(h => h.id === id)) % 6];
+    dep.features.forEach(f => f.properties.color = holdColor(f.properties.holding_id));
+    const b = meta.bbox;
+    map = new maplibregl.Map({
+      container: "map", attributionControl: false, maxBounds: [[b[0] - 25, b[1] - 12], [200, 84]],
+      bounds: [[b[0], b[1]], [b[2], b[3]]], fitBoundsOptions: { padding: 40 },
+      style: { version: 8, glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf", sources: {},
+               layers: [{ id: "bg", type: "background", paint: { "background-color": css("--bg") } }] },
+    });
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+    map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: "© участники OpenStreetMap · Natural Earth" }));
+    map.on("load", () => {
+      const add = (id, data) => map.addSource(id, { type: "geojson", data });
+      add("land", land); add("neighbors", nb); add("roads", roads); add("lines", lines); add("stations", st); add("depots", dep); add("road-labels", roadLabels);
+      map.addLayer({ id: "neighbors", type: "fill", source: "neighbors", paint: { "fill-color": "#c9cfd6", "fill-opacity": .35 } });
+      map.addLayer({ id: "land", type: "fill", source: "land", paint: { "fill-color": css("--land") } });
+      map.addLayer({ id: "roads-fill", type: "fill", source: "roads", paint: { "fill-color": css("--road"), "fill-opacity": ["case", ["boolean", ["feature-state", "dim"], false], .25, 1] } });
+      map.addLayer({ id: "roads-edge", type: "line", source: "roads", paint: { "line-color": css("--road-edge"), "line-width": 1.2 } });
+      map.addLayer({ id: "roads-label", type: "symbol", source: "road-labels", maxzoom: 6.5,
+        layout: { "text-field": ["step", ["zoom"], ["get", "road"], 4.3, ["concat", ["get", "name"], " ж.д."]], "text-font": ["Open Sans Semibold"],
+                  "text-size": ["step", ["zoom"], 11, 4.3, 13], "text-transform": "uppercase", "text-letter-spacing": .08, "text-max-width": 8 },
+        paint: { "text-color": css("--ink-soft"), "text-halo-color": css("--road"), "text-halo-width": 1.5 } });
+      map.addLayer({ id: "track-ind", type: "line", source: "lines", minzoom: 8, filter: ["==", ["get", "usage"], "industrial"],
+        paint: { "line-color": css("--track"), "line-width": 1, "line-opacity": .7 } });
+      map.addLayer({ id: "track-branch", type: "line", source: "lines", filter: ["==", ["get", "usage"], "branch"],
+        paint: { "line-color": css("--track"), "line-width": ["interpolate", ["linear"], ["zoom"], 4, 1, 9, 2.4] } });
+      map.addLayer({ id: "track-main", type: "line", source: "lines", filter: ["==", ["get", "usage"], "main"],
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": css("--track"), "line-width": ["interpolate", ["linear"], ["zoom"], 4, 1.8, 9, 4] } });
+      map.addLayer({ id: "stations", type: "circle", source: "stations", minzoom: 6,
+        paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 1.6, 10, 4], "circle-color": css("--road-edge"), "circle-stroke-color": "#fff", "circle-stroke-width": 1 } });
+      map.addLayer({ id: "stations-label", type: "symbol", source: "stations", minzoom: 7.5,
+        layout: { "text-field": ["get", "name"], "text-font": ["Open Sans Semibold"], "text-size": 11, "text-offset": [0, .9], "text-anchor": "top", "text-optional": true },
+        paint: { "text-color": css("--ink-soft"), "text-halo-color": css("--bg"), "text-halo-width": 1.4 } });
+      map.addLayer({ id: "depots", type: "circle", source: "depots", filter: ["!=", ["get", "icon"], "◆"],
+        paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, 4, 9, 7], "circle-color": ["get", "color"], "circle-stroke-color": "#fff", "circle-stroke-width": 1.5 } });
+      drawDiamonds();
+      map.addLayer({ id: "depot-dia", type: "symbol", source: "depots", filter: ["==", ["get", "icon"], "◆"],
+        layout: { "icon-image": ["concat", "dia-", ["get", "holding_id"]], "icon-size": ["interpolate", ["linear"], ["zoom"], 4, .8, 9, 1.2], "icon-allow-overlap": true } });
+      map.addLayer({ id: "depot-label", type: "symbol", source: "depots", minzoom: 4.4,
+        layout: { "text-field": ["get", "name"], "text-font": ["Open Sans Semibold"], "text-size": 12, "text-anchor": "left", "text-offset": [.9, 0], "text-optional": true, "text-max-width": 14 },
+        paint: { "text-color": css("--depot"), "text-halo-color": css("--bg"), "text-halo-width": 1.6 } });
+
+      for (const l of ["stations", "depots", "depot-dia"]) {
+        map.on("click", l, e => showFeature(e.features[0]));
+        map.on("mouseenter", l, () => map.getCanvas().style.cursor = "pointer");
+        map.on("mouseleave", l, () => map.getCanvas().style.cursor = "");
+      }
+      map.on("click", "roads-fill", e => { if (!map.queryRenderedFeatures(e.point, { layers: ["stations", "depots", "depot-dia"] }).length) pickRoad(e.features[0].properties.road); });
+      renderChips(); renderLegend();
+    });
+  });
+
+function drawDiamonds() {
+  meta.holdings.forEach((h, i) => {
+    const s = 22, c = document.createElement("canvas"); c.width = c.height = s; const g = c.getContext("2d");
+    g.translate(s / 2, s / 2); g.rotate(Math.PI / 4); g.fillStyle = COLORS[i % 6]; g.strokeStyle = "#fff"; g.lineWidth = 2.5;
+    g.fillRect(-6.5, -6.5, 13, 13); g.strokeRect(-6.5, -6.5, 13, 13);
+    map.addImage("dia-" + h.id, g.getImageData(0, 0, s, s));
+  });
+}
+
+function renderChips() {
+  const sel = document.getElementById("road");
+  sel.innerHTML = [["", "Все дороги"], ...Object.entries(meta.roads)].map(([code, name]) => `<option value="${code}">${name}</option>`).join("");
+  sel.value = state.road || "";
+}
+function pickRoad(code) {
+  state.road = code || null;
+  const f = ["==", ["get", "road"], code];
+  for (const l of ["track-main", "track-branch", "track-ind"])
+    map.setPaintProperty(l, "line-opacity", code ? ["case", f, 1, .25] : 1);
+  map.setPaintProperty("roads-fill", "fill-opacity", code ? ["case", f, 1, .35] : 1);
+  for (const l of ["stations", "stations-label", "depots", "depot-dia", "depot-label"]) {
+    const base = { stations: ["has", "name"], "stations-label": ["has", "name"],
+                   depots: ["!=", ["get", "icon"], "◆"], "depot-dia": ["==", ["get", "icon"], "◆"], "depot-label": ["has", "name"] }[l];
+    map.setFilter(l, code ? ["all", base, f] : base);
+  }
+  if (code) {
+    const pts = [...stations, ...depots].filter(x => x.properties.road === code).map(x => x.geometry.coordinates);
+    const lons = pts.map(p => p[0]), lats = pts.map(p => p[1]);
+    map.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: 60, duration: 700 });
+  } else map.fitBounds([[meta.bbox[0], meta.bbox[1]], [meta.bbox[2], meta.bbox[3]]], { padding: 40, duration: 700 });
+  document.getElementById("road").value = state.road || "";
+}
+function renderLegend() {
+  const used = new Set(depots.map(d => d.properties.holding_id));
+  document.getElementById("legend").innerHTML =
+    `<div class="row">${meta.holdings.filter(h => used.has(h.id)).map((h, i) => `<span><i class="dot" style="background:${COLORS[meta.holdings.indexOf(h) % 6]}"></i>${h.short_name}</span>`).join("")}</div>
+     <div class="row"><span><i class="dot" style="background:var(--ink-soft)"></i>депо / завод</span><span><i class="dia" style="background:var(--ink-soft)"></i>участок / ТОР / ВКМ</span><span><i class="dot" style="background:var(--road-edge);width:6px;height:6px"></i>станция (при приближении)</span></div>`;
+}
+function showFeature(f) {
+  const p = f.properties, road = meta.roads[p.road] || "—";
+  document.getElementById("info-body").innerHTML = p.esr !== undefined
+    ? `<div class="k">Станция</div><h3>${p.name}</h3><div><span class="k">Код ЕСР:</span> ${p.esr || "—"}</div><div><span class="k">Дорога:</span> ${road}</div>`
+    : `<div class="k">${p.icon === "◆" ? "Участок / ТОР / ВКМ" : "Депо / завод"}</div><h3>${p.name}</h3><div><span class="k">Холдинг:</span> ${p.holding}</div><div><span class="k">Дорога:</span> ${road}</div>
+       <p style="margin:10px 0 0"><a href="../#/depot/${p.id}">Карточка депо в Вагонотеке →</a></p>`;
+  document.getElementById("info").style.display = "block";
+}
+function hideInfo() { document.getElementById("info").style.display = "none"; }
+
+const q = document.getElementById("q"), res = document.getElementById("res");
+q.addEventListener("input", () => {
+  const s = q.value.trim().toLowerCase();
+  if (s.length < 2) { res.style.display = "none"; return; }
+  const hits = [...depots, ...stations].filter(f => f.properties.name.toLowerCase().includes(s) || (f.properties.esr || "").startsWith(s)).slice(0, 30);
+  res.innerHTML = hits.map((f, i) => `<div data-i="${i}">${f.properties.name}<span>${f.properties.esr || f.properties.holding || ""} · ${f.properties.road}</span></div>`).join("") || `<div>Ничего не найдено</div>`;
+  res.style.display = "block";
+  res.querySelectorAll("[data-i]").forEach(el => el.onclick = () => {
+    const f = hits[+el.dataset.i]; res.style.display = "none"; q.value = f.properties.name;
+    map.flyTo({ center: f.geometry.coordinates, zoom: 10 }); showFeature(f);
+  });
+});
+document.addEventListener("click", e => { if (!e.target.closest(".search")) res.style.display = "none"; });
+</script>
+</body>
+</html>

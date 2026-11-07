@@ -3,3 +3,6 @@
 
 __pycache__/
 *.pyc
+
+# исходники ж/д карты из OSM (db/fetch_railmap_osm.py), большие
+db/osm_cache/

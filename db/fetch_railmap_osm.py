@@ -1,7 +1,7 @@
 """Скачивание исходных данных для ж/д карты (docs/railmap/) в db/osm_cache/ (в git не попадает).
 
   rail_<usage>_<запад>_<восток>.json — пути OSM: way[railway=rail][usage=main|branch], полосами по долготе
-  stations.tsv                        — станции и о.п. России (name, esr:user, railway)
+  stations.tsv, stations_by.tsv, stations_kz.tsv — станции и о.п. России, Беларуси, Казахстана
   ne10_countries.geojson              — Natural Earth 1:10m, границы стран
 
 Overpass бесплатный и медленный: запросы по одному, с паузами и повторами. Уже скачанное не качается
@@ -17,7 +17,7 @@ CACHE = Path(__file__).parent / "osm_cache"
 OVERPASS = "https://overpass-api.de/api/interpreter"
 UA = {"User-Agent": "Vagonoteka-railmap/1.0"}
 OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))  # системный прокси Windows может быть мёртвым
-# полосы по долготе: на западе сеть густая — полосы уже
+# полосы по долготе (захватывают и Беларусь с Казахстаном): на западе сеть густая — полосы уже
 BANDS = [(19, 28), (28, 33), (33, 37), (37, 40), (40, 44), (44, 48), (48, 53), (53, 58), (58, 63), (63, 72),
          (72, 82), (82, 94), (94, 110), (110, 125), (125, 180)]
 NE10 = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_10m_admin_0_countries.geojson"
@@ -53,6 +53,10 @@ def main():
     fetch("stations.tsv", '[out:csv(::type,::id,::lat,::lon,name,"esr:user",railway;true;"\\t")][timeout:600];'
                           'area["ISO3166-1"="RU"][admin_level=2]->.ru;'
                           '(nwr["railway"~"^(station|halt)$"](area.ru););out center;')
+    for iso, name in (("BY", "stations_by.tsv"), ("KZ", "stations_kz.tsv")):  # Белорусская и Казахстанская дороги
+        fetch(name, '[out:csv(::type,::id,::lat,::lon,name,"esr:user",railway;true;"\t")][timeout:600];'
+                    f'area["ISO3166-1"="{iso}"][admin_level=2]->.a;'
+                    '(nwr["railway"~"^(station|halt)$"](area.a););out center;')
     for usage in ("main", "branch"):
         for w, e in BANDS:
             fetch(f"rail_{usage}_{w}_{e}.json",

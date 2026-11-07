@@ -36,7 +36,7 @@ db/
   build_photos.py       photo_match_results.json + docs/Photo/ -> docs/photos/
   rzd.db               собранная база (пересоздаётся build_db.py)
   fetch_railmap_osm.py  OSM (пути, станции) + Natural Earth (границы) -> db/osm_cache/ (в git не попадает, ~200 МБ)
-  build_railmap.py      osm_cache + catalog_data.json -> docs/railmap/*.geojson (карта сети по 16 дорогам)
+  build_railmap.py      osm_cache + catalog_data.json -> docs/railmap/*.geojson (карта сети: 16 дорог РЖД + БЧ, КЗХ)
 docs/
   index.html            каркас страницы: шапка, разделы, подвал (без сборки)
   app.css               стили всех страниц, темы светлая/тёмная
@@ -128,6 +128,8 @@ python -m http.server 8000
 
 ## Карта ж/д сети (`docs/railmap/`)
 
+16 дорог РЖД + Белорусская и Казахстанская (дорога = страна). Те же слои использует карта на странице
+«Ремонтные депо» (`docs/js/depots.js`, MapLibre подгружается только там).
 Пути и станции — OpenStreetMap, границы — Natural Earth; под картой обязательна подпись «© участники OpenStreetMap».
 Дорога станции — по первым двум цифрам кода ЕСР (таблица `ROADS` в `db/build_railmap.py`), станции без кода —
 по ближайшим соседям; территория дороги — области ближайших станций. Обновить (например, после новых депо):

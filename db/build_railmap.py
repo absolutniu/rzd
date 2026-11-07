@@ -1,4 +1,4 @@
-"""Ж/д карта всей сети РЖД: OSM (пути, станции) + наши депо -> слои GeoJSON для docs/railmap/.
+"""Ж/д карта: 16 дорог РЖД + Белорусская и Казахстанская; OSM (пути, станции) + наши депо -> docs/railmap/.
 
 Дорога станции — по первым двум цифрам кода ЕСР (таблица проверена на станциях примыкания наших депо);
 коды, которых нет в таблице, и станции без кода — по большинству ближайших соседей; Калининградская —
@@ -43,12 +43,15 @@ ROADS = {
     "ВСБ": ("Восточно-Сибирская", ("92", "93")),
     "ЗАБ": ("Забайкальская", ("94", "95")),
     "ДВС": ("Дальневосточная", ("91", "96", "97", "98", "99")),
+    "БЧ": ("Белорусская", ()),  # соседние сети — по стране, территория = страна
+    "КЗХ": ("Казахстанская", ()),
 }
+FOREIGN = {"БЧ": ("Belarus", "stations_by.tsv"), "КЗХ": ("Kazakhstan", "stations_kz.tsv")}
 ROAD_BY_PREFIX = {p: code for code, (_, prefixes) in ROADS.items() for p in prefixes}
 RAILWAY_NAME_TO_CODE = {name: code for code, (name, _) in ROADS.items()}
 BAM_JUNCTION_LON = 119.9  # коды БАМа «90…» есть и на ВСЖД, и на ДВЖД: стык Мурурин — Олонгдо
 KALININGRAD = box(19.0, 54.2, 23.0, 55.4)
-NEIGHBORS = ("Belarus", "Ukraine", "Kazakhstan", "Mongolia", "China", "North Korea", "South Korea", "Japan", "Finland",
+NEIGHBORS = ("Ukraine", "Mongolia", "China", "North Korea", "South Korea", "Japan", "Finland",
              "Estonia", "Latvia", "Lithuania", "Poland", "Norway", "Georgia", "Azerbaijan", "Armenia", "Turkey", "Sweden",
              "Uzbekistan", "Turkmenistan", "Kyrgyzstan", "Iran")
 
@@ -103,9 +106,17 @@ def unwrap(g):
 countries = json.loads((SRC / "ne10_countries.geojson").read_text(encoding="utf-8"))
 by_admin = {f["properties"]["ADMIN"]: f for f in countries["features"]}
 russia = unwrap(shape(by_admin["Russia"]["geometry"]).buffer(0))
-land = russia.simplify(0.01)
-clip_area = russia.simplify(0.02).buffer(0.03)  # пути вдоль границы не терять
-shapely.prepare(clip_area)
+def no_holes(g):  # Байконур вырезан из Казахстана в Natural Earth — на карте дыркой не нужен
+    return unary_union([Polygon(p.exterior) for p in (g.geoms if g.geom_type == "MultiPolygon" else [g])])
+
+
+foreign = {road: no_holes(shape(by_admin[admin]["geometry"]).buffer(0)) for road, (admin, _) in FOREIGN.items()}
+land = unary_union([russia, *foreign.values()]).simplify(0.01)
+ru_clip = russia.simplify(0.02).buffer(0.03)  # пути вдоль границы не терять
+foreign_clip = {road: g.simplify(0.02).buffer(0.03) for road, g in foreign.items()}
+clip_area = unary_union([ru_clip, *foreign_clip.values()])
+for g in (ru_clip, clip_area, *foreign_clip.values()):
+    shapely.prepare(g)
 
 # ---- станции ----
 stations, seen = [], set()
@@ -116,11 +127,18 @@ with open(SRC / "stations.tsv", encoding="utf-8") as f:
             continue
         seen.add(key)
         lon, lat = float(r["@lon"]), float(r["@lat"])
-        if not clip_area.contains(Point(lon, lat)):
+        if not ru_clip.contains(Point(lon, lat)):
             continue  # Крым и пр. вне границы Natural Earth — не наша сеть
         road = "КЛГ" if KALININGRAD.contains(Point(lon, lat)) else road_by_code(r["esr:user"], lon)
         stations.append({"lon": lon, "lat": lat, "name": r["name"], "esr": (r["esr:user"] or "").strip(), "road": road,
                          "by_code": road is not None})
+for road, (_, fname) in FOREIGN.items():  # Беларусь, Казахстан: дорога = страна
+    with open(SRC / fname, encoding="utf-8") as f:
+        for r in csv.DictReader(f, delimiter="	"):
+            lon, lat = float(r["@lon"]), float(r["@lat"])
+            if r["railway"] == "station" and r["name"] and foreign_clip[road].contains(Point(lon, lat)):
+                stations.append({"lon": lon, "lat": lat, "name": r["name"], "esr": (r["esr:user"] or "").strip(),
+                                 "road": road, "by_code": False})
 coded = [s for s in stations if s["by_code"]]
 coded_xy = np.array([(c["lon"], c["lat"]) for c in coded])
 for s in stations:  # нет кода или код не из таблицы — по большинству 7 ближайших станций с кодом
@@ -128,8 +146,11 @@ for s in stations:  # нет кода или код не из таблицы —
         dx = (coded_xy[:, 0] - s["lon"]) * np.cos(np.radians(s["lat"]))
         idx = np.argpartition(dx ** 2 + (coded_xy[:, 1] - s["lat"]) ** 2, 7)[:7]
         s["road"] = Counter(coded[i]["road"] for i in idx).most_common(1)[0][0]
-print(f"станций: {len(stations)}, дорога по коду ЕСР: {len(coded)}, по соседям: {len(stations) - len(coded)}", flush=True)
+n_ru = sum(1 for s in stations if s["road"] not in FOREIGN)
+print(f"станций: {len(stations)} (РЖД {n_ru}: по коду ЕСР {len(coded)}, по соседям {n_ru - len(coded)}; БЧ и КЗХ {len(stations) - n_ru})", flush=True)
 all_tree = STRtree([Point(s["lon"], s["lat"]) for s in stations])
+ru_stations = [s for s in stations if s["road"] not in FOREIGN]
+ru_tree = STRtree([Point(s["lon"], s["lat"]) for s in ru_stations])
 
 # ---- пути ----
 by_road_usage = defaultdict(list)
@@ -146,7 +167,8 @@ for path in sorted(SRC.glob("rail_*.json")):
             line = line.intersection(clip_area)
             if line.is_empty or line.geom_type not in ("LineString", "MultiLineString"):
                 continue
-        road = stations[all_tree.nearest(line.interpolate(0.5, normalized=True))]["road"]
+        mid = line.interpolate(0.5, normalized=True)
+        road = next((r for r, g in foreign_clip.items() if g.contains(mid)), None) or ru_stations[ru_tree.nearest(mid)]["road"]
         by_road_usage[(road, usage)].append(line)
 lines = []
 for (road, usage), ls in sorted(by_road_usage.items()):
@@ -155,15 +177,21 @@ for (road, usage), ls in sorted(by_road_usage.items()):
 write("lines.geojson", lines)
 
 # ---- территории дорог ----
-cells = voronoi_polygons(MultiPoint([(s["lon"], s["lat"]) for s in stations]), extend_to=box(*WORLD))
+cells = voronoi_polygons(MultiPoint([(s["lon"], s["lat"]) for s in ru_stations]), extend_to=box(*WORLD))
 cell_road = defaultdict(list)
 for cell in cells.geoms:
-    idx = all_tree.query(cell, predicate="contains")
+    idx = ru_tree.query(cell, predicate="contains")
     if len(idx):
-        cell_road[stations[idx[0]]["road"]].append(cell)
+        cell_road[ru_stations[idx[0]]["road"]].append(cell)
+ru_land = russia.simplify(0.01)
 areas, labels = [], []
-for road, cs in sorted(cell_road.items()):
-    area = polygons_only(unary_union(cs).intersection(land)).simplify(0.02).buffer(0)
+for road in ROADS:
+    if road in FOREIGN:
+        area = foreign[road].simplify(0.02).buffer(0)
+    elif road in cell_road:
+        area = polygons_only(unary_union(cell_road[road]).intersection(ru_land)).simplify(0.02).buffer(0)
+    else:
+        continue
     if area.is_empty:
         continue
     props = {"road": road, "name": ROADS[road][0]}

@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Карта железных дорог</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <style>
@@ -53,7 +54,7 @@
 <body>
 <div id="map"></div>
 <div class="bar">
-  <div class="title">Железные дороги России <small>16 дорог · пути и станции по данным OpenStreetMap</small></div>
+  <div class="title">Железные дороги <small>16 дорог РЖД, Белорусская и Казахстанская · пути и станции по данным OpenStreetMap</small></div>
   <select class="chip road-select" id="road" onchange="pickRoad(this.value)" aria-label="Дорога"></select>
   <div class="search"><input id="q" placeholder="Станция или код ЕСР" autocomplete="off"><div class="res" id="res"></div></div>
 </div>

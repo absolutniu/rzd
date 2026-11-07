@@ -12,6 +12,8 @@
   --warn: #b9791b; --warn-soft: rgba(185,121,27,.15);
   --danger: #c1442e; --danger-soft: rgba(193,68,46,.13);
   --map-1: #bb4d0a; --map-2: #00707f; --map-3: #6a8a3f; --map-4: #7a4fa3; --map-5: #b0306a; --map-6: #3a5f9c;
+  /* карта ж/д сети (как на макетах: голубая территория дорог, белые пути) */
+  --rm-bg: #eef4fb; --rm-neighbor: #e1e5ea; --rm-land: #d6e4f7; --rm-road: #bad3f7; --rm-edge: #7f9fca; --rm-track: #ffffff; --rm-sel: #14181b;
   --shadow: 0 1px 2px rgba(20,24,28,.06), 0 10px 28px rgba(20,24,28,.08);
   --shadow-lg: 0 12px 40px rgba(20,24,28,.18);
   --ease-spring: cubic-bezier(.34,1.56,.64,1); --ease-smooth: cubic-bezier(.22,1,.36,1);
@@ -31,6 +33,7 @@
     --warn: #d6a13c; --warn-soft: rgba(214,161,60,.16);
     --danger: #e0685a; --danger-soft: rgba(224,104,90,.16);
     --map-1: #ff9d55; --map-2: #3fd0e8; --map-3: #9dbf6e; --map-4: #b892e6; --map-5: #f27aaa; --map-6: #8fb2ee;
+    --rm-bg: #12161a; --rm-neighbor: #1d2227; --rm-land: #1b2735; --rm-road: #22364d; --rm-edge: #4f6d92; --rm-track: #cfdcec; --rm-sel: #eef1f2;
     --shadow: 0 1px 2px rgba(0,0,0,.35), 0 10px 28px rgba(0,0,0,.4);
     --shadow-lg: 0 16px 48px rgba(0,0,0,.55);
   }
@@ -43,6 +46,7 @@
   --ok: #4cb37e; --ok-soft: rgba(76,179,126,.15); --warn: #d6a13c; --warn-soft: rgba(214,161,60,.16);
   --danger: #e0685a; --danger-soft: rgba(224,104,90,.16);
   --map-1: #ff9d55; --map-2: #3fd0e8; --map-3: #9dbf6e; --map-4: #b892e6; --map-5: #f27aaa; --map-6: #8fb2ee;
+  --rm-bg: #12161a; --rm-neighbor: #1d2227; --rm-land: #1b2735; --rm-road: #22364d; --rm-edge: #4f6d92; --rm-track: #cfdcec; --rm-sel: #eef1f2;
   --shadow: 0 1px 2px rgba(0,0,0,.35), 0 10px 28px rgba(0,0,0,.4); --shadow-lg: 0 16px 48px rgba(0,0,0,.55);
 }
 
@@ -538,25 +542,17 @@ table.cargo-table td.code { font-family: var(--mono); }
 
 /* ===================== депо ===================== */
 .depot-map-frame { position: relative; background: var(--panel); border: 2px solid var(--line); border-radius: 18px; overflow: hidden; }
-#depot-map { width: 100%; height: auto; display: block; }
-#depot-map .land { fill: var(--panel-sunken); stroke: var(--line-strong); stroke-width: 1; stroke-linejoin: round; }
-#depot-map .dot { fill: var(--dot, var(--accent)); stroke: var(--panel); stroke-width: 1.2; cursor: pointer; transition: r .1s, opacity .15s; }
-#depot-map .dot:hover, #depot-map .dot:focus-visible { fill: var(--ink); r: 5.5; }
-#depot-map .dot.hidden { display: none; }
-#depot-map .dot.sel { fill: var(--ink); r: 6; stroke-width: 2; }
-#depot-map .dot.dia { transform-box: fill-box; transform-origin: center; transform: rotate(45deg); transition: transform .1s, opacity .15s; }
-#depot-map .dot.dia:hover, #depot-map .dot.dia:focus-visible { transform: rotate(45deg) scale(1.45); }
-#depot-map .dot.dia.sel { transform: rotate(45deg) scale(1.6); }
+.depot-map { height: 460px; background: var(--rm-bg); }
+@media (max-width: 720px) { .depot-map { height: 340px; } }
+.depot-map .maplibregl-ctrl-attrib { font-size: 10.5px; }
 .depot-map-legend { display: flex; gap: 16px; flex-wrap: wrap; padding: 0 16px 14px; font-size: 12.5px; color: var(--ink-soft); }
 .map-legend-item { display: flex; align-items: center; gap: 6px; }
 .map-legend-item .sw { width: 9px; height: 9px; border-radius: 999px; display: inline-block; }
 .depot-map-legend.icons { margin-top: -6px; color: var(--ink-faint); }
 .map-legend-item .ic { color: var(--ink-soft); font-size: 12px; }
-.depot-map-tip {
-  position: absolute; pointer-events: none; background: var(--ink); color: var(--paper); font-size: 12px;
-  padding: 5px 9px; border-radius: 6px; transform: translate(-50%, -140%); white-space: nowrap; opacity: 0; transition: opacity .1s; z-index: 5;
-}
-.depot-map-tip.show { opacity: 1; }
+.depot-map-legend { padding-top: 12px; }
+.depot-map-tip .maplibregl-popup-content { background: var(--ink); color: var(--paper); font-size: 12px; padding: 5px 9px; border-radius: 6px; box-shadow: var(--shadow); }
+.depot-map-tip .maplibregl-popup-tip { display: none; }
 .depot-count { margin: 20px 0 10px; font-size: 14.5px; }
 .depot-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
 .depot-split.single { grid-template-columns: minmax(0, 620px); }

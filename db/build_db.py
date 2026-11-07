@@ -555,17 +555,21 @@ def main():
     # в основе 11.2026 нет станции примыкания и кода станции — берём из прежней основы по клейму
     legacy = json.loads(DEPOTS_LEGACY_PATH.read_text(encoding="utf-8")) if DEPOTS_LEGACY_PATH.exists() else {}
     stations = legacy.get("stations_by_stamp", {})
+    def show_flag(v):  # необязательный столбец «Показывать на сайте»: да/нет; пусто — решает правило ниже
+        v = (c(v) or "").lower()
+        return 1 if v in ("да", "1", "yes") else 0 if v in ("нет", "0", "no") else None
+
     def st(r, col, legacy_key):
         return c(r.get(col)) or stations.get(code(r["Клеймо депо"]) or "", {}).get(legacy_key)
     load("Депо_Характер",
          """INSERT INTO depots (id, holding_id, name, stamp_code, railway_id, adjoining_station,
-            station_code, latitude, longitude, website, registration_date, inn, address, map_icon)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            station_code, latitude, longitude, website, registration_date, inn, address, map_icon, show_on_site)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
          lambda r: (r["ID депо"], c(r["ID ремонт. холдинга"]), r["Наименование депо"],
                     code(r["Клеймо депо"]), c(r["Дорога"]), st(r, "Станция примыкания", "adjoining_station"),
                     st(r, "Код станции", "station_code"), f(r["Широта"]), f(r["Долгота"]), c(r["Сайт"]),
                     d(r.get("Дата регистрации")), code(r.get("ИНН")), c(r.get("Адрес производства")),
-                    c(r.get("Значок на карте")) or "●"),
+                    c(r.get("Значок на карте")) or "●", show_flag(r.get("Показывать на сайте"))),
          skip_if=lambda r: not c(r.get("ID депо")))
     # депо, удалённые из основы (клеймо прекращено), — по решению оставлены на сайте с пометкой
     have_stamps = {s for (s,) in cur.execute("SELECT stamp_code FROM depots")}
@@ -654,6 +658,11 @@ def main():
 
     load_prilozhenie_e(conn, cur)
     load_rsfgt(conn, cur)  # реестр клеймения РС ФЖТ: дополняет компетенции, авторизации и реквизиты депо
+    # показывать ли депо на сайте: если в Excel не указано — скрываем депо без действующего клейма
+    cur.execute("""UPDATE depots SET show_on_site = CASE WHEN COALESCE(stamp_status, 'Действует') = 'Действует' THEN 1 ELSE 0 END
+                   WHERE show_on_site IS NULL""")
+    hidden = [n for (n,) in cur.execute("SELECT name FROM depots WHERE show_on_site = 0 ORDER BY id")]
+    print(f"Депо скрыто с сайта: {len(hidden)} ({', '.join(hidden)})")
 
     conn.commit()
 

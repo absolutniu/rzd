@@ -283,7 +283,7 @@ const cargoSource = q => {
 const vagonSource = q => VAGONS.filter(v => v.model.toLowerCase().includes(q))
   .sort((a, b) => a.model.toLowerCase().indexOf(q) - b.model.toLowerCase().indexOf(q) || a.model.localeCompare(b.model, "ru"))
   .map(v => ({ id: v.id, label: v.model, sub: `${TYPE_META[v.typeId].name} · ${mfrShort(v.mfrId)}` }));
-const depotSource = q => DATA.depots.filter(d => d.name.toLowerCase().includes(q) || (d.adjoining_station || "").toLowerCase().includes(q))
+const depotSource = q => DATA.depots.filter(d => d.name.toLowerCase().includes(q))
   .map(d => ({ id: d.id, label: d.name, sub: RAILWAY_BY_ID.get(d.railway_id) || "" }));
 const chipHTML = (label, removeJs, cls = "") => `<span class="chip ${cls}"><span class="t" title="${esc(label)}">${esc(label)}</span><button onclick="${removeJs}" title="Убрать">✕</button></span>`;
 

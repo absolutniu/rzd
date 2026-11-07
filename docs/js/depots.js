@@ -101,6 +101,7 @@ function wireDepotMap() {
 }
 
 /* ---------- панель депо ---------- */
+// станция примыкания и код станции пока не показываются (в базе и выгрузке остаются: adjoining_station, station_code)
 function depotPanelHTML(d) {
   const holding = d.holding_id ? HOLDING_BY_ID.get(d.holding_id) : null;
   const railway = d.railway_id ? RAILWAY_BY_ID.get(d.railway_id) : null;
@@ -138,8 +139,6 @@ function depotPanelHTML(d) {
         <div class="eyebrow" style="margin-bottom:6px">Общие</div>
         <dl class="spec-table">
           <div class="row"><dt>Дорога</dt><dd>${esc(railway || "—")}</dd></div>
-          <div class="row"><dt>Станция примыкания</dt><dd>${esc(d.adjoining_station || "—")}</dd></div>
-          <div class="row"><dt>Код станции</dt><dd>${esc(d.station_code || "—")}</dd></div>
           <div class="row"><dt>Клеймо депо</dt><dd>${esc(d.stamp_code || "—")}${stampOff(d) ? ` <span class="stamp-off">клеймо ${esc(d.stamp_status.toLowerCase())}о</span>` : ""}</dd></div>
           ${d.cert_number ? `<div class="row"><dt>Свидетельство РС ФЖТ</dt><dd>${d.cert_url ? `<a href="${esc(d.cert_url)}" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">№ ${esc(d.cert_number)}</a>` : `№ ${esc(d.cert_number)}`}${d.cert_valid_until ? `, до ${fmtDate(d.cert_valid_until)}` : ""}</dd></div>` : ""}
           <div class="row"><dt>Координаты</dt><dd>${coords}</dd></div>

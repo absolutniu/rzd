@@ -228,6 +228,44 @@ for i, a in enumerate(codes):
             for here, there in ((a, b), (b, a)):
                 junctions.append({"type": "Feature", "properties": {"road": here, "to": there, "to_name": ROADS[there][0]},
                                   "geometry": {"type": "Point", "coordinates": list(c)}})
+
+# стыки из справочника (sources/railmap_stations.xlsx, лист «Соединения ЖД»: станция А — станция Б) заменяют
+# вычисленные переходы для своей пары дорог; точка — середина между стыковыми станциями (или та, что нашлась)
+JUNCTIONS_XLSX = BASE / "sources" / "railmap_stations.xlsx"
+if JUNCTIONS_XLSX.exists():
+    import openpyxl
+    wb = openpyxl.load_workbook(JUNCTIONS_XLSX, read_only=True, data_only=True)
+    known = {str(r[1]).strip(): (r[3], r[2]) for r in wb["0. Справ_Станции + коорд"].iter_rows(min_row=2, values_only=True)
+             if r[1] and r[2] and r[3]}
+    by_name = defaultdict(list)
+    for st in stations:
+        by_name[st["name"].strip().lower()].append(st)
+
+    def locate(name, roads):  # сначала справочник, затем OSM — станция одной из двух дорог стыка
+        if name in known:
+            return known[name]
+        cands = [st for st in by_name.get(name.lower(), []) if st["road"] in roads]
+        return (cands[0]["lon"], cands[0]["lat"]) if cands else None
+
+    fixed = []
+    for r in wb["Соединения ЖД"].iter_rows(min_row=3, values_only=True):
+        if not r[0] or not r[1]:
+            continue
+        a, b = (RAILWAY_NAME_TO_CODE.get(x.strip()) for x in str(r[1]).split(" - "))
+        sa, sb = str(r[3]).strip(), str(r[5]).strip()
+        pts = [p for p in (locate(sa, {a, b}), locate(sb, {a, b})) if p]
+        if not (a and b and pts):
+            print(f"стык {r[0]} ({sa} — {sb}): станции не найдены, пропускаю")
+            continue
+        c = [round(sum(p[0] for p in pts) / len(pts), 4), round(sum(p[1] for p in pts) / len(pts), 4)]
+        fixed.append((a, b, c, f"{sa} — {sb}"))
+    pairs = {frozenset((a, b)) for a, b, _, _ in fixed}
+    junctions = [j for j in junctions if frozenset((j["properties"]["road"], j["properties"]["to"])) not in pairs]
+    for a, b, c, title in fixed:
+        for here, there in ((a, b), (b, a)):
+            junctions.append({"type": "Feature", "properties": {"road": here, "to": there, "to_name": ROADS[there][0], "stations": title},
+                              "geometry": {"type": "Point", "coordinates": c}})
+    print(f"стыков из справочника: {len(fixed)} (пар дорог: {len(pairs)})")
 write("junctions.geojson", junctions)
 
 neighbors = []

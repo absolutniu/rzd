@@ -117,7 +117,8 @@ Promise.all(["meta.json", "lines.geojson", "roads.geojson", "stations.geojson", 
       map.addLayer({ id: "junctions", type: "circle", source: "junctions", filter: ["==", ["get", "road"], ""],
         paint: { "circle-radius": 7, "circle-color": css("--road-edge"), "circle-stroke-color": "#fff", "circle-stroke-width": 2.5 } });
       map.addLayer({ id: "junction-label", type: "symbol", source: "junctions", filter: ["==", ["get", "road"], ""],
-        layout: { "text-field": ["concat", ["get", "to_name"], " ЖД"], "text-font": ["Open Sans Semibold"], "text-size": 13,
+        // подпись перехода: соседняя дорога; второй строкой — стыковые станции из справочника
+        layout: { "text-field": ["format", ["concat", ["get", "to_name"], " ЖД"], {}, ["case", ["has", "stations"], ["concat", "\n", ["get", "stations"]], ""], { "font-scale": .78 }], "text-font": ["Open Sans Semibold"], "text-size": 13,
                   "text-variable-anchor": ["bottom", "top", "left", "right"], "text-radial-offset": 1.1, "text-allow-overlap": false },
         paint: { "text-color": css("--ink"), "text-halo-color": css("--bg"), "text-halo-width": 2 } });
       for (const l of ["junctions", "junction-label"]) {

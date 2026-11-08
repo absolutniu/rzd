@@ -152,7 +152,8 @@ async function initDepotMap() {
     map.addLayer({ id: "junctions", type: "circle", source: "junctions", filter: ["==", ["get", "road"], ""],
       paint: { "circle-radius": 7, "circle-color": c("edge"), "circle-stroke-color": c("track"), "circle-stroke-width": 2.5 } });
     map.addLayer({ id: "junction-label", type: "symbol", source: "junctions", filter: ["==", ["get", "road"], ""],
-      layout: { "text-field": ["concat", ["get", "to_name"], " ЖД"], "text-font": ["Open Sans Semibold"], "text-size": 12.5,
+      // подпись перехода: соседняя дорога; второй строкой — стыковые станции из справочника
+      layout: { "text-field": ["format", ["concat", ["get", "to_name"], " ЖД"], {}, ["case", ["has", "stations"], ["concat", "\n", ["get", "stations"]], ""], { "font-scale": .78 }], "text-font": ["Open Sans Semibold"], "text-size": 12.5,
                 "text-variable-anchor": ["bottom", "top", "left", "right"], "text-radial-offset": 1.1 },
       paint: { "text-color": cssVar("--ink"), "text-halo-color": c("bg"), "text-halo-width": 2 } });
     RM.popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, className: "depot-map-tip", offset: 10 });

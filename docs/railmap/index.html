@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Карта железных дорог</title>
 <link rel="icon" type="image/svg+xml" href="../favicon.svg">
-<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<link rel="stylesheet" href="../vendor/maplibre-gl-4.7.1/maplibre-gl.css">
+<script src="../vendor/maplibre-gl-4.7.1/maplibre-gl.js"></script>
 <style>
   :root {
     --bg: #eaf2fc; --land: #d6e4f7; --road: #bad3f7; --road-edge: #7f9fca; --track: #ffffff;
@@ -55,6 +55,7 @@
 <div id="map"></div>
 <div class="bar">
   <div class="title">Железные дороги <small>16 дорог РЖД, Белорусская и Казахстанская · пути и станции по данным OpenStreetMap</small></div>
+  <button class="chip on" id="all-roads" style="display:none" onclick="pickRoad('')">← Все дороги</button>
   <select class="chip road-select" id="road" onchange="pickRoad(this.value)" aria-label="Дорога"></select>
   <div class="search"><input id="q" placeholder="Станция или код ЕСР" autocomplete="off"><div class="res" id="res"></div></div>
 </div>
@@ -64,25 +65,25 @@
 const COLORS = ["--h1", "--h2", "--h3", "--h4", "--h5", "--h6"].map(v => getComputedStyle(document.documentElement).getPropertyValue(v).trim());
 const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const load = f => fetch(f, { cache: "no-cache" }).then(r => r.json());
-let state = { road: null }, stations = [], depots = [], meta = null, map = null;
+let state = { road: null }, stations = [], depots = [], junctions = [], meta = null, map = null;
 
-Promise.all(["meta.json", "lines.geojson", "roads.geojson", "stations.geojson", "depots.geojson", "land.geojson", "neighbors.geojson", "road_labels.geojson"].map(load))
-  .then(([m, lines, roads, st, dep, land, nb, roadLabels]) => {
-    meta = m; stations = st.features; depots = dep.features;
+Promise.all(["meta.json", "lines.geojson", "roads.geojson", "stations.geojson", "depots.geojson", "land.geojson", "neighbors.geojson", "road_labels.geojson", "junctions.geojson"].map(load))
+  .then(([m, lines, roads, st, dep, land, nb, roadLabels, junc]) => {
+    meta = m; stations = st.features; depots = dep.features; junctions = junc.features;
     const holdColor = id => COLORS[Math.max(0, meta.holdings.findIndex(h => h.id === id)) % 6];
     dep.features.forEach(f => f.properties.color = holdColor(f.properties.holding_id));
     const b = meta.bbox;
     map = new maplibregl.Map({
       container: "map", attributionControl: false, maxBounds: [[b[0] - 25, b[1] - 12], [200, 84]],
       bounds: [[b[0], b[1]], [b[2], b[3]]], fitBoundsOptions: { padding: 40 },
-      style: { version: 8, glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf", sources: {},
+      style: { version: 8, glyphs: new URL("../vendor/fonts/{fontstack}/{range}.pbf", location.href).href.replace(/%7B/g, "{").replace(/%7D/g, "}"), sources: {},
                layers: [{ id: "bg", type: "background", paint: { "background-color": css("--bg") } }] },
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
     map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: "© участники OpenStreetMap · Natural Earth" }));
     map.on("load", () => {
       const add = (id, data) => map.addSource(id, { type: "geojson", data });
-      add("land", land); add("neighbors", nb); add("roads", roads); add("lines", lines); add("stations", st); add("depots", dep); add("road-labels", roadLabels);
+      add("land", land); add("neighbors", nb); add("roads", roads); add("lines", lines); add("stations", st); add("depots", dep); add("road-labels", roadLabels); add("junctions", junc);
       map.addLayer({ id: "neighbors", type: "fill", source: "neighbors", paint: { "fill-color": "#c9cfd6", "fill-opacity": .35 } });
       map.addLayer({ id: "land", type: "fill", source: "land", paint: { "fill-color": css("--land") } });
       map.addLayer({ id: "roads-fill", type: "fill", source: "roads", paint: { "fill-color": css("--road"), "fill-opacity": ["case", ["boolean", ["feature-state", "dim"], false], .25, 1] } });
@@ -112,12 +113,28 @@ Promise.all(["meta.json", "lines.geojson", "roads.geojson", "stations.geojson", 
         layout: { "text-field": ["get", "name"], "text-font": ["Open Sans Semibold"], "text-size": 12, "text-anchor": "left", "text-offset": [.9, 0], "text-optional": true, "text-max-width": 14 },
         paint: { "text-color": css("--depot"), "text-halo-color": css("--bg"), "text-halo-width": 1.6 } });
 
+      // переходы на соседние дороги — видны только у выбранной дороги, клик — переход
+      map.addLayer({ id: "junctions", type: "circle", source: "junctions", filter: ["==", ["get", "road"], ""],
+        paint: { "circle-radius": 7, "circle-color": css("--road-edge"), "circle-stroke-color": "#fff", "circle-stroke-width": 2.5 } });
+      map.addLayer({ id: "junction-label", type: "symbol", source: "junctions", filter: ["==", ["get", "road"], ""],
+        layout: { "text-field": ["concat", ["get", "to_name"], " ЖД"], "text-font": ["Open Sans Semibold"], "text-size": 13,
+                  "text-variable-anchor": ["bottom", "top", "left", "right"], "text-radial-offset": 1.1, "text-allow-overlap": false },
+        paint: { "text-color": css("--ink"), "text-halo-color": css("--bg"), "text-halo-width": 2 } });
+      for (const l of ["junctions", "junction-label"]) {
+        map.on("click", l, e => pickRoad(e.features[0].properties.to));
+        map.on("mouseenter", l, () => map.getCanvas().style.cursor = "pointer");
+        map.on("mouseleave", l, () => map.getCanvas().style.cursor = "");
+      }
       for (const l of ["stations", "depots", "depot-dia"]) {
         map.on("click", l, e => showFeature(e.features[0]));
         map.on("mouseenter", l, () => map.getCanvas().style.cursor = "pointer");
         map.on("mouseleave", l, () => map.getCanvas().style.cursor = "");
       }
-      map.on("click", "roads-fill", e => { if (!map.queryRenderedFeatures(e.point, { layers: ["stations", "depots", "depot-dia"] }).length) pickRoad(e.features[0].properties.road); });
+      map.on("click", "roads-fill", e => {
+        if (!map.queryRenderedFeatures(e.point, { layers: ["stations", "depots", "depot-dia", "junctions", "junction-label"] }).length) pickRoad(e.features[0].properties.road);
+      });
+      map.on("mouseenter", "roads-fill", () => { if (!state.road) map.getCanvas().style.cursor = "pointer"; });
+      map.on("mouseleave", "roads-fill", () => map.getCanvas().style.cursor = "");
       renderChips(); renderLegend();
     });
   });
@@ -137,18 +154,25 @@ function renderChips() {
   sel.value = state.road || "";
 }
 function pickRoad(code) {
+  // выбрана дорога — она крупно, соседние едва видны; по краям — переходы на соседние дороги
   state.road = code || null;
+  hideInfo();
   const f = ["==", ["get", "road"], code];
   for (const l of ["track-main", "track-branch", "track-ind"])
-    map.setPaintProperty(l, "line-opacity", code ? ["case", f, 1, .25] : 1);
-  map.setPaintProperty("roads-fill", "fill-opacity", code ? ["case", f, 1, .35] : 1);
+    map.setPaintProperty(l, "line-opacity", code ? ["case", f, 1, .1] : 1);
+  map.setPaintProperty("roads-fill", "fill-opacity", code ? ["case", f, 1, .18] : 1);
+  map.setPaintProperty("roads-edge", "line-opacity", code ? ["case", f, 1, .25] : 1);
+  map.setLayoutProperty("roads-label", "visibility", code ? "none" : "visible");
+  map.setFilter("junctions", f); map.setFilter("junction-label", f);
+  document.getElementById("all-roads").style.display = code ? "" : "none";
+  map.setLayerZoomRange("depot-label", code ? 0 : 4.4, 24);  // у выбранной дороги подписи депо сразу
   for (const l of ["stations", "stations-label", "depots", "depot-dia", "depot-label"]) {
     const base = { stations: ["has", "name"], "stations-label": ["has", "name"],
                    depots: ["!=", ["get", "icon"], "◆"], "depot-dia": ["==", ["get", "icon"], "◆"], "depot-label": ["has", "name"] }[l];
     map.setFilter(l, code ? ["all", base, f] : base);
   }
   if (code) {
-    const pts = [...stations, ...depots].filter(x => x.properties.road === code).map(x => x.geometry.coordinates);
+    const pts = [...stations, ...depots, ...junctions].filter(x => x.properties.road === code).map(x => x.geometry.coordinates);
     const lons = pts.map(p => p[0]), lats = pts.map(p => p[1]);
     map.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: 60, duration: 700 });
   } else map.fitBounds([[meta.bbox[0], meta.bbox[1]], [meta.bbox[2], meta.bbox[3]]], { padding: 40, duration: 700 });

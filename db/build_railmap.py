@@ -170,9 +170,11 @@ for path in sorted(SRC.glob("rail_*.json")):
         mid = line.interpolate(0.5, normalized=True)
         road = next((r for r, g in foreign_clip.items() if g.contains(mid)), None) or ru_stations[ru_tree.nearest(mid)]["road"]
         by_road_usage[(road, usage)].append(line)
-lines = []
+lines, track_raw = [], defaultdict(list)  # track_raw — пути дороги без упрощения (для переходов)
 for (road, usage), ls in sorted(by_road_usage.items()):
-    merged = linemerge(unary_union(ls)).simplify(0.0015 if usage == "main" else 0.002, preserve_topology=False)
+    raw_lines = linemerge(unary_union(ls))
+    track_raw[road].append(raw_lines)
+    merged = raw_lines.simplify(0.0015 if usage == "main" else 0.002, preserve_topology=False)
     lines.append({"type": "Feature", "properties": {"road": road, "usage": usage}, "geometry": rounded(merged)})
 write("lines.geojson", lines)
 
@@ -184,14 +186,15 @@ for cell in cells.geoms:
     if len(idx):
         cell_road[ru_stations[idx[0]]["road"]].append(cell)
 ru_land = russia.simplify(0.01)
-areas, labels = [], []
+areas, labels, area_raw = [], [], {}
 for road in ROADS:
     if road in FOREIGN:
-        area = foreign[road].simplify(0.02).buffer(0)
+        area_raw[road] = foreign[road]
     elif road in cell_road:
-        area = polygons_only(unary_union(cell_road[road]).intersection(ru_land)).simplify(0.02).buffer(0)
+        area_raw[road] = polygons_only(unary_union(cell_road[road]).intersection(ru_land))
     else:
         continue
+    area = area_raw[road].simplify(0.02).buffer(0)
     if area.is_empty:
         continue
     props = {"road": road, "name": ROADS[road][0]}
@@ -201,6 +204,31 @@ for road in ROADS:
     labels.append({"type": "Feature", "properties": props, "geometry": {"type": "Point", "coordinates": [round(pt.x, 3), round(pt.y, 3)]}})
 write("roads.geojson", areas)
 write("road_labels.geojson", labels)
+
+# ---- переходы между дорогами: где пути пересекают границу территорий двух дорог ----
+# точка одна, а объекта два (по одному на каждую сторону): при выбранной дороге видны её переходы,
+# подпись — соседняя дорога, клик — переход на неё
+JUNCTION_GAP = 0.35  # ° (~25–35 км): ближе — один переход
+junctions = []
+codes = list(area_raw)
+for i, a in enumerate(codes):
+    for b in codes[i + 1:]:
+        strip = area_raw[a].buffer(0.02).intersection(area_raw[b].buffer(0.02))
+        if strip.is_empty or strip.area == 0:
+            continue
+        cross = unary_union(track_raw[a] + track_raw[b]).intersection(strip)
+        pts = [g.interpolate(0.5, normalized=True) for g in getattr(cross, "geoms", [cross]) if g.geom_type == "LineString" and not g.is_empty]
+        groups = []
+        for p in pts:
+            g = next((g for g in groups if g[0].distance(p) < JUNCTION_GAP), None)
+            if g: g.append(p)
+            else: groups.append([p])
+        for g in groups:
+            c = (round(sum(p.x for p in g) / len(g), 4), round(sum(p.y for p in g) / len(g), 4))
+            for here, there in ((a, b), (b, a)):
+                junctions.append({"type": "Feature", "properties": {"road": here, "to": there, "to_name": ROADS[there][0]},
+                                  "geometry": {"type": "Point", "coordinates": list(c)}})
+write("junctions.geojson", junctions)
 
 neighbors = []
 for name in NEIGHBORS:

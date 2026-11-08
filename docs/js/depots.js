@@ -55,7 +55,7 @@ const depotHash = () => depState.model ? `#/depots/model/${depState.model}` : "#
 const holdingColor = id => `var(--map-${(DATA.repairHoldings.findIndex(h => h.id === id) % 6) + 1})`;
 // значок на карте (лист «Депо_Характер», описание — «Справочник_ID»)
 const MAP_ICONS = [["●", "вагоноремонтное депо / завод"], ["◆", "вагонный участок / участок ТОР / ВКМ / колесно-роликовый участок"]];
-const MAPLIBRE = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl";
+const MAPLIBRE = "vendor/maplibre-gl-4.7.1/maplibre-gl";  // своя копия, без внешних CDN
 const RAILMAP_VIEW = [[19, 41], [145, 71]];
 // карта живёт дольше страницы: renderDepots() перерисовывает HTML, а этот узел переносится в новый слот
 const RM = { map: null, el: null, loading: null, meta: null, visible: new Set(), fitKey: "", selected: null, popup: null };
@@ -104,9 +104,12 @@ const cssVar = name => getComputedStyle(document.documentElement).getPropertyVal
 async function initDepotMap() {
   if (RM.map) return;
   const get = f => fetch("railmap/" + f, { cache: "no-cache" }).then(r => r.json());
-  const [meta, land, neighbors, roads, lines, stations] = await Promise.all(
-    ["meta.json", "land.geojson", "neighbors.geojson", "roads.geojson", "lines.geojson", "stations.geojson"].map(get));
-  RM.meta = meta;
+  const [meta, land, neighbors, roads, lines, stations, junctions] = await Promise.all(
+    ["meta.json", "land.geojson", "neighbors.geojson", "roads.geojson", "lines.geojson", "stations.geojson", "junctions.geojson"].map(get));
+  RM.meta = meta; RM.stations = stations.features; RM.junctions = junctions.features;
+  // код дороги на карте (ОКТ, МСК…) <-> railway_id сайта — по названию; у БЧ, КЗХ, КЛГ депо нет
+  RM.railwayByCode = new Map(Object.entries(meta.roads).map(([code, name]) => [code, DATA.railways.find(r => r.name.trim() === name)?.id]).filter(([, id]) => id));
+  RM.codeByRailway = new Map([...RM.railwayByCode].map(([code, id]) => [id, code]));
   const c = n => cssVar("--rm-" + n);
   const map = RM.map = new maplibregl.Map({
     container: RM.el, attributionControl: false, bounds: RAILMAP_VIEW, fitBoundsOptions: { padding: 20 },
@@ -117,12 +120,13 @@ async function initDepotMap() {
       "CooperativeGesturesHandler.MobileHelpText": "Карту двигают двумя пальцами",
       "NavigationControl.ZoomIn": "Приблизить", "NavigationControl.ZoomOut": "Отдалить",
     },
-    style: { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": c("bg") } }] },
+    style: { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": c("bg") } }],
+             glyphs: new URL("vendor/fonts/{fontstack}/{range}.pbf", document.baseURI).href.replace(/%7B/g, "{").replace(/%7D/g, "}") },
   });
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
   map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: "© участники OpenStreetMap · Natural Earth" }));
   map.on("load", () => {
-    for (const [id, data] of Object.entries({ land, neighbors, roads, lines, stations, depots: depotFeatures() })) map.addSource(id, { type: "geojson", data });
+    for (const [id, data] of Object.entries({ land, neighbors, roads, lines, stations, junctions, depots: depotFeatures() })) map.addSource(id, { type: "geojson", data });
     map.addLayer({ id: "neighbors", type: "fill", source: "neighbors", paint: { "fill-color": c("neighbor") } });
     map.addLayer({ id: "land", type: "fill", source: "land", paint: { "fill-color": c("land") } });
     map.addLayer({ id: "roads-fill", type: "fill", source: "roads", paint: { "fill-color": c("road") } });
@@ -144,6 +148,13 @@ async function initDepotMap() {
     map.addLayer({ id: "depots-dia", type: "symbol", source: "depots", filter: ["get", "dia"],
       layout: { "icon-image": "dia", "icon-size": ["interpolate", ["linear"], ["zoom"], 3, .55, 9, 1], "icon-allow-overlap": true },
       paint: { "icon-color": ["get", "color"], "icon-halo-color": c("track"), "icon-halo-width": 1.2 } });
+    // переходы на соседние дороги — когда в фильтре одна дорога; клик — фильтр на соседнюю
+    map.addLayer({ id: "junctions", type: "circle", source: "junctions", filter: ["==", ["get", "road"], ""],
+      paint: { "circle-radius": 7, "circle-color": c("edge"), "circle-stroke-color": c("track"), "circle-stroke-width": 2.5 } });
+    map.addLayer({ id: "junction-label", type: "symbol", source: "junctions", filter: ["==", ["get", "road"], ""],
+      layout: { "text-field": ["concat", ["get", "to_name"], " ЖД"], "text-font": ["Open Sans Semibold"], "text-size": 12.5,
+                "text-variable-anchor": ["bottom", "top", "left", "right"], "text-radial-offset": 1.1 },
+      paint: { "text-color": cssVar("--ink"), "text-halo-color": c("bg"), "text-halo-width": 2 } });
     RM.popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, className: "depot-map-tip", offset: 10 });
     for (const l of ["depots", "depots-dia", "stations"]) {
       map.on("mousemove", l, e => {
@@ -155,8 +166,24 @@ async function initDepotMap() {
     }
     for (const l of ["depots", "depots-dia"])
       map.on("click", l, e => { const id = e.features[0].properties.id; nav(id === depState.selected ? depotHash() : `#/depot/${id}`); });
+    for (const l of ["junctions", "junction-label"]) {
+      map.on("click", l, e => pickMapRoad(e.features[0].properties.to));
+      map.on("mouseenter", l, () => map.getCanvas().style.cursor = "pointer");
+      map.on("mouseleave", l, () => map.getCanvas().style.cursor = "");
+    }
+    map.on("click", "roads-fill", e => {
+      if (!map.queryRenderedFeatures(e.point, { layers: ["depots", "depots-dia", "junctions", "junction-label"] }).length) pickMapRoad(e.features[0].properties.road);
+    });
     updateDepotMap();
   });
+}
+
+// выбор дороги на карте = фильтр «Дорога» с одной этой дорогой
+function pickMapRoad(code) {
+  const id = RM.railwayByCode.get(code);
+  if (!id || (depState.railways.size === 1 && depState.railways.has(id))) return;
+  depState.railways = new Set([id]);
+  if (depState.selected) nav(depotHash()); else renderDepots();
 }
 
 function updateDepotMap() {
@@ -167,20 +194,29 @@ function updateDepotMap() {
   map.setFilter("depots", ["all", ["!", ["get", "dia"]], shown]);
   map.setFilter("depots-dia", ["all", ["get", "dia"], shown]);
   map.setFilter("depot-sel", ["==", ["get", "id"], depState.selected || ""]);
-  // выбраны дороги — их территория и пути ярче, остальные бледнее
-  const codes = Object.entries(RM.meta.roads).filter(([, n]) => [...depState.railways].some(id => RAILWAY_BY_ID.get(id) === n)).map(([k]) => k);
+  // выбраны дороги — их территория и пути ярче, остальные бледнее; одна дорога — крупно, с переходами на соседние
+  const codes = [...depState.railways].map(id => RM.codeByRailway.get(id)).filter(Boolean);
+  const single = codes.length === 1 ? codes[0] : null;
   const on = codes.length ? ["in", ["get", "road"], ["literal", codes]] : true;
-  map.setPaintProperty("roads-fill", "fill-opacity", codes.length ? ["case", on, 1, .4] : 1);
-  for (const l of ["track-main", "track-branch"]) map.setPaintProperty(l, "line-opacity", codes.length ? ["case", on, 1, .35] : 1);
+  map.setPaintProperty("roads-fill", "fill-opacity", codes.length ? ["case", on, 1, single ? .18 : .4] : 1);
+  map.setPaintProperty("roads-edge", "line-opacity", single ? ["case", on, 1, .25] : 1);
+  for (const l of ["track-main", "track-branch"]) map.setPaintProperty(l, "line-opacity", codes.length ? ["case", on, 1, single ? .1 : .35] : 1);
+  const jf = single ? ["all", ["==", ["get", "road"], single], ["in", ["get", "to"], ["literal", [...RM.railwayByCode.keys()]]]] : ["==", ["get", "road"], ""];
+  map.setFilter("junctions", jf); map.setFilter("junction-label", jf);
   // вид: выбранное депо — к нему; изменился набор депо — показать все найденные
   const sel = depState.selected && DEPOT_BY_ID.get(depState.selected);
   if (sel && sel.latitude != null && RM.selected !== sel.id) {
     map.easeTo({ center: [sel.longitude, sel.latitude], zoom: Math.max(map.getZoom(), 5.5), duration: 600 });
   } else if (!sel) {
-    const key = all ? "" : ids.slice().sort().join();
+    const key = single ? "road:" + single : all ? "" : ids.slice().sort().join();
     if (key !== RM.fitKey) {
       const pts = ids.map(id => DEPOT_BY_ID.get(id)).filter(d => d && d.latitude != null);
-      if (!all && pts.length) {
+      if (single) {  // вся дорога: её станции, депо и переходы
+        const xy = [...RM.stations, ...RM.junctions].filter(f => f.properties.road === single).map(f => f.geometry.coordinates)
+          .concat(pts.map(d => [d.longitude, d.latitude]));
+        const lon = xy.map(p => p[0]), lat = xy.map(p => p[1]);
+        map.fitBounds([[Math.min(...lon), Math.min(...lat)], [Math.max(...lon), Math.max(...lat)]], { padding: 50, duration: 600 });
+      } else if (!all && pts.length) {
         const lon = pts.map(d => d.longitude), lat = pts.map(d => d.latitude);
         map.fitBounds([[Math.min(...lon), Math.min(...lat)], [Math.max(...lon), Math.max(...lat)]], { padding: 50, maxZoom: 7, duration: 600 });
       } else map.fitBounds(RAILMAP_VIEW, { padding: 20, duration: 600 });

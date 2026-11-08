@@ -51,53 +51,180 @@ function renderDepotsRoute(params) {
 }
 const depotHash = () => depState.model ? `#/depots/model/${depState.model}` : "#/depots";
 
-/* ---------- карта ---------- */
-const RUSSIA_OUTLINE = [[112.12,73.79,113.02,73.98,113.53,73.34,113.97,73.59,115.57,73.75,118.78,73.59,119.02,73.12,123.2,72.97,123.26,73.74,126.98,73.57,128.59,73.04,129.05,72.4,128.46,71.98,129.72,71.19,131.29,70.79,132.25,71.84,133.86,71.39,135.56,71.66,137.5,71.35,138.23,71.63,139.87,71.49,139.15,72.42,140.47,72.85,146.0,72.45,146.0,59.31,142.2,59.04,135.13,54.73,136.7,54.6,137.19,53.98,138.16,53.76,138.8,54.25,139.9,54.19,141.35,53.09,141.38,52.24,140.6,51.24,140.06,48.45,138.55,47.0,138.22,46.31,134.87,43.4,133.54,42.81,132.91,42.8,132.28,43.28,130.94,42.55,130.78,42.22,130.64,42.4,130.63,42.9,131.14,42.93,131.29,44.11,131.03,44.97,131.88,45.32,133.1,45.14,133.77,46.12,134.11,47.21,135.03,48.48,133.37,48.18,132.51,47.79,130.99,47.79,130.58,48.73,129.4,49.44,127.66,49.76,127.29,50.74,125.95,52.79,123.57,53.46,121.0,53.25,120.18,52.75,120.73,52.52,120.74,51.96,119.28,50.58,119.29,50.14,117.88,49.51,116.68,49.89,115.49,49.81,114.36,50.25,112.9,49.54,110.66,49.13,108.48,49.28,106.89,50.27,105.89,50.41,103.68,50.09,102.26,50.51,102.07,51.26,98.86,52.05,97.83,51.01,98.23,50.42,97.26,49.73,94.82,50.01,94.15,50.48,93.1,50.5,92.23,50.8,88.81,49.47,87.36,49.21,86.83,49.83,85.54,49.69,83.38,51.07,81.95,50.81,80.57,51.39,80.04,50.86,77.8,53.4,76.53,54.18,76.89,54.49,74.38,53.55,73.43,53.49,73.51,54.04,72.22,54.38,71.18,54.13,70.87,55.17,69.07,55.39,68.17,54.97,65.18,54.35,61.44,54.01,60.98,53.66,61.7,52.98,60.74,52.72,60.93,52.45,59.97,51.96,61.59,51.27,61.34,50.8,59.93,50.84,59.64,50.55,58.36,51.06,56.78,51.04,55.72,50.62,52.33,51.72,50.77,51.69,48.7,50.61,48.58,49.87,47.55,50.45,46.75,49.36,47.04,49.15,46.47,48.39,47.32,47.72,48.06,47.74,48.69,47.08,48.59,46.56,49.1,46.4,48.65,45.81,47.68,45.64,46.68,44.61,47.59,43.66,47.49,42.99,48.58,41.81,47.82,41.15,45.78,42.09,45.47,42.5,44.54,42.71,43.93,42.55,42.39,43.22,39.96,43.43,36.68,45.24,37.4,45.4,38.23,46.24,37.67,46.64,39.15,47.04,39.12,47.26,38.22,47.1,38.26,47.55,38.77,47.83,39.74,47.9,39.9,48.23,39.67,48.78,40.07,49.6,38.01,49.92,37.39,50.38,36.63,50.23,35.36,50.58,35.02,51.21,34.22,51.26,34.14,51.57,34.39,51.77,33.75,52.34,31.79,52.1,31.31,53.07,32.69,53.35,31.73,53.79,31.79,53.97,30.76,54.81,30.97,55.08,30.87,55.55,29.9,55.79,29.37,55.67,29.23,55.92,28.18,56.17,27.77,57.24,27.29,57.47,27.72,57.79,27.42,58.72,28.13,59.3,27.98,59.48,29.12,60.03,28.07,60.5,31.14,62.36,31.52,62.87,30.04,63.55,30.44,64.2,29.54,64.95,30.22,65.81,29.05,66.94,29.98,67.7,28.45,68.36,28.59,69.06,32.13,69.91,33.78,69.3,36.51,69.06,40.29,67.93,41.06,67.46,41.13,66.79,40.02,66.27,38.38,66.0,33.92,66.76,33.18,66.63,34.81,65.9,34.94,64.41,37.01,63.85,37.14,64.33,36.54,64.76,37.18,65.14,39.59,64.52,40.44,64.76,39.76,65.5,42.09,66.48,43.95,66.07,44.53,66.76,43.7,67.35,44.19,67.95,43.45,68.57,46.25,68.25,46.82,67.69,45.56,67.57,45.56,67.01,46.35,66.67,47.89,66.88,48.14,67.52,53.72,68.86,54.47,68.81,53.49,68.2,54.73,68.1,55.44,68.44,57.32,68.47,58.8,68.88,59.94,68.28,61.08,68.94,60.03,69.52,60.55,69.85,63.5,69.55,68.51,68.09,69.18,68.62,68.16,69.14,68.14,69.36,66.93,69.45,67.26,69.93,66.69,71.03,68.54,71.93,69.2,72.84,69.94,73.04,72.59,72.78,72.8,72.22,71.85,71.41,72.47,71.09,72.79,70.39,72.56,69.02,73.67,68.41,73.24,67.74,71.28,66.32,72.42,66.17,72.82,66.53,73.92,66.79,74.19,67.28,75.05,67.76,74.47,68.33,74.94,68.99,73.84,69.07,73.6,69.63,74.4,70.63,73.1,71.45,74.89,72.12,74.66,72.83,75.16,72.85,75.68,72.3,75.29,71.34,76.36,71.15,75.9,71.87,77.58,72.27,79.65,72.32,81.5,71.75,80.61,72.58,80.51,73.65,82.25,73.85,110.87,74.0],[57.54,70.72,53.68,70.76,53.41,71.21,51.6,71.47,51.46,72.01,52.48,72.23,52.44,72.77,54.43,73.63,53.51,73.75,54.19,74.0,58.01,74.0,55.42,72.37,55.62,71.54],[144.65,48.98,143.17,49.31,142.56,47.86,143.53,46.84,143.51,46.14,142.75,46.74,142.09,45.97,141.9,48.86,142.18,50.95,141.59,51.94,141.68,53.3,142.61,53.76,142.21,54.23,142.65,54.37,143.26,52.74,143.24,51.76],[22.73,54.33,19.66,54.43,19.89,54.87,21.27,55.19,22.76,54.86],[143.6,73.21,140.04,73.32,139.86,73.37,140.81,73.77,142.06,73.86,143.48,73.48]];
-// фиксированные геограницы — те же, по которым обрезан RUSSIA_OUTLINE (db/build_map_outline.py)
-const MAP = (() => {
-  const LON_MIN = 18, LON_MAX = 146, LAT_MIN = 40, LAT_MAX = 74, W = 640, H = 360, PAD = 20;
-  const xCorr = Math.cos((LAT_MIN + LAT_MAX) / 2 * Math.PI / 180);
-  const geoW = (LON_MAX - LON_MIN) * xCorr, geoH = LAT_MAX - LAT_MIN;
-  const scale = Math.min((W - 2 * PAD) / geoW, (H - 2 * PAD) / geoH);
-  const left = PAD + ((W - 2 * PAD) - geoW * scale) / 2, top = PAD + ((H - 2 * PAD) - geoH * scale) / 2;
-  const x = lon => left + (lon - LON_MIN) * xCorr * scale, y = lat => top + (LAT_MAX - lat) * scale;
-  const land = RUSSIA_OUTLINE.map(r => { let d = ""; for (let i = 0; i < r.length; i += 2) d += (i ? "L" : "M") + x(r[i]).toFixed(1) + " " + y(r[i + 1]).toFixed(1); return d + "Z"; }).join(" ");
-  return { W, H, x, y, land };
-})();
+/* ---------- карта: MapLibre + слои ж/д сети из railmap/ (db/build_railmap.py) ---------- */
 const holdingColor = id => `var(--map-${(DATA.repairHoldings.findIndex(h => h.id === id) % 6) + 1})`;
 // значок на карте (лист «Депо_Характер», описание — «Справочник_ID»)
 const MAP_ICONS = [["●", "вагоноремонтное депо / завод"], ["◆", "вагонный участок / участок ТОР / ВКМ / колесно-роликовый участок"]];
-function depotMapHTML(visible) {
-  const dots = DATA.depots.filter(d => d.latitude != null && d.longitude != null).map(d => {
-    const x = MAP.x(d.longitude).toFixed(1), y = MAP.y(d.latitude).toFixed(1);
-    const attrs = `class="dot${d.map_icon === "◆" ? " dia" : ""}${visible.has(d.id) ? "" : " hidden"}${depState.selected === d.id ? " sel" : ""}" data-id="${d.id}" data-x="${x}" data-y="${y}" style="--dot:${holdingColor(d.holding_id)}" tabindex="0" role="button" aria-label="${esc(d.name)}"`;
-    return d.map_icon === "◆" ? `<rect ${attrs} x="${(x - 3.2).toFixed(1)}" y="${(y - 3.2).toFixed(1)}" width="6.4" height="6.4"></rect>` : `<circle ${attrs} cx="${x}" cy="${y}" r="3.8"></circle>`;
-  }).join("");
+const MAPLIBRE = "vendor/maplibre-gl-4.7.1/maplibre-gl";  // своя копия, без внешних CDN
+const RAILMAP_VIEW = [[19, 41], [145, 71]];
+// карта живёт дольше страницы: renderDepots() перерисовывает HTML, а этот узел переносится в новый слот
+const RM = { map: null, el: null, loading: null, meta: null, visible: new Set(), fitKey: "", selected: null, popup: null };
+
+function loadMapLibre() {  // ~800 КБ — грузим, только когда открыли «Ремонтные депо»
+  if (window.maplibregl) return Promise.resolve();
+  RM.loading ||= new Promise((ok, fail) => {
+    const css = document.createElement("link");
+    css.rel = "stylesheet"; css.href = MAPLIBRE + ".css";
+    const js = document.createElement("script");
+    js.src = MAPLIBRE + ".js"; js.onload = ok; js.onerror = fail;
+    document.head.append(css, js);
+  });
+  return RM.loading;
+}
+
+function depotMapHTML() {
   return `<div class="depot-map-frame">
-    <svg id="depot-map" viewBox="0 0 ${MAP.W} ${MAP.H}" preserveAspectRatio="xMidYMid meet"><path class="land" d="${MAP.land}" fill-rule="evenodd"/>${dots}</svg>
-    <div class="depot-map-tip" id="depot-map-tip"></div>
+    <div class="depot-map-slot" id="depot-map-slot"></div>
     <div class="depot-map-legend">${DATA.repairHoldings.map(h => `<span class="map-legend-item"><span class="sw" style="background:${holdingColor(h.id)}"></span>${esc(h.short_name)}</span>`).join("")}</div>
-    <div class="depot-map-legend icons">${MAP_ICONS.map(([icon, label]) => `<span class="map-legend-item"><span class="ic">${icon}</span>${esc(label)}</span>`).join("")}</div>
+    <div class="depot-map-legend icons">${MAP_ICONS.map(([icon, label]) => `<span class="map-legend-item"><span class="ic">${icon}</span>${esc(label)}</span>`).join("")}
+      <a class="map-legend-item" href="railmap/" style="margin-left:auto;color:var(--accent)">Карта ж/д сети →</a></div>
   </div>`;
 }
-function wireDepotMap() {
-  const svg = $("depot-map"), tip = $("depot-map-tip");
-  if (!svg) return;
-  const show = dot => {
-    const r = svg.getBoundingClientRect();
-    tip.textContent = DEPOT_BY_ID.get(dot.dataset.id).name;
-    tip.style.left = (r.width * dot.dataset.x / MAP.W) + "px";
-    tip.style.top = (r.height * dot.dataset.y / MAP.H) + "px";
-    tip.classList.add("show");
-  };
-  svg.querySelectorAll(".dot").forEach(dot => {
-    dot.addEventListener("mouseenter", () => show(dot));
-    dot.addEventListener("focus", () => show(dot));
-    dot.addEventListener("mouseleave", () => { if (dot.dataset.id !== depState.selected) tip.classList.remove("show"); else show(dot); });
-    dot.addEventListener("click", () => nav(`#/depot/${dot.dataset.id}`));
+
+function wireDepotMap(visible) {
+  const slot = $("depot-map-slot");
+  if (!slot) return;
+  RM.visible = visible;
+  if (!RM.el) { RM.el = document.createElement("div"); RM.el.className = "depot-map"; }
+  slot.appendChild(RM.el);
+  if (RM.map) { RM.map.resize(); updateDepotMap(); return; }
+  loadMapLibre().then(initDepotMap).catch(() => {
+    RM.el.innerHTML = `<p class="no-data" style="padding:24px">Карта не загрузилась — проверьте подключение к интернету.</p>`;
   });
-  const sel = depState.selected && svg.querySelector(`.dot[data-id="${depState.selected}"]`);
-  if (sel) { sel.parentNode.appendChild(sel); show(sel); }
+}
+
+function depotFeatures() {
+  return { type: "FeatureCollection", features: DATA.depots.filter(d => d.latitude != null && d.longitude != null).map(d => ({
+    type: "Feature", geometry: { type: "Point", coordinates: [d.longitude, d.latitude] },
+    properties: { id: d.id, name: d.name, dia: d.map_icon === "◆", color: cssVar(holdingColor(d.holding_id).slice(4, -1)) },
+  })) };
+}
+const cssVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+async function initDepotMap() {
+  if (RM.map) return;
+  const get = f => fetch("railmap/" + f, { cache: "no-cache" }).then(r => r.json());
+  const [meta, land, neighbors, roads, lines, stations, junctions] = await Promise.all(
+    ["meta.json", "land.geojson", "neighbors.geojson", "roads.geojson", "lines.geojson", "stations.geojson", "junctions.geojson"].map(get));
+  RM.meta = meta; RM.stations = stations.features; RM.junctions = junctions.features;
+  // код дороги на карте (ОКТ, МСК…) <-> railway_id сайта — по названию; у БЧ, КЗХ, КЛГ депо нет
+  RM.railwayByCode = new Map(Object.entries(meta.roads).map(([code, name]) => [code, DATA.railways.find(r => r.name.trim() === name)?.id]).filter(([, id]) => id));
+  RM.codeByRailway = new Map([...RM.railwayByCode].map(([code, id]) => [id, code]));
+  const c = n => cssVar("--rm-" + n);
+  const map = RM.map = new maplibregl.Map({
+    container: RM.el, attributionControl: false, bounds: RAILMAP_VIEW, fitBoundsOptions: { padding: 20 },
+    maxBounds: [[-5, 28], [200, 84]], cooperativeGestures: true, dragRotate: false, pitchWithRotate: false,
+    locale: {
+      "CooperativeGesturesHandler.WindowsHelpText": "Масштаб — Ctrl + колесо мыши",
+      "CooperativeGesturesHandler.MacHelpText": "Масштаб — ⌘ + колесо мыши",
+      "CooperativeGesturesHandler.MobileHelpText": "Карту двигают двумя пальцами",
+      "NavigationControl.ZoomIn": "Приблизить", "NavigationControl.ZoomOut": "Отдалить",
+    },
+    style: { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": c("bg") } }],
+             glyphs: new URL("vendor/fonts/{fontstack}/{range}.pbf", document.baseURI).href.replace(/%7B/g, "{").replace(/%7D/g, "}") },
+  });
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+  map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: "© участники OpenStreetMap · Natural Earth" }));
+  map.on("load", () => {
+    for (const [id, data] of Object.entries({ land, neighbors, roads, lines, stations, junctions, depots: depotFeatures() })) map.addSource(id, { type: "geojson", data });
+    map.addLayer({ id: "neighbors", type: "fill", source: "neighbors", paint: { "fill-color": c("neighbor") } });
+    map.addLayer({ id: "land", type: "fill", source: "land", paint: { "fill-color": c("land") } });
+    map.addLayer({ id: "roads-fill", type: "fill", source: "roads", paint: { "fill-color": c("road") } });
+    map.addLayer({ id: "roads-edge", type: "line", source: "roads", paint: { "line-color": c("edge"), "line-width": 1 } });
+    map.addLayer({ id: "track-branch", type: "line", source: "lines", filter: ["==", ["get", "usage"], "branch"],
+      paint: { "line-color": c("track"), "line-width": ["interpolate", ["linear"], ["zoom"], 3, .6, 9, 2.2] } });
+    map.addLayer({ id: "track-main", type: "line", source: "lines", filter: ["==", ["get", "usage"], "main"], layout: { "line-join": "round" },
+      paint: { "line-color": c("track"), "line-width": ["interpolate", ["linear"], ["zoom"], 3, 1.1, 9, 3.6] } });
+    map.addLayer({ id: "stations", type: "circle", source: "stations", minzoom: 7,
+      paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 7, 2, 11, 4], "circle-color": c("edge"), "circle-stroke-color": c("track"), "circle-stroke-width": 1 } });
+    // ромбик участка — картинка: квадрат, повёрнутый на 45°
+    const s = 24, cv = document.createElement("canvas"), g = cv.getContext("2d");
+    cv.width = cv.height = s; g.translate(s / 2, s / 2); g.rotate(Math.PI / 4); g.fillStyle = "#fff"; g.fillRect(-7, -7, 14, 14);
+    map.addImage("dia", g.getImageData(0, 0, s, s), { sdf: true });
+    map.addLayer({ id: "depot-sel", type: "circle", source: "depots", filter: ["==", ["get", "id"], ""],
+      paint: { "circle-radius": 11, "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": c("sel"), "circle-stroke-width": 2.5 } });
+    map.addLayer({ id: "depots", type: "circle", source: "depots", filter: ["!", ["get", "dia"]],
+      paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 3, 3.6, 9, 7], "circle-color": ["get", "color"], "circle-stroke-color": c("track"), "circle-stroke-width": 1.2 } });
+    map.addLayer({ id: "depots-dia", type: "symbol", source: "depots", filter: ["get", "dia"],
+      layout: { "icon-image": "dia", "icon-size": ["interpolate", ["linear"], ["zoom"], 3, .55, 9, 1], "icon-allow-overlap": true },
+      paint: { "icon-color": ["get", "color"], "icon-halo-color": c("track"), "icon-halo-width": 1.2 } });
+    // переходы на соседние дороги — когда в фильтре одна дорога; клик — фильтр на соседнюю
+    map.addLayer({ id: "junctions", type: "circle", source: "junctions", filter: ["==", ["get", "road"], ""],
+      paint: { "circle-radius": 7, "circle-color": c("edge"), "circle-stroke-color": c("track"), "circle-stroke-width": 2.5 } });
+    map.addLayer({ id: "junction-label", type: "symbol", source: "junctions", filter: ["==", ["get", "road"], ""],
+      layout: { "text-field": ["concat", ["get", "to_name"], " ЖД"], "text-font": ["Open Sans Semibold"], "text-size": 12.5,
+                "text-variable-anchor": ["bottom", "top", "left", "right"], "text-radial-offset": 1.1 },
+      paint: { "text-color": cssVar("--ink"), "text-halo-color": c("bg"), "text-halo-width": 2 } });
+    RM.popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, className: "depot-map-tip", offset: 10 });
+    for (const l of ["depots", "depots-dia", "stations"]) {
+      map.on("mousemove", l, e => {
+        const p = e.features[0].properties;
+        map.getCanvas().style.cursor = l === "stations" ? "" : "pointer";
+        RM.popup.setLngLat(e.features[0].geometry.coordinates).setText(p.esr !== undefined ? `ст. ${p.name}${p.esr ? " · " + p.esr : ""}` : p.name).addTo(map);
+      });
+      map.on("mouseleave", l, () => { map.getCanvas().style.cursor = ""; RM.popup.remove(); updateDepotMap(); });
+    }
+    for (const l of ["depots", "depots-dia"])
+      map.on("click", l, e => { const id = e.features[0].properties.id; nav(id === depState.selected ? depotHash() : `#/depot/${id}`); });
+    for (const l of ["junctions", "junction-label"]) {
+      map.on("click", l, e => pickMapRoad(e.features[0].properties.to));
+      map.on("mouseenter", l, () => map.getCanvas().style.cursor = "pointer");
+      map.on("mouseleave", l, () => map.getCanvas().style.cursor = "");
+    }
+    map.on("click", "roads-fill", e => {
+      if (!map.queryRenderedFeatures(e.point, { layers: ["depots", "depots-dia", "junctions", "junction-label"] }).length) pickMapRoad(e.features[0].properties.road);
+    });
+    updateDepotMap();
+  });
+}
+
+// выбор дороги на карте = фильтр «Дорога» с одной этой дорогой
+function pickMapRoad(code) {
+  const id = RM.railwayByCode.get(code);
+  if (!id || (depState.railways.size === 1 && depState.railways.has(id))) return;
+  depState.railways = new Set([id]);
+  if (depState.selected) nav(depotHash()); else renderDepots();
+}
+
+function updateDepotMap() {
+  const map = RM.map;
+  if (!map || !map.getLayer("depots")) return;
+  const ids = [...RM.visible], all = ids.length === DATA.depots.length;
+  const shown = ["in", ["get", "id"], ["literal", ids]];
+  map.setFilter("depots", ["all", ["!", ["get", "dia"]], shown]);
+  map.setFilter("depots-dia", ["all", ["get", "dia"], shown]);
+  map.setFilter("depot-sel", ["==", ["get", "id"], depState.selected || ""]);
+  // выбраны дороги — их территория и пути ярче, остальные бледнее; одна дорога — крупно, с переходами на соседние
+  const codes = [...depState.railways].map(id => RM.codeByRailway.get(id)).filter(Boolean);
+  const single = codes.length === 1 ? codes[0] : null;
+  const on = codes.length ? ["in", ["get", "road"], ["literal", codes]] : true;
+  map.setPaintProperty("roads-fill", "fill-opacity", codes.length ? ["case", on, 1, single ? .18 : .4] : 1);
+  map.setPaintProperty("roads-edge", "line-opacity", single ? ["case", on, 1, .25] : 1);
+  for (const l of ["track-main", "track-branch"]) map.setPaintProperty(l, "line-opacity", codes.length ? ["case", on, 1, single ? .1 : .35] : 1);
+  const jf = single ? ["all", ["==", ["get", "road"], single], ["in", ["get", "to"], ["literal", [...RM.railwayByCode.keys()]]]] : ["==", ["get", "road"], ""];
+  map.setFilter("junctions", jf); map.setFilter("junction-label", jf);
+  // вид: выбранное депо — к нему; изменился набор депо — показать все найденные
+  const sel = depState.selected && DEPOT_BY_ID.get(depState.selected);
+  if (sel && sel.latitude != null && RM.selected !== sel.id) {
+    map.easeTo({ center: [sel.longitude, sel.latitude], zoom: Math.max(map.getZoom(), 5.5), duration: 600 });
+  } else if (!sel) {
+    const key = single ? "road:" + single : all ? "" : ids.slice().sort().join();
+    if (key !== RM.fitKey) {
+      const pts = ids.map(id => DEPOT_BY_ID.get(id)).filter(d => d && d.latitude != null);
+      if (single) {  // вся дорога: её станции, депо и переходы
+        const xy = [...RM.stations, ...RM.junctions].filter(f => f.properties.road === single).map(f => f.geometry.coordinates)
+          .concat(pts.map(d => [d.longitude, d.latitude]));
+        const lon = xy.map(p => p[0]), lat = xy.map(p => p[1]);
+        map.fitBounds([[Math.min(...lon), Math.min(...lat)], [Math.max(...lon), Math.max(...lat)]], { padding: 50, duration: 600 });
+      } else if (!all && pts.length) {
+        const lon = pts.map(d => d.longitude), lat = pts.map(d => d.latitude);
+        map.fitBounds([[Math.min(...lon), Math.min(...lat)], [Math.max(...lon), Math.max(...lat)]], { padding: 50, maxZoom: 7, duration: 600 });
+      } else map.fitBounds(RAILMAP_VIEW, { padding: 20, duration: 600 });
+    }
+    RM.fitKey = key;
+  }
+  if (sel) RM.popup.setLngLat([sel.longitude, sel.latitude]).setText(sel.name).addTo(map);
+  RM.selected = depState.selected;
 }
 
 /* ---------- панель депо ---------- */
@@ -207,7 +334,7 @@ function renderDepots() {
           ${ddHTML("dep-rt", multi("Тип ремонта", DATA.repairTypes.map(r => ({ value: r.id, label: r.name, count: DATA.depots.filter(d => depotRepairTypes(d.id).has(r.id)).length })), "repairs"))}
           ${ddHTML("dep-sv", multi("Дополнительные услуги", DATA.depotServices.map(s => ({ value: s.id, label: s.name, count: DATA.depots.filter(d => depotServices(d.id).some(l => l.service_id === s.id)).length })), "services"))}
         </div>
-        ${depotMapHTML(visible)}
+        ${depotMapHTML()}
       </div>
       <aside class="sticky-side rail-right">${appliedHTML(applied, "depState.railways.clear(); depState.holdings.clear(); depState.repairs.clear(); depState.services.clear(); renderDepots()")}</aside>
       <div class="span-cr">
@@ -224,6 +351,6 @@ function renderDepots() {
       </div>
     </div>
   </div>`;
-  wireDepotMap();
+  wireDepotMap(visible);
   if (sel && route.lastGroup === "depots") $("depot-panel")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }

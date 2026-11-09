@@ -2,8 +2,11 @@
 
 Дорога станции — по первым двум цифрам кода ЕСР (таблица проверена на станциях примыкания наших депо);
 коды, которых нет в таблице, и станции без кода — по большинству ближайших соседей; Калининградская —
-по положению. Дорога отрезка пути — по ближайшей станции. Территория дороги — области ближайших станций
-(диаграмма Вороного) по границе России.
+по положению; одиночные «анклавы» среди чужой дороги — дороге большинства соседей. Депо (дорога из
+справочника) — опорные точки наравне со станциями. Дорога отрезка пути — по ближайшей станции/депо.
+Территория дороги — области ближайших станций и депо (диаграмма Вороного) по границе России; у сибирских
+и дальневосточных дорог — не дальше ~160 км от их путей. Переход между дорогами — узел, где сходятся пути
+двух дорог (или стык из справочника, если он там есть).
 
 Вход — db/osm_cache/ (скачивает fetch_railmap_osm.py). Использование: python build_railmap.py
 """
@@ -15,7 +18,7 @@ from pathlib import Path
 import numpy as np
 import shapely
 from shapely import STRtree, voronoi_polygons
-from shapely.affinity import translate
+from shapely.affinity import scale, translate
 from shapely.geometry import LineString, MultiPoint, Point, Polygon, box, mapping, shape
 from shapely.ops import linemerge, unary_union
 
@@ -51,6 +54,7 @@ ROAD_BY_PREFIX = {p: code for code, (_, prefixes) in ROADS.items() for p in pref
 RAILWAY_NAME_TO_CODE = {name: code for code, (name, _) in ROADS.items()}
 BAM_JUNCTION_LON = 119.9  # коды БАМа «90…» есть и на ВСЖД, и на ДВЖД: стык Мурурин — Олонгдо
 KALININGRAD = box(19.0, 54.2, 23.0, 55.4)
+CRIMEA = box(32.3, 44.3, 36.55, 46.25)  # Крымская ж.д. — не филиал РЖД (и коды ЕСР «85…» совпадают с ЗСЖД): в сеть дорог не берём
 NEIGHBORS = ("Ukraine", "Mongolia", "China", "North Korea", "South Korea", "Japan", "Finland",
              "Estonia", "Latvia", "Lithuania", "Poland", "Norway", "Georgia", "Azerbaijan", "Armenia", "Turkey", "Sweden",
              "Uzbekistan", "Turkmenistan", "Kyrgyzstan", "Iran")
@@ -127,8 +131,8 @@ with open(SRC / "stations.tsv", encoding="utf-8") as f:
             continue
         seen.add(key)
         lon, lat = float(r["@lon"]), float(r["@lat"])
-        if not ru_clip.contains(Point(lon, lat)):
-            continue  # Крым и пр. вне границы Natural Earth — не наша сеть
+        if not ru_clip.contains(Point(lon, lat)) or CRIMEA.contains(Point(lon, lat)):
+            continue  # вне границы России (Natural Earth) или Крым — не сеть РЖД
         road = "КЛГ" if KALININGRAD.contains(Point(lon, lat)) else road_by_code(r["esr:user"], lon)
         stations.append({"lon": lon, "lat": lat, "name": r["name"], "esr": (r["esr:user"] or "").strip(), "road": road,
                          "by_code": road is not None})
@@ -146,31 +150,67 @@ for s in stations:  # нет кода или код не из таблицы —
         dx = (coded_xy[:, 0] - s["lon"]) * np.cos(np.radians(s["lat"]))
         idx = np.argpartition(dx ** 2 + (coded_xy[:, 1] - s["lat"]) ** 2, 7)[:7]
         s["road"] = Counter(coded[i]["road"] for i in idx).most_common(1)[0][0]
+# депо из выгрузки сайта: дорога известна точно (справочник депо) — «якоря» для территорий и путей,
+# чтобы объект не оказался на соседней дороге
+cat = json.loads((BASE.parent / "docs" / "data" / "catalog_data.json").read_text(encoding="utf-8"))
+rw = {r["id"]: r["name"] for r in cat["railways"]}
+depot_seeds = []
+for d in cat["depots"]:
+    road = RAILWAY_NAME_TO_CODE.get(rw.get(d["railway_id"], ""))
+    if road and d.get("latitude") and d.get("longitude") and ru_clip.contains(Point(d["longitude"], d["latitude"])):
+        depot_seeds.append({"lon": d["longitude"], "lat": d["latitude"], "name": d["name"], "esr": "", "road": road,
+                            "by_code": True, "depot": True})
+
+# анклавы: станция, вокруг которой (8 ближайших станций и депо) почти нет её дороги, — ошибка кода/привязки;
+# отдаём её дороге большинства (так пропадают «острова» посреди чужой дороги и ложные переходы к ним)
+ENCLAVE_K = 8
+for _ in range(2):
+    pool = [x for x in stations if x["road"] not in FOREIGN] + depot_seeds
+    xy = np.array([(x["lon"], x["lat"]) for x in pool])
+    fixed_n = 0
+    for x in pool:
+        if x.get("depot"):
+            continue
+        dx = (xy[:, 0] - x["lon"]) * np.cos(np.radians(x["lat"]))
+        idx = np.argpartition(dx ** 2 + (xy[:, 1] - x["lat"]) ** 2, ENCLAVE_K + 1)[:ENCLAVE_K + 1]
+        votes = Counter(pool[i]["road"] for i in idx if pool[i] is not x)
+        top, n_top = votes.most_common(1)[0]
+        if votes.get(x["road"], 0) <= 1 and n_top >= 5 and top != x["road"]:
+            x["road"] = top
+            fixed_n += 1
+    print(f"анклавы: переотнесено станций {fixed_n}", flush=True)
+
 n_ru = sum(1 for s in stations if s["road"] not in FOREIGN)
 print(f"станций: {len(stations)} (РЖД {n_ru}: по коду ЕСР {len(coded)}, по соседям {n_ru - len(coded)}; БЧ и КЗХ {len(stations) - n_ru})", flush=True)
-all_tree = STRtree([Point(s["lon"], s["lat"]) for s in stations])
 ru_stations = [s for s in stations if s["road"] not in FOREIGN]
-ru_tree = STRtree([Point(s["lon"], s["lat"]) for s in ru_stations])
+seeds = ru_stations + depot_seeds  # точки, по которым делятся территории и пути
+seed_tree = STRtree([Point(s["lon"], s["lat"]) for s in seeds])
 
 # ---- пути ----
+# дорога отрезка — по ближайшей станции/депо; переход — узел, где сходятся пути двух разных дорог
 by_road_usage = defaultdict(list)
+node_roads = defaultdict(set)  # конец отрезка (округлённый) -> дороги отрезков, которые в нём сходятся
 for path in sorted(SRC.glob("rail_*.json")):
     usage = path.stem.split("_")[1]
+    usage = "branch" if usage == "other" else usage  # линии без usage в OSM — рисуем как ветки
     for el in json.loads(path.read_text(encoding="utf-8"))["elements"]:
         pts = [(p["lon"], p["lat"]) for p in el.get("geometry", []) if p]
         if len(pts) < 2:
             continue
         line = LineString(pts)
-        if not clip_area.intersects(line):
+        if not clip_area.intersects(line) or CRIMEA.contains(line):
             continue
         if not clip_area.contains(line):
             line = line.intersection(clip_area)
             if line.is_empty or line.geom_type not in ("LineString", "MultiLineString"):
                 continue
         mid = line.interpolate(0.5, normalized=True)
-        road = next((r for r, g in foreign_clip.items() if g.contains(mid)), None) or ru_stations[ru_tree.nearest(mid)]["road"]
+        road = next((r for r, g in foreign_clip.items() if g.contains(mid)), None) or seeds[seed_tree.nearest(mid)]["road"]
         by_road_usage[(road, usage)].append(line)
-lines, track_raw = [], defaultdict(list)  # track_raw — пути дороги без упрощения (для переходов)
+        for part in getattr(line, "geoms", [line]):
+            for x, y in (part.coords[0], part.coords[-1]):
+                node_roads[(round(x, 4), round(y, 4))].add(road)
+lines, track_raw = [], defaultdict(list)  # track_raw — пути дороги без упрощения
 for (road, usage), ls in sorted(by_road_usage.items()):
     raw_lines = linemerge(unary_union(ls))
     track_raw[road].append(raw_lines)
@@ -179,19 +219,37 @@ for (road, usage), ls in sorted(by_road_usage.items()):
 write("lines.geojson", lines)
 
 # ---- территории дорог ----
-cells = voronoi_polygons(MultiPoint([(s["lon"], s["lat"]) for s in ru_stations]), extend_to=box(*WORLD))
+cells = voronoi_polygons(MultiPoint([(s["lon"], s["lat"]) for s in seeds]), extend_to=box(*WORLD))
 cell_road = defaultdict(list)
 for cell in cells.geoms:
-    idx = ru_tree.query(cell, predicate="contains")
+    idx = seed_tree.query(cell, predicate="contains")
     if len(idx):
-        cell_road[ru_stations[idx[0]]["road"]].append(cell)
+        cell_road[seeds[idx[0]]["road"]].append(cell)
 ru_land = russia.simplify(0.01)
+# на севере Сибири и Дальнего Востока путей нет — территорию этих дорог ограничиваем ~200 км от их путей
+NORTH_TRIM = {"СВР", "ЗСБ", "КРС", "ВСБ", "ДВС"}
+TRIM_KM = 160
+
+
+def near_tracks(road):
+    """Полоса ~TRIM_KM вокруг путей дороги (буфер в «км-подобных» координатах: долгота сжата на cos 60°)."""
+    tr = unary_union(track_raw[road]).simplify(0.05)
+    squeezed = scale(tr, xfact=0.5, yfact=1, origin=(0, 0))
+    return scale(squeezed.buffer(TRIM_KM / 111), xfact=2, yfact=1, origin=(0, 0))
+
+
 areas, labels, area_raw = [], [], {}
 for road in ROADS:
     if road in FOREIGN:
         area_raw[road] = foreign[road]
     elif road in cell_road:
-        area_raw[road] = polygons_only(unary_union(cell_road[road]).intersection(ru_land))
+        a = polygons_only(unary_union(cell_road[road]).intersection(ru_land))
+        if road in NORTH_TRIM and track_raw[road]:
+            a = polygons_only(a.intersection(near_tracks(road)))
+            # обрезка могла оставить мелкие обрывки без путей — убираем
+            parts = [g for g in getattr(a, "geoms", [a]) if g.area > 0.3 or unary_union(track_raw[road]).intersects(g)]
+            a = unary_union(parts)
+        area_raw[road] = a
     else:
         continue
     area = area_raw[road].simplify(0.02).buffer(0)
@@ -205,29 +263,70 @@ for road in ROADS:
 write("roads.geojson", areas)
 write("road_labels.geojson", labels)
 
-# ---- переходы между дорогами: где пути пересекают границу территорий двух дорог ----
-# точка одна, а объекта два (по одному на каждую сторону): при выбранной дороге видны её переходы,
-# подпись — соседняя дорога, клик — переход на неё
-JUNCTION_GAP = 0.35  # ° (~25–35 км): ближе — один переход
+# ---- переходы между дорогами: узлы путей, где сходятся две дороги ----
+# точка на самом пути; соседние узлы одной пары дорог ближе JUNCTION_GAP — один переход (пути у границы
+# бывают «пёстрыми» — A, B, A); точка одна, а объекта два: по одному на каждую сторону
+JUNCTION_GAP = 0.12  # ° (~8–13 км)
+by_pair = defaultdict(list)
+for (x, y), roads in node_roads.items():
+    for a in roads:
+        for b in roads:
+            if a < b:
+                by_pair[(a, b)].append(Point(x, y))
 junctions = []
-codes = list(area_raw)
-for i, a in enumerate(codes):
-    for b in codes[i + 1:]:
-        strip = area_raw[a].buffer(0.02).intersection(area_raw[b].buffer(0.02))
-        if strip.is_empty or strip.area == 0:
+for (a, b), pts in sorted(by_pair.items()):
+    if a not in area_raw or b not in area_raw:
+        continue
+    kept = []
+    for p in pts:
+        # переход должен быть у общей границы территорий, а не внутри одной из них
+        if area_raw[a].distance(p) > 0.25 or area_raw[b].distance(p) > 0.25:
             continue
-        cross = unary_union(track_raw[a] + track_raw[b]).intersection(strip)
-        pts = [g.interpolate(0.5, normalized=True) for g in getattr(cross, "geoms", [cross]) if g.geom_type == "LineString" and not g.is_empty]
-        groups = []
-        for p in pts:
-            g = next((g for g in groups if g[0].distance(p) < JUNCTION_GAP), None)
-            if g: g.append(p)
-            else: groups.append([p])
-        for g in groups:
-            c = (round(sum(p.x for p in g) / len(g), 4), round(sum(p.y for p in g) / len(g), 4))
-            for here, there in ((a, b), (b, a)):
-                junctions.append({"type": "Feature", "properties": {"road": here, "to": there, "to_name": ROADS[there][0]},
-                                  "geometry": {"type": "Point", "coordinates": list(c)}})
+        if any(k.distance(p) < JUNCTION_GAP for k in kept):
+            continue
+        kept.append(p)
+    for p in kept:
+        for here, there in ((a, b), (b, a)):
+            junctions.append({"type": "Feature", "properties": {"road": here, "to": there, "to_name": ROADS[there][0]},
+                              "geometry": {"type": "Point", "coordinates": [round(p.x, 4), round(p.y, 4)]}})
+
+# стыки из справочника (sources/railmap_stations.xlsx, лист «Соединения ЖД»: станция А — станция Б) заменяют
+# вычисленные переходы для своей пары дорог; точка — середина между стыковыми станциями (или та, что нашлась)
+JUNCTIONS_XLSX = BASE / "sources" / "railmap_stations.xlsx"
+if JUNCTIONS_XLSX.exists():
+    import openpyxl
+    wb = openpyxl.load_workbook(JUNCTIONS_XLSX, read_only=True, data_only=True)
+    known = {str(r[1]).strip(): (r[3], r[2]) for r in wb["0. Справ_Станции + коорд"].iter_rows(min_row=2, values_only=True)
+             if r[1] and r[2] and r[3]}
+    by_name = defaultdict(list)
+    for st in stations:
+        by_name[st["name"].strip().lower()].append(st)
+
+    def locate(name, roads):  # сначала справочник, затем OSM — станция одной из двух дорог стыка
+        if name in known:
+            return known[name]
+        cands = [st for st in by_name.get(name.lower(), []) if st["road"] in roads]
+        return (cands[0]["lon"], cands[0]["lat"]) if cands else None
+
+    fixed = []
+    for r in wb["Соединения ЖД"].iter_rows(min_row=3, values_only=True):
+        if not r[0] or not r[1]:
+            continue
+        a, b = (RAILWAY_NAME_TO_CODE.get(x.strip()) for x in str(r[1]).split(" - "))
+        sa, sb = str(r[3]).strip(), str(r[5]).strip()
+        pts = [p for p in (locate(sa, {a, b}), locate(sb, {a, b})) if p]
+        if not (a and b and pts):
+            print(f"стык {r[0]} ({sa} — {sb}): станции не найдены, пропускаю")
+            continue
+        c = [round(sum(p[0] for p in pts) / len(pts), 4), round(sum(p[1] for p in pts) / len(pts), 4)]
+        fixed.append((a, b, c, f"{sa} — {sb}"))
+    pairs = {frozenset((a, b)) for a, b, _, _ in fixed}
+    junctions = [j for j in junctions if frozenset((j["properties"]["road"], j["properties"]["to"])) not in pairs]
+    for a, b, c, title in fixed:
+        for here, there in ((a, b), (b, a)):
+            junctions.append({"type": "Feature", "properties": {"road": here, "to": there, "to_name": ROADS[there][0], "stations": title},
+                              "geometry": {"type": "Point", "coordinates": c}})
+    print(f"стыков из справочника: {len(fixed)} (пар дорог: {len(pairs)})")
 write("junctions.geojson", junctions)
 
 neighbors = []
@@ -244,9 +343,7 @@ write("stations.geojson", [
      "geometry": {"type": "Point", "coordinates": [round(s["lon"], 5), round(s["lat"], 5)]}}
     for s in stations])
 
-# ---- депо из выгрузки сайта ----
-cat = json.loads((BASE.parent / "docs" / "data" / "catalog_data.json").read_text(encoding="utf-8"))
-rw = {r["id"]: r["name"] for r in cat["railways"]}
+# ---- депо (catalog_data.json прочитан выше) ----
 hold = {h["id"]: h["short_name"] for h in cat["repairHoldings"]}
 dep = []
 for d in cat["depots"]:

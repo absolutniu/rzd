@@ -48,6 +48,8 @@
   .info a { color: var(--accent); }
   .info .x { position: absolute; right: 10px; top: 8px; border: 0; background: none; font-size: 18px; color: var(--ink-soft); cursor: pointer; }
   .maplibregl-ctrl-attrib { font-size: 11px; }
+  .jtip .maplibregl-popup-content { background: var(--ink); color: var(--panel); font-size: 12.5px; padding: 6px 10px; border-radius: 7px; }
+  .jtip .maplibregl-popup-tip { display: none; }
   @media (max-width: 640px) { .search input { width: 100%; } .search { flex: 1 1 100%; } .info { top: auto; bottom: 120px; } }
 </style>
 </head>
@@ -86,6 +88,8 @@ Promise.all(["meta.json", "lines.geojson", "roads.geojson", "stations.geojson", 
       add("land", land); add("neighbors", nb); add("roads", roads); add("lines", lines); add("stations", st); add("depots", dep); add("road-labels", roadLabels); add("junctions", junc);
       map.addLayer({ id: "neighbors", type: "fill", source: "neighbors", paint: { "fill-color": "#c9cfd6", "fill-opacity": .35 } });
       map.addLayer({ id: "land", type: "fill", source: "land", paint: { "fill-color": css("--land") } });
+      // контур суши: там, где нет территории дорог (север Сибири), берег не сливается с морем
+      map.addLayer({ id: "land-edge", type: "line", source: "land", paint: { "line-color": css("--road-edge"), "line-width": .8, "line-opacity": .55 } });
       map.addLayer({ id: "roads-fill", type: "fill", source: "roads", paint: { "fill-color": css("--road"), "fill-opacity": ["case", ["boolean", ["feature-state", "dim"], false], .25, 1] } });
       map.addLayer({ id: "roads-edge", type: "line", source: "roads", paint: { "line-color": css("--road-edge"), "line-width": 1.2 } });
       map.addLayer({ id: "roads-label", type: "symbol", source: "road-labels", maxzoom: 6.5,
@@ -105,33 +109,33 @@ Promise.all(["meta.json", "lines.geojson", "roads.geojson", "stations.geojson", 
         layout: { "text-field": ["get", "name"], "text-font": ["Open Sans Semibold"], "text-size": 11, "text-offset": [0, .9], "text-anchor": "top", "text-optional": true },
         paint: { "text-color": css("--ink-soft"), "text-halo-color": css("--bg"), "text-halo-width": 1.4 } });
       map.addLayer({ id: "depots", type: "circle", source: "depots", filter: ["!=", ["get", "icon"], "◆"],
-        paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, 4, 9, 7], "circle-color": ["get", "color"], "circle-stroke-color": "#fff", "circle-stroke-width": 1.5 } });
+        paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, 5, 9, 9], "circle-color": ["get", "color"], "circle-stroke-color": "#fff", "circle-stroke-width": 1.5 } });
       drawDiamonds();
       map.addLayer({ id: "depot-dia", type: "symbol", source: "depots", filter: ["==", ["get", "icon"], "◆"],
-        layout: { "icon-image": ["concat", "dia-", ["get", "holding_id"]], "icon-size": ["interpolate", ["linear"], ["zoom"], 4, .8, 9, 1.2], "icon-allow-overlap": true } });
+        layout: { "icon-image": ["concat", "dia-", ["get", "holding_id"]], "icon-size": ["interpolate", ["linear"], ["zoom"], 4, 1, 9, 1.45], "icon-allow-overlap": true } });
       map.addLayer({ id: "depot-label", type: "symbol", source: "depots", minzoom: 4.4,
         layout: { "text-field": ["get", "name"], "text-font": ["Open Sans Semibold"], "text-size": 12, "text-anchor": "left", "text-offset": [.9, 0], "text-optional": true, "text-max-width": 14 },
         paint: { "text-color": css("--depot"), "text-halo-color": css("--bg"), "text-halo-width": 1.6 } });
 
-      // переходы на соседние дороги — видны только у выбранной дороги, клик — переход
-      map.addLayer({ id: "junctions", type: "circle", source: "junctions", filter: ["==", ["get", "road"], ""],
-        paint: { "circle-radius": 7, "circle-color": css("--road-edge"), "circle-stroke-color": "#fff", "circle-stroke-width": 2.5 } });
-      map.addLayer({ id: "junction-label", type: "symbol", source: "junctions", filter: ["==", ["get", "road"], ""],
-        layout: { "text-field": ["concat", ["get", "to_name"], " ЖД"], "text-font": ["Open Sans Semibold"], "text-size": 13,
-                  "text-variable-anchor": ["bottom", "top", "left", "right"], "text-radial-offset": 1.1, "text-allow-overlap": false },
-        paint: { "text-color": css("--ink"), "text-halo-color": css("--bg"), "text-halo-width": 2 } });
-      for (const l of ["junctions", "junction-label"]) {
-        map.on("click", l, e => pickRoad(e.features[0].properties.to));
-        map.on("mouseenter", l, () => map.getCanvas().style.cursor = "pointer");
-        map.on("mouseleave", l, () => map.getCanvas().style.cursor = "");
-      }
+      // переходы на соседние дороги — видны только у выбранной дороги: значок «рельсы», название — при наведении, клик — переход
+      map.addImage("junction", railJunctionIcon(css("--road-edge")));
+      map.addLayer({ id: "junctions", type: "symbol", source: "junctions", filter: ["==", ["get", "road"], ""],
+        layout: { "icon-image": "junction", "icon-size": .85, "icon-allow-overlap": true } });
+      const tip = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12, className: "jtip" });
+      map.on("click", "junctions", e => { tip.remove(); pickRoad(e.features[0].properties.to); });
+      map.on("mousemove", "junctions", e => {
+        const p = e.features[0].properties;
+        map.getCanvas().style.cursor = "pointer";
+        tip.setLngLat(e.features[0].geometry.coordinates).setHTML(`Переход: <b>${p.to_name} ЖД</b>${p.stations ? `<br><small>${p.stations}</small>` : ""}`).addTo(map);
+      });
+      map.on("mouseleave", "junctions", () => { map.getCanvas().style.cursor = ""; tip.remove(); });
       for (const l of ["stations", "depots", "depot-dia"]) {
         map.on("click", l, e => showFeature(e.features[0]));
         map.on("mouseenter", l, () => map.getCanvas().style.cursor = "pointer");
         map.on("mouseleave", l, () => map.getCanvas().style.cursor = "");
       }
       map.on("click", "roads-fill", e => {
-        if (!map.queryRenderedFeatures(e.point, { layers: ["stations", "depots", "depot-dia", "junctions", "junction-label"] }).length) pickRoad(e.features[0].properties.road);
+        if (!map.queryRenderedFeatures(e.point, { layers: ["stations", "depots", "depot-dia", "junctions"] }).length) pickRoad(e.features[0].properties.road);
       });
       map.on("mouseenter", "roads-fill", () => { if (!state.road) map.getCanvas().style.cursor = "pointer"; });
       map.on("mouseleave", "roads-fill", () => map.getCanvas().style.cursor = "");
@@ -139,6 +143,18 @@ Promise.all(["meta.json", "lines.geojson", "roads.geojson", "stations.geojson", 
     });
   });
 
+// значок перехода: две рельсы со шпалами на белом круге
+function railJunctionIcon(color) {
+  const n = 26, cv = document.createElement("canvas"), g = cv.getContext("2d");
+  cv.width = cv.height = n;
+  g.fillStyle = "#fff"; g.strokeStyle = color; g.lineWidth = 1.5;
+  g.beginPath(); g.arc(n / 2, n / 2, n / 2 - 1.5, 0, 2 * Math.PI); g.fill(); g.stroke();
+  g.lineCap = "round"; g.lineWidth = 2;
+  for (const y of [8, 13, 18]) { g.beginPath(); g.moveTo(7, y); g.lineTo(19, y); g.stroke(); }  // шпалы
+  g.lineWidth = 2.2;
+  for (const x of [10, 16]) { g.beginPath(); g.moveTo(x, 5); g.lineTo(x, 21); g.stroke(); }    // рельсы
+  return g.getImageData(0, 0, n, n);
+}
 function drawDiamonds() {
   meta.holdings.forEach((h, i) => {
     const s = 22, c = document.createElement("canvas"); c.width = c.height = s; const g = c.getContext("2d");
@@ -163,7 +179,7 @@ function pickRoad(code) {
   map.setPaintProperty("roads-fill", "fill-opacity", code ? ["case", f, 1, .18] : 1);
   map.setPaintProperty("roads-edge", "line-opacity", code ? ["case", f, 1, .25] : 1);
   map.setLayoutProperty("roads-label", "visibility", code ? "none" : "visible");
-  map.setFilter("junctions", f); map.setFilter("junction-label", f);
+  map.setFilter("junctions", f);
   document.getElementById("all-roads").style.display = code ? "" : "none";
   map.setLayerZoomRange("depot-label", code ? 0 : 4.4, 24);  // у выбранной дороги подписи депо сразу
   for (const l of ["stations", "stations-label", "depots", "depot-dia", "depot-label"]) {

@@ -1,6 +1,6 @@
 """Скачивание исходных данных для ж/д карты (docs/railmap/) в db/osm_cache/ (в git не попадает).
 
-  rail_<usage>_<запад>_<восток>.json — пути OSM: way[railway=rail][usage=main|branch], полосами по долготе
+  rail_<usage>_<запад>_<восток>.json — пути OSM: way[railway=rail][usage=main|branch] и без usage/service (other)
   stations.tsv, stations_by.tsv, stations_kz.tsv — станции и о.п. России, Беларуси, Казахстана
   ne10_countries.geojson              — Natural Earth 1:10m, границы стран
 
@@ -57,10 +57,12 @@ def main():
         fetch(name, '[out:csv(::type,::id,::lat,::lon,name,"esr:user",railway;true;"\t")][timeout:600];'
                     f'area["ISO3166-1"="{iso}"][admin_level=2]->.a;'
                     '(nwr["railway"~"^(station|halt)$"](area.a););out center;')
-    for usage in ("main", "branch"):
+    for usage in ("main", "branch", "other"):
+        # other — пути без usage и без service (не станционные/подъездные): в OSM так размечены многие линии
+        cond = f'["usage"="{usage}"]' if usage != "other" else '[!"usage"][!"service"]'
         for w, e in BANDS:
             fetch(f"rail_{usage}_{w}_{e}.json",
-                  f'[out:json][timeout:600];way["railway"="rail"]["usage"="{usage}"](41,{w},78,{e});out skel geom;')
+                  f'[out:json][timeout:600];way["railway"="rail"]{cond}(41,{w},78,{e});out skel geom;')
             time.sleep(5)
 
 

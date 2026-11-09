@@ -148,18 +148,18 @@ function renderCatalog() {
   if (type) crumbs.push([TYPE_META[type].plural, kind ? catHashWith({ kind: null }) : null]);
   if (kind) crumbs.push([KIND_BY_ID.get(kind).name.replace(/^./, c => c.toUpperCase()), null]);
 
-  let left, right, center;
+  // два пути: выбрать тип вагона или указать груз; поиск по грузу — под типами, после выбора типа (без груза) скрыт
+  let left, right = "", center;
   if (intro) {
-    left = typeListPanelHTML(VAGONS);
-    right = cargoPanelHTML();
+    left = typeListPanelHTML(VAGONS) + cargoPanelHTML();
     center = `<div class="cat-intro"><b>Чем везти?</b>
       <span>${VAGONS.length} моделей грузовых вагонов российского производства.</span>
-      <span>Выберите тип вагона слева — или укажите груз справа, и мы покажем, какие модели его возят.</span>
+      <span>Выберите тип вагона — или укажите груз, и мы покажем, какие модели его возят.</span>
       <div class="rail-rule"></div>
       <a class="go-link" style="margin-top:14px" href="#/mfrs">или начните с завода-производителя</a></div>`;
   } else {
-    left = type ? kindPanelHTML() : (appliedHTML(applied, clearAll) + typeListPanelHTML(base));
-    right = (type ? appliedHTML(applied, clearAll) : "") + cargoPanelHTML();
+    left = (type ? kindPanelHTML() : typeListPanelHTML(base)) + (cargo.length ? cargoPanelHTML() : "");
+    right = appliedHTML(applied, clearAll);
     const head = cargo.length
       ? `<div class="cat-head cargo"><h2>Найдено для перевозки</h2>${cargo.map(cid => chipHTML(CARGO_BY_ID.get(cid).name, `nav(catHashWith({cargo: catState.cargo.filter(x => x !== '${cid}')}))`, "lg")).join("")}
          <span class="models">${pl(list.length, "модель", "модели", "моделей")}</span></div>
@@ -181,15 +181,15 @@ function renderCatalog() {
       }
       let i = 0;
       cards = groups
-        ? groups.map(([title, vs]) => `<div class="kind-group-title">${esc(title)} <span class="mono" style="font-size:13px;color:var(--ink-faint)">${vs.length}</span></div><div class="vgrid">${vs.map(v => vagonCardHTML(v, i++)).join("")}</div>`).join("")
-        : `<div class="vgrid">${list.map(v => vagonCardHTML(v, i++)).join("")}</div>`;
+        ? groups.map(([title, vs]) => `<div class="kind-group-title">${esc(title)} <span class="mono" style="font-size:13px;color:var(--ink-faint)">${vs.length}</span></div><div class="vgrid four">${vs.map(v => vagonCardHTML(v, i++)).join("")}</div>`).join("")
+        : `<div class="vgrid four">${list.map(v => vagonCardHTML(v, i++)).join("")}</div>`;
     }
     center = head + catToolbarHTML(base) + cards;
   }
 
-  $("view-catalog").innerHTML = bandHTML("Грузовые вагоны") + `<div class="wrap">
+  $("view-catalog").innerHTML = bandHTML("Грузовые вагоны") + `<div class="wrap wide">
     ${crumbsHTML(crumbs)}
-    <div class="layout-3">
+    <div class="layout-3 wide">
       <aside class="sticky-side">${left}</aside>
       <div>${center}</div>
       <aside class="sticky-side rail-right">${right}</aside>

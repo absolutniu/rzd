@@ -7,12 +7,26 @@ const PART_LINKS = [ // часть вагона -> подпись в блоке 
   ["Z004", "кузова и рамы вагона"],
 ];
 
+// нормативы — строками, критерии (единичный / комбинированный) — столбцами; одинаковые значения КР — одной ячейкой
 function overhaulTableHTML(rows) {
   if (!rows || !rows.length) return `<p class="no-data">данные по межремонтным срокам не внесены для этой модели</p>`;
-  const cell = (y, km) => `${y ?? "—"}${km ? ` <span class="km">/ ${fmtNum(km)} тыс.км</span>` : ""}`;
+  const years = y => y == null ? null : Number.isInteger(y) ? pl(y, "год", "года", "лет") : `${fmtNum(y)} года`;
+  const cell = (y, km) => y == null && km == null ? "—" : [years(y), km != null ? `${fmtNum(km)} тыс. км` : null].filter(Boolean).join(" / ");
+  const crit = rows.map(r => r.c);
+  const norms = [
+    ["ДР после постройки", r => cell(r.drBuild, r.drBuildKm)],
+    ["ДР после ДР", r => cell(r.drDr, r.drDrKm)],
+    ["ДР после КР", r => cell(r.drKr, r.drKrKm)],
+    ["КР после постройки", r => cell(r.krBuild, null)],
+    ["КР после КР", r => cell(r.krKr, null)],
+  ].filter(([, get]) => rows.some(r => get(r) !== "—"));
+  const head = c => /^един/i.test(c) ? "Единич. критерий" : /^комб/i.test(c) ? "Комб. критерий" : c;
   return `<div class="scroll-x"><table class="overhaul">
-    <thead><tr><th>Критерий</th><th>ДР после постройки</th><th>ДР после ДР</th><th>ДР после КР</th><th>КР после постройки, лет</th></tr></thead>
-    <tbody>${rows.map(r => `<tr><td>${esc(r.c)}</td><td>${cell(r.drBuild, r.drBuildKm)}</td><td>${cell(r.drDr, r.drDrKm)}</td><td>${cell(r.drKr, r.drKrKm)}</td><td>${r.krBuild ?? "—"}</td></tr>`).join("")}</tbody>
+    <thead><tr><th>Нормативы</th>${crit.map(c => `<th>${esc(head(c))}</th>`).join("")}</tr></thead>
+    <tbody>${norms.map(([name, get]) => {
+      const vals = rows.map(get);
+      return `<tr><td class="nm">${name}</td>${vals.every(v => v === vals[0]) && vals.length > 1 ? `<td colspan="${vals.length}" class="merged">${vals[0]}</td>` : vals.map(v => `<td>${v}</td>`).join("")}</tr>`;
+    }).join("")}</tbody>
   </table></div>`;
 }
 

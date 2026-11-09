@@ -50,23 +50,29 @@ function renderMfrs() {
   </div>`;
 }
 
+// выпуск — столбцы (синие, левая шкала), доля — линия (оранжевая, своя шкала в верхней части): не сливаются
 function outputChartSVG(rows) {
   if (!rows || !rows.length) return `<p class="no-data">данные о выпуске по годам не внесены</p>`;
-  const W = 520, H = 210, PL = 8, PR = 8, PT = 22, PB = 26;
+  const W = 520, H = 250, PL = 8, PR = 8, PT = 26, PB = 26;
   const iw = W - PL - PR, ih = H - PT - PB, n = rows.length, gap = iw / n, bw = Math.min(gap * 0.52, 36);
-  const maxV = Math.max(...rows.map(r => r.volume || 0), 1), maxS = Math.max(...rows.map(r => r.share || 0), 1);
-  const x = i => PL + i * gap + (gap - bw) / 2;
-  const yV = v => PT + ih - (v / maxV) * ih, yS = v => PT + ih - (v / maxS) * ih * 0.86;
-  const bars = rows.map((r, i) => r.volume == null ? "" : `<rect x="${x(i).toFixed(1)}" y="${yV(r.volume).toFixed(1)}" width="${bw.toFixed(1)}" height="${(PT + ih - yV(r.volume)).toFixed(1)}" rx="2" fill="var(--accent2)" opacity=".85"/>
-    <text x="${(x(i) + bw / 2).toFixed(1)}" y="${(yV(r.volume) - 5).toFixed(1)}" text-anchor="middle" font-size="10" fill="var(--ink-soft)">${fmtNum(r.volume)}</text>`).join("");
-  const pts = rows.map((r, i) => r.share != null ? `${(x(i) + bw / 2).toFixed(1)},${yS(r.share).toFixed(1)}` : null).filter(Boolean).join(" ");
-  const dots = rows.map((r, i) => r.share == null ? "" : `<circle cx="${(x(i) + bw / 2).toFixed(1)}" cy="${yS(r.share).toFixed(1)}" r="3" fill="var(--accent)"/><text x="${(x(i) + bw / 2 + 4).toFixed(1)}" y="${(yS(r.share) + 12).toFixed(1)}" font-size="9" fill="var(--accent)">${fmtNum(r.share)}%</text>`).join("");
-  const years = rows.map((r, i) => `<text x="${(x(i) + bw / 2).toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="var(--ink-faint)">${r.year}</text>`).join("");
+  const vals = rows.map(r => r.share).filter(v => v != null);
+  const maxV = Math.max(...rows.map(r => r.volume || 0), 1);
+  const minS = vals.length ? Math.min(...vals) : 0, maxS = vals.length ? Math.max(...vals) : 1;
+  const x = i => PL + i * gap + (gap - bw) / 2, cx = i => x(i) + bw / 2;
+  const barTop = PT + ih * 0.42;  // столбцы — в нижних 58 %, линия доли — в верхних 30 %
+  const yV = v => PT + ih - (v / maxV) * (PT + ih - barTop);
+  const yS = v => PT + 4 + (maxS === minS ? 0.5 : 1 - (v - minS) / (maxS - minS)) * ih * 0.28;
+  const bars = rows.map((r, i) => r.volume == null ? "" : `<rect x="${x(i).toFixed(1)}" y="${yV(r.volume).toFixed(1)}" width="${bw.toFixed(1)}" height="${(PT + ih - yV(r.volume)).toFixed(1)}" rx="2" fill="var(--chart-volume)"/>
+    <text x="${cx(i).toFixed(1)}" y="${(yV(r.volume) - 6).toFixed(1)}" text-anchor="middle" font-size="13" font-weight="700" fill="var(--chart-volume)">${fmtNum(r.volume)}</text>`).join("");
+  const pts = rows.map((r, i) => r.share != null ? `${cx(i).toFixed(1)},${yS(r.share).toFixed(1)}` : null).filter(Boolean).join(" ");
+  const dots = rows.map((r, i) => r.share == null ? "" : `<circle cx="${cx(i).toFixed(1)}" cy="${yS(r.share).toFixed(1)}" r="3.5" fill="var(--chart-share)"/>
+    <text x="${cx(i).toFixed(1)}" y="${(yS(r.share) - 8).toFixed(1)}" text-anchor="middle" font-size="12" font-weight="700" fill="var(--chart-share)">${fmtNum(r.share)}%</text>`).join("");
+  const years = rows.map((r, i) => `<text x="${cx(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="var(--ink-faint)">${r.year}</text>`).join("");
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;overflow:visible" role="img" aria-label="Выпуск вагонов по годам">
-      <line x1="${PL}" x2="${W - PR}" y1="${PT + ih}" y2="${PT + ih}" stroke="var(--line-strong)"/>${bars}<polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2"/>${dots}${years}</svg>
-    <div style="display:flex;gap:18px;margin-top:6px;font-size:11.5px;color:var(--ink-soft);flex-wrap:wrap">
-      <span><span style="display:inline-block;width:9px;height:9px;background:var(--accent2);border-radius:2px;margin-right:5px"></span>производство грузовых вагонов, тыс. ед.</span>
-      <span><span style="display:inline-block;width:12px;height:3px;background:var(--accent);margin:0 5px 3px 0"></span>доля от общего объёма производства, %</span>
+      <line x1="${PL}" x2="${W - PR}" y1="${PT + ih}" y2="${PT + ih}" stroke="var(--line-strong)"/>${bars}<polyline points="${pts}" fill="none" stroke="var(--chart-share)" stroke-width="2.5"/>${dots}${years}</svg>
+    <div style="display:flex;gap:18px;margin-top:6px;font-size:12px;color:var(--ink-soft);flex-wrap:wrap">
+      <span><span style="display:inline-block;width:10px;height:10px;background:var(--chart-volume);border-radius:2px;margin-right:5px"></span>производство грузовых вагонов, тыс. ед.</span>
+      <span><span style="display:inline-block;width:14px;height:3px;background:var(--chart-share);margin:0 5px 3px 0"></span>доля от общего объёма производства, %</span>
     </div>`;
 }
 

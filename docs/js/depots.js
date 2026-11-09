@@ -129,6 +129,8 @@ async function initDepotMap() {
     for (const [id, data] of Object.entries({ land, neighbors, roads, lines, stations, junctions, depots: depotFeatures() })) map.addSource(id, { type: "geojson", data });
     map.addLayer({ id: "neighbors", type: "fill", source: "neighbors", paint: { "fill-color": c("neighbor") } });
     map.addLayer({ id: "land", type: "fill", source: "land", paint: { "fill-color": c("land") } });
+    // контур суши: там, где нет территории дорог (север Сибири), берег не сливается с морем
+    map.addLayer({ id: "land-edge", type: "line", source: "land", paint: { "line-color": c("edge"), "line-width": .8, "line-opacity": .55 } });
     map.addLayer({ id: "roads-fill", type: "fill", source: "roads", paint: { "fill-color": c("road") } });
     map.addLayer({ id: "roads-edge", type: "line", source: "roads", paint: { "line-color": c("edge"), "line-width": 1 } });
     map.addLayer({ id: "track-branch", type: "line", source: "lines", filter: ["==", ["get", "usage"], "branch"],
@@ -143,19 +145,20 @@ async function initDepotMap() {
     map.addImage("dia", g.getImageData(0, 0, s, s), { sdf: true });
     map.addLayer({ id: "depot-sel", type: "circle", source: "depots", filter: ["==", ["get", "id"], ""],
       paint: { "circle-radius": 11, "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": c("sel"), "circle-stroke-width": 2.5 } });
+    // депо и участки — главные объекты карты: значки крупнее, у выбранной дороги — с подписями
     map.addLayer({ id: "depots", type: "circle", source: "depots", filter: ["!", ["get", "dia"]],
-      paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 3, 3.6, 9, 7], "circle-color": ["get", "color"], "circle-stroke-color": c("track"), "circle-stroke-width": 1.2 } });
+      paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 3, 4.6, 9, 9], "circle-color": ["get", "color"], "circle-stroke-color": c("track"), "circle-stroke-width": 1.4 } });
     map.addLayer({ id: "depots-dia", type: "symbol", source: "depots", filter: ["get", "dia"],
-      layout: { "icon-image": "dia", "icon-size": ["interpolate", ["linear"], ["zoom"], 3, .55, 9, 1], "icon-allow-overlap": true },
+      layout: { "icon-image": "dia", "icon-size": ["interpolate", ["linear"], ["zoom"], 3, .75, 9, 1.3], "icon-allow-overlap": true },
       paint: { "icon-color": ["get", "color"], "icon-halo-color": c("track"), "icon-halo-width": 1.2 } });
-    // переходы на соседние дороги — когда в фильтре одна дорога; клик — фильтр на соседнюю
-    map.addLayer({ id: "junctions", type: "circle", source: "junctions", filter: ["==", ["get", "road"], ""],
-      paint: { "circle-radius": 7, "circle-color": c("edge"), "circle-stroke-color": c("track"), "circle-stroke-width": 2.5 } });
-    map.addLayer({ id: "junction-label", type: "symbol", source: "junctions", filter: ["==", ["get", "road"], ""],
-      // подпись перехода: соседняя дорога; второй строкой — стыковые станции из справочника
-      layout: { "text-field": ["format", ["concat", ["get", "to_name"], " ЖД"], {}, ["case", ["has", "stations"], ["concat", "\n", ["get", "stations"]], ""], { "font-scale": .78 }], "text-font": ["Open Sans Semibold"], "text-size": 12.5,
-                "text-variable-anchor": ["bottom", "top", "left", "right"], "text-radial-offset": 1.1 },
-      paint: { "text-color": cssVar("--ink"), "text-halo-color": c("bg"), "text-halo-width": 2 } });
+    // переходы на соседние дороги — когда в фильтре одна дорога: значок «рельсы», название — при наведении, клик — соседняя дорога
+    map.addImage("junction", railJunctionIcon(c("edge")));
+    map.addLayer({ id: "junctions", type: "symbol", source: "junctions", filter: ["==", ["get", "road"], ""],
+      layout: { "icon-image": "junction", "icon-size": .8, "icon-allow-overlap": true } });
+    map.addLayer({ id: "depot-label", type: "symbol", source: "depots", filter: ["==", ["get", "id"], ""],
+      layout: { "text-field": ["get", "name"], "text-font": ["Open Sans Semibold"], "text-size": 12, "text-anchor": "left", "text-offset": [1, 0],
+                "text-max-width": 16, "text-optional": true },
+      paint: { "text-color": c("label"), "text-halo-color": c("bg"), "text-halo-width": 1.6 } });
     RM.popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, className: "depot-map-tip", offset: 10 });
     for (const l of ["depots", "depots-dia", "stations"]) {
       map.on("mousemove", l, e => {
@@ -167,16 +170,31 @@ async function initDepotMap() {
     }
     for (const l of ["depots", "depots-dia"])
       map.on("click", l, e => { const id = e.features[0].properties.id; nav(id === depState.selected ? depotHash() : `#/depot/${id}`); });
-    for (const l of ["junctions", "junction-label"]) {
-      map.on("click", l, e => pickMapRoad(e.features[0].properties.to));
-      map.on("mouseenter", l, () => map.getCanvas().style.cursor = "pointer");
-      map.on("mouseleave", l, () => map.getCanvas().style.cursor = "");
-    }
+    map.on("click", "junctions", e => pickMapRoad(e.features[0].properties.to));
+    map.on("mousemove", "junctions", e => {
+      const p = e.features[0].properties;
+      map.getCanvas().style.cursor = "pointer";
+      RM.popup.setLngLat(e.features[0].geometry.coordinates).setText(`Переход: ${p.to_name} ЖД${p.stations ? " · " + p.stations : ""}`).addTo(map);
+    });
+    map.on("mouseleave", "junctions", () => { map.getCanvas().style.cursor = ""; RM.popup.remove(); updateDepotMap(); });
     map.on("click", "roads-fill", e => {
-      if (!map.queryRenderedFeatures(e.point, { layers: ["depots", "depots-dia", "junctions", "junction-label"] }).length) pickMapRoad(e.features[0].properties.road);
+      if (!map.queryRenderedFeatures(e.point, { layers: ["depots", "depots-dia", "junctions"] }).length) pickMapRoad(e.features[0].properties.road);
     });
     updateDepotMap();
   });
+}
+
+// значок перехода: две рельсы со шпалами на белом круге (по макету), цвет — как границы дорог
+function railJunctionIcon(color) {
+  const s = 26, cv = document.createElement("canvas"), g = cv.getContext("2d");
+  cv.width = cv.height = s;
+  g.fillStyle = "#fff"; g.strokeStyle = color; g.lineWidth = 1.5;
+  g.beginPath(); g.arc(s / 2, s / 2, s / 2 - 1.5, 0, 2 * Math.PI); g.fill(); g.stroke();
+  g.lineCap = "round"; g.lineWidth = 2;
+  for (const y of [8, 13, 18]) { g.beginPath(); g.moveTo(7, y); g.lineTo(19, y); g.stroke(); }  // шпалы
+  g.lineWidth = 2.2;
+  for (const x of [10, 16]) { g.beginPath(); g.moveTo(x, 5); g.lineTo(x, 21); g.stroke(); }    // рельсы
+  return g.getImageData(0, 0, s, s);
 }
 
 // выбор дороги на карте = фильтр «Дорога» с одной этой дорогой
@@ -203,7 +221,8 @@ function updateDepotMap() {
   map.setPaintProperty("roads-edge", "line-opacity", single ? ["case", on, 1, .25] : 1);
   for (const l of ["track-main", "track-branch"]) map.setPaintProperty(l, "line-opacity", codes.length ? ["case", on, 1, single ? .1 : .35] : 1);
   const jf = single ? ["all", ["==", ["get", "road"], single], ["in", ["get", "to"], ["literal", [...RM.railwayByCode.keys()]]]] : ["==", ["get", "road"], ""];
-  map.setFilter("junctions", jf); map.setFilter("junction-label", jf);
+  map.setFilter("junctions", jf);
+  map.setFilter("depot-label", single ? shown : ["==", ["get", "id"], ""]);
   // вид: выбранное депо — к нему; изменился набор депо — показать все найденные
   const sel = depState.selected && DEPOT_BY_ID.get(depState.selected);
   if (sel && sel.latitude != null && RM.selected !== sel.id) {
@@ -242,7 +261,11 @@ function depotPanelHTML(d) {
     groups.get(k).rts.set(c.repair_type_id, c.note);
   });
   const planned = [...groups.values()].sort((a, b) => a.t.localeCompare(b.t) || (a.kind || "").localeCompare(b.kind || ""));
-  const rtChip = (rt, note) => `<span class="tag-chip">${esc(REPAIR_TYPE_BY_ID.get(rt) || rt)}${note ? `<span class="note-dot" title="${esc(note)}">?</span>` : ""}</span>`;
+  // «?» у вида ремонта — примечание из Excel («Депо_Компетенц», столбец E; «Депо_Авторизац», столбец D): подсказка при наведении
+  const noteDot = note => note ? `<span class="note-dot" tabindex="0" data-tip="${esc(note)}" aria-label="${esc(note)}">?</span>` : "";
+  const rtChip = (rt, note) => `<span class="tag-chip">${esc(REPAIR_TYPE_BY_ID.get(rt) || rt)}${noteDot(note)}</span>`;
+  // три столбца: тип вагона — деповской — капитальный (капитальный всегда в своём столбце, даже без деповского)
+  const rtCells = rts => ["RT001", "RT002"].map(rt => `<span class="rt-cell">${rts.has(rt) ? rtChip(rt, rts.get(rt)) : ""}</span>`).join("");
   const current = [...new Set(comps.filter(c => !PLANNED.has(c.repair_type_id)).map(c => c.repair_type_id))];
   const auths = DATA.depotAuthorizations.filter(a => a.depot_id === d.id);
   const authByVagon = new Map();
@@ -251,8 +274,11 @@ function depotPanelHTML(d) {
   const dContacts = DATA.depotContacts[d.id] || [];
   const hContacts = holding ? (DATA.repairHoldingContacts[holding.id] || []) : [];
   const contactList = list => list.map(c => `<div class="mfr-sub">${esc(c.name || "")}</div>${c.phone ? `<div>${esc(c.phone)}</div>` : ""}${c.email ? `<div><a href="mailto:${esc(c.email.split(/[,;]/)[0].trim())}">${esc(c.email)}</a></div>` : ""}`).join("");
-  const typeLbl = (t, kind) => `<span class="lbl">${esc(TYPE_META[t]?.name || t)}${kind ? `<span class="k">${esc(KIND_BY_ID.get(kind)?.name || "")}</span>` : ""}</span>`;
+  const typeLbl = (t, kind, extra = "") => `<span class="lbl">${esc(TYPE_META[t]?.name || t)}${kind ? `<span class="k">${esc(KIND_BY_ID.get(kind)?.name || "")}</span>` : ""}${extra}</span>`;
+  const authRows = [...authByVagon].map(([vid, rts]) => [VAGON_BY_ID.get(vid), rts]).filter(([v]) => v)
+    .sort(([a], [b]) => a.typeId.localeCompare(b.typeId) || (a.kindId || "").localeCompare(b.kindId || "") || a.model.localeCompare(b.model));
 
+  // блоки, по которым ничего не внесено, не показываем (у ВКМ и участков часто нет ремонта вагонов)
   return `<div class="depot-panel" id="depot-panel">
     <button class="close" title="Закрыть" onclick="nav(depotHash())">✕</button>
     <div class="dp-head">
@@ -277,23 +303,21 @@ function depotPanelHTML(d) {
       </div>
     </div>
 
-    <div class="dp-section"><h4>Компетенции по ремонту <span class="sm">(типовые вагоны)</span></h4></div>
-    <div class="dp-section"><h4>Плановые ремонты</h4>
-      ${planned.length ? `<div class="dp-box">${planned.map(g => `<div class="comp-row">${typeLbl(g.t, g.kind)}<span class="chips">${[...g.rts].map(([rt, n]) => rtChip(rt, n)).join("")}</span></div>`).join("")}</div>` : `<p class="no-data">не внесены</p>`}
-    </div>
-    <div class="dp-section"><h4>Текущий ремонт</h4>
-      ${current.length ? `<div class="dp-box" style="padding:10px 12px"><div class="tags">${current.map(rt => `<span class="tag-chip alt big" style="font-size:14px">${esc(REPAIR_TYPE_BY_ID.get(rt) || rt)}</span>`).join("")}</div></div>` : `<p class="no-data">данных о текущем ремонте (ТР-1, ТР-2, ТР-3) пока нет</p>`}
-    </div>
-    <div class="dp-section"><h4>Авторизация на ремонт <span class="sm">(вагоны с повышенной осевой нагрузкой)</span></h4>
-      ${authByVagon.size ? `<div class="dp-box">${[...authByVagon].map(([vid, rts]) => { const v = VAGON_BY_ID.get(vid); if (!v) return "";
-        return `<div class="comp-row">${typeLbl(v.typeId, v.kindId)}<span class="chips"><a class="tag-chip alt link" href="#/vagon/${v.id}">${esc(v.model)}</a>${[...rts].map(([rt, n]) => rtChip(rt, n)).join("")}</span></div>`; }).join("")}</div>`
-        : `<p class="no-data">авторизаций на конкретные модели нет</p>`}
-    </div>
-    <div class="dp-section"><h4>Дополнительные услуги</h4>
-      ${services.length ? `<div class="dp-box" style="padding:10px 12px"><div class="tags">${services.map(l => `<span class="tag-chip alt">${esc(SERVICE_BY_ID.get(l.service_id) || l.service_id)}${l.note ? `<span class="note-dot" title="${esc(l.note)}">?</span>` : ""}</span>`).join("")}</div></div>` : `<p class="no-data">не внесены</p>`}
-    </div>
+    ${planned.length || current.length ? `<div class="dp-section"><h4>Компетенции по ремонту <span class="sm">(типовые вагоны)</span></h4></div>` : ""}
+    ${planned.length ? `<div class="dp-section"><h4>Плановые ремонты</h4>
+      <div class="dp-box comp-grid">${planned.map(g => `<div class="comp-row">${typeLbl(g.t, g.kind)}${rtCells(g.rts)}</div>`).join("")}</div>
+    </div>` : ""}
+    ${current.length ? `<div class="dp-section"><h4>Текущий ремонт</h4>
+      <div class="dp-box" style="padding:10px 12px"><div class="tags">${current.map(rt => `<span class="tag-chip alt big" style="font-size:14px">${esc(REPAIR_TYPE_BY_ID.get(rt) || rt)}</span>`).join("")}</div></div>
+    </div>` : ""}
+    ${authRows.length ? `<div class="dp-section"><h4>Авторизация на ремонт <span class="sm">(вагоны с повышенной осевой нагрузкой)</span></h4>
+      <div class="dp-box comp-grid">${authRows.map(([v, rts]) => `<div class="comp-row">${typeLbl(v.typeId, v.kindId, `<a class="tag-chip alt link model" href="#/vagon/${v.id}">${esc(v.model)}</a>`)}${rtCells(rts)}</div>`).join("")}</div>
+    </div>` : ""}
+    ${services.length ? `<div class="dp-section"><h4>Дополнительные услуги</h4>
+      <div class="dp-box" style="padding:10px 12px"><div class="tags">${services.map(l => `<span class="tag-chip alt">${esc(SERVICE_BY_ID.get(l.service_id) || l.service_id)}${noteDot(l.note)}</span>`).join("")}</div></div>
+    </div>` : ""}
     <div class="contact-boxes">
-      <div class="contact-box"><h5>Контакты депо</h5>${dContacts.length ? contactList(dContacts) : `<span class="no-data">не внесены</span>`}</div>
+      ${dContacts.length ? `<div class="contact-box"><h5>Контакты депо</h5>${contactList(dContacts)}</div>` : ""}
       <div class="contact-box"><h5>Контакты холдинга</h5>${holding ? `<div style="font-weight:700">${esc(holding.short_name || "")} ${holding.website ? siteLink(holding.website) : ""}</div>${contactList(hContacts)}` : `<span class="no-data">—</span>`}</div>
     </div>
   </div>`;
@@ -314,11 +338,12 @@ function renderDepots() {
   if (depState.repairs.size) applied.push({ k: "Тип ремонта", v: [...depState.repairs].map(id => REPAIR_TYPE_BY_ID.get(id)), remove: "depState.repairs.clear(); renderDepots()" });
   if (depState.services.size) applied.push({ k: "Дополнительные услуги", v: [...depState.services].map(id => SERVICE_BY_ID.get(id)), remove: "depState.services.clear(); renderDepots()" });
   const sel = depState.selected ? DEPOT_BY_ID.get(depState.selected) : null;
-  const rows = list.slice().sort((a, b) => (a.railway_id || "").localeCompare(b.railway_id || "") || a.name.localeCompare(b.name, "ru"));
+  // выбрано депо — остальные убираем из таблицы и с карты, чтобы не заслоняли
+  const rows = sel ? [sel] : list.slice().sort((a, b) => (a.railway_id || "").localeCompare(b.railway_id || "") || a.name.localeCompare(b.name, "ru"));
 
-  $("view-depots").innerHTML = bandHTML("Ремонтные депо") + `<div class="wrap">
+  $("view-depots").innerHTML = bandHTML("Ремонтные депо") + `<div class="wrap wide">
     ${crumbsHTML([["Главная", "#/"], ["Ремонтные депо", (v || sel) ? "#/depots" : null], ...(sel ? [[sel.name, null]] : v ? [["модель " + v.model, null]] : [])])}
-    <div class="layout-3">
+    <div class="layout-3 wide">
       <aside class="sticky-side">
         <div class="panel"><div class="panel-title center">Поиск депо по<br>модели вагона</div>
           <label class="field-label" for="si-depmodel">Модель вагона</label>
@@ -340,7 +365,7 @@ function renderDepots() {
       <aside class="sticky-side rail-right">${appliedHTML(applied, "depState.railways.clear(); depState.holdings.clear(); depState.repairs.clear(); depState.services.clear(); renderDepots()")}</aside>
       <div class="span-cr">
         <div class="depot-count">${list.length === DATA.depots.length ? `всего добавлено: <b>${pl(list.length, "депо", "депо", "депо")}</b>` : `найдено: <b>${pl(list.length, "депо", "депо", "депо")}</b>`}</div>
-        <div class="depot-split${sel ? "" : " single"}">
+        <div class="depot-split${sel ? " with-panel" : " single"}">
           <div class="depot-table-wrap"><table class="depot-table">
             <thead><tr><th>Дорога</th><th>Холдинг</th><th>Депо</th><th></th></tr></thead>
             <tbody>${rows.map(d => `<tr class="${d.id === depState.selected ? "sel" : ""}" onclick="nav('${d.id === depState.selected ? depotHash() : "#/depot/" + d.id}')">
@@ -352,6 +377,6 @@ function renderDepots() {
       </div>
     </div>
   </div>`;
-  wireDepotMap(visible);
+  wireDepotMap(sel ? new Set([sel.id]) : visible);
   if (sel && route.lastGroup === "depots") $("depot-panel")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }

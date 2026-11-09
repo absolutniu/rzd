@@ -12,6 +12,9 @@ let DATA, VAGONS, VAGON_BY_ID, TYPE_BY_ID, KIND_BY_ID, MFR_BY_ID, BOGIE_BY_ID, D
 function initFromData(data) {
   DATA = data;
   VAGONS = DATA.vagons;
+  // сертификат с прошедшей датой окончания — «срок действия закончился», даже если в источнике ещё «Действует»
+  const today = new Date().toISOString().slice(0, 10);
+  VAGONS.forEach(v => { const c = v.cert; if (c && isoDate(c.to) && isoDate(c.to) < today && /^действ/i.test((c.status || "").trim())) c.status = "Срок действия закончился"; });
   VAGON_BY_ID = new Map(VAGONS.map(v => [v.id, v]));
   TYPE_BY_ID = new Map(DATA.vagonTypes.map(t => [t.id, t.name]));
   KIND_BY_ID = new Map(DATA.vagonKinds.map(k => [k.id, k]));
@@ -52,7 +55,9 @@ function fmtNum(n) {
   if (typeof n !== "number") return n;
   return n.toLocaleString("ru-RU");
 }
-function fmtDate(iso) { return iso ? iso.slice(0, 10).split("-").reverse().join(".") : null; }
+// дата из источника: «2026-08-25» или «25.08.2026» -> «2026-08-25»
+function isoDate(s) { const m = String(s || "").match(/^(\d{2})\.(\d{2})\.(\d{4})/); return m ? `${m[3]}-${m[2]}-${m[1]}` : (s ? String(s).slice(0, 10) : null); }
+function fmtDate(iso) { iso = isoDate(iso); return iso ? iso.split("-").reverse().join(".") : null; }
 function plural(n, one, few, many) {
   const a = Math.abs(n) % 100, b = a % 10;
   if (a > 10 && a < 20) return many;

@@ -12,7 +12,7 @@
   --warn: #b9791b; --warn-soft: rgba(185,121,27,.15);
   --danger: #c1442e; --danger-soft: rgba(193,68,46,.13);
   --map-1: #bb4d0a; --map-2: #00707f; --map-3: #6a8a3f; --map-4: #7a4fa3; --map-5: #b0306a; --map-6: #3a5f9c;
-  --chart-volume: #2f6fb5; --chart-share: #e07a1f;
+  --chart-volume: #2f6fb5; --chart-share: #e07a1f; --axle: #00a04a;
   /* карта ж/д сети (как на макетах: голубая территория дорог, белые пути) */
   --rm-bg: #eef4fb; --rm-neighbor: #e1e5ea; --rm-land: #d6e4f7; --rm-road: #bad3f7; --rm-edge: #7f9fca; --rm-track: #ffffff; --rm-sel: #14181b; --rm-label: #8e3a94;
   --shadow: 0 1px 2px rgba(20,24,28,.06), 0 10px 28px rgba(20,24,28,.08);
@@ -34,7 +34,7 @@
     --warn: #d6a13c; --warn-soft: rgba(214,161,60,.16);
     --danger: #e0685a; --danger-soft: rgba(224,104,90,.16);
     --map-1: #ff9d55; --map-2: #3fd0e8; --map-3: #9dbf6e; --map-4: #b892e6; --map-5: #f27aaa; --map-6: #8fb2ee;
-    --chart-volume: #6fa8ec; --chart-share: #ffa24d;
+    --chart-volume: #6fa8ec; --chart-share: #ffa24d; --axle: #3ccf7f;
     --rm-bg: #12161a; --rm-neighbor: #1d2227; --rm-land: #1b2735; --rm-road: #22364d; --rm-edge: #4f6d92; --rm-track: #cfdcec; --rm-sel: #eef1f2; --rm-label: #d993de;
     --shadow: 0 1px 2px rgba(0,0,0,.35), 0 10px 28px rgba(0,0,0,.4);
     --shadow-lg: 0 16px 48px rgba(0,0,0,.55);
@@ -48,7 +48,7 @@
   --ok: #4cb37e; --ok-soft: rgba(76,179,126,.15); --warn: #d6a13c; --warn-soft: rgba(214,161,60,.16);
   --danger: #e0685a; --danger-soft: rgba(224,104,90,.16);
   --map-1: #ff9d55; --map-2: #3fd0e8; --map-3: #9dbf6e; --map-4: #b892e6; --map-5: #f27aaa; --map-6: #8fb2ee;
-  --chart-volume: #6fa8ec; --chart-share: #ffa24d;
+  --chart-volume: #6fa8ec; --chart-share: #ffa24d; --axle: #3ccf7f;
   --rm-bg: #12161a; --rm-neighbor: #1d2227; --rm-land: #1b2735; --rm-road: #22364d; --rm-edge: #4f6d92; --rm-track: #cfdcec; --rm-sel: #eef1f2; --rm-label: #d993de;
   --shadow: 0 1px 2px rgba(0,0,0,.35), 0 10px 28px rgba(0,0,0,.4); --shadow-lg: 0 16px 48px rgba(0,0,0,.55);
 }
@@ -263,12 +263,13 @@ footer.foot .wrap { padding-top: 22px; padding-bottom: 32px; display: flex; gap:
 
 /* значок «повышенная осевая нагрузка 25 тс» */
 .axle-badge {
-  display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 32px; border: 2px solid var(--ok);
-  border-radius: 6px; color: var(--ok); background: var(--panel); flex-shrink: 0;
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center; padding: 3px 8px; border: 2px solid var(--axle);
+  border-radius: 8px; color: var(--axle); background: var(--panel); flex-shrink: 0; line-height: 1.1; white-space: nowrap;
 }
-.axle-badge svg { width: 30px; height: 24px; }
+.axle-badge small { font-size: 10px; font-weight: 600; }
+.axle-badge b { font-size: 14px; font-weight: 800; }
 .axle-line { display: inline-flex; align-items: center; gap: 10px; color: var(--ok); font-weight: 700; font-size: 14px; }
-.axle-line .axle-badge { width: 34px; height: 28px; }
+.axle-line .axle-badge { padding: 2px 7px; }
 
 /* выпадающие кнопки сортировки/фильтров (как в макетах) */
 .toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0 18px; }
@@ -503,7 +504,7 @@ table.overhaul .km { color: var(--ink-faint); }
 .mfr-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--accent); }
 .mfr-card .full { font-size: 16px; font-weight: 700; line-height: 1.3; }
 .mfr-card .models { margin-top: auto; text-align: right; font-family: var(--mono); color: var(--accent); font-size: 17px; font-weight: 700; }
-.mfr-card .b25 { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--ok); font-weight: 700; line-height: 1.3; }
+.mfr-card .b25 { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--axle); font-weight: 700; line-height: 1.3; }
 .mfr-logo {
   align-self: center; width: 120px; height: 62px; border-radius: 4px; background: var(--accent); color: var(--accent-ink);
   display: flex; align-items: center; justify-content: center; text-align: center; padding: 4px 8px;
@@ -512,7 +513,7 @@ table.overhaul .km { color: var(--ink-faint); }
 .mfr-logo.lg { width: 180px; height: 100px; font-size: 30px; }
 .mfr-logo img { max-width: 100%; max-height: 100%; }
 .mfr-sub { font-size: 12.5px; color: var(--ink-faint); }
-.b25-big { display: flex; align-items: center; gap: 10px; justify-content: center; color: var(--ok); font-weight: 700; font-size: 14px; margin-top: 18px; }
+.b25-big { display: flex; align-items: center; gap: 10px; justify-content: center; color: var(--axle); font-weight: 700; font-size: 14px; margin-top: 18px; }
 .type-icon-grid { display: flex; flex-wrap: wrap; gap: 18px 22px; }
 .type-icon-item { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100px; text-align: center; }
 .type-icon-item svg { width: 92px; height: 52px; color: var(--steel); }

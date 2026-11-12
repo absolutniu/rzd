@@ -174,7 +174,7 @@ async function initDepotMap() {
     map.on("mousemove", "junctions", e => {
       const p = e.features[0].properties;
       map.getCanvas().style.cursor = "pointer";
-      RM.popup.setLngLat(e.features[0].geometry.coordinates).setText(`Переход: ${p.to_name} ЖД${p.stations ? " · " + p.stations : ""}`).addTo(map);
+      RM.popup.setLngLat(e.features[0].geometry.coordinates).setText(`Переход: ${p.to_name} ЖД`).addTo(map);
     });
     map.on("mouseleave", "junctions", () => { map.getCanvas().style.cursor = ""; RM.popup.remove(); updateDepotMap(); });
     map.on("click", "roads-fill", e => {
@@ -297,7 +297,7 @@ function depotPanelHTML(d) {
           ${d.cert_number ? `<div class="row"><dt>Свидетельство РС ФЖТ</dt><dd>${d.cert_url ? `<a href="${esc(d.cert_url)}" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">№ ${esc(d.cert_number)}</a>` : `№ ${esc(d.cert_number)}`}${d.cert_valid_until ? `, до ${fmtDate(d.cert_valid_until)}` : ""}</dd></div>` : ""}
           <div class="row"><dt>Координаты</dt><dd>${coords}</dd></div>
           ${d.inn ? `<div class="row"><dt>ИНН</dt><dd>${esc(d.inn)}</dd></div>` : ""}
-          ${d.address ? `<div class="row"><dt>Адрес производства</dt><dd style="font-family:inherit;text-align:left">${esc(d.address)}</dd></div>` : ""}
+          ${d.address ? `<div class="row"><dt>Адрес производства</dt><dd style="font-family:inherit">${esc(d.address)}</dd></div>` : ""}
           ${d.registration_date ? `<div class="row"><dt>Дата регистрации</dt><dd>${fmtDate(d.registration_date)}</dd></div>` : ""}
         </dl>
       </div>

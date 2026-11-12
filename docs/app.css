@@ -411,6 +411,7 @@ footer.foot .wrap { padding-top: 22px; padding-bottom: 32px; display: flex; gap:
   display: flex; align-items: center; gap: 16px; box-shadow: var(--shadow-lg); transition: transform .4s var(--ease-spring);
 }
 .compare-tray.show { transform: translateX(-50%) translateY(0); }
+.compare-tray:not(.show) { visibility: hidden; transition: transform .4s var(--ease-spring), visibility 0s .4s; }  /* скрытый лоток не ловит Tab */
 .compare-tray .txt { font-size: 13px; }
 .compare-tray .clear { background: transparent; border: none; color: var(--paper); opacity: .6; cursor: pointer; font-size: 12.5px; }
 
@@ -595,6 +596,14 @@ table.depot-table tbody tr:last-child td { border-bottom: none; }
 table.depot-table td.name { font-weight: 700; }
 table.depot-table td.more { color: var(--ink-faint); text-align: right; white-space: nowrap; }
 table.depot-table tr.sel td.more { color: var(--accent); }
+/* узкая таблица депо (телефон, планшет, боковая колонка карточки депо) помещается в ширину: без колонки
+   «подробнее» (строка и так кликабельна), поплотнее; если и так не влезла — прокрутка, а не обрезка */
+.depot-table-wrap { container-type: inline-size; overflow-x: auto; }
+@container (max-width: 560px) {
+  table.depot-table th, table.depot-table td { padding: 9px 10px; }
+  table.depot-table th:last-child, table.depot-table td.more { display: none; }
+  table.depot-table td { overflow-wrap: anywhere; hyphens: auto; }
+}
 .depot-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; box-shadow: var(--shadow); position: sticky; top: 84px; max-height: calc(100vh - 100px); overflow-y: auto; }
 .depot-panel .close { float: right; border: none; background: none; font-size: 26px; line-height: 1; color: var(--ink-soft); cursor: pointer; }
 .depot-panel .close:hover { color: var(--accent); }

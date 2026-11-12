@@ -31,6 +31,8 @@
   .chip { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 999px; padding: 7px 13px; cursor: pointer; font: inherit; box-shadow: 0 2px 8px rgba(20,40,70,.06); }
   .chip.on { background: var(--ink); color: var(--panel); border-color: var(--ink); }
   .road-select { appearance: auto; padding-right: 10px; }
+  .exit { margin-left: auto; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+  .exit:hover { background: var(--ink); color: var(--panel); border-color: var(--ink); }
   .search { position: relative; }
   .search input { width: 240px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 999px; padding: 8px 14px; font: inherit; }
   .search .res { position: absolute; top: 40px; left: 0; width: 320px; max-height: 320px; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 28px rgba(20,40,70,.16); display: none; }
@@ -50,7 +52,15 @@
   .maplibregl-ctrl-attrib { font-size: 11px; }
   .jtip .maplibregl-popup-content { background: var(--ink); color: var(--panel); font-size: 12.5px; padding: 6px 10px; border-radius: 7px; }
   .jtip .maplibregl-popup-tip { display: none; }
-  @media (max-width: 640px) { .search input { width: 100%; } .search { flex: 1 1 100%; } .info { top: auto; bottom: 120px; } }
+  /* телефон: строка 1 — [← Все дороги] [дорога] [✕], строка 2 — поиск; легенда не заезжает на кнопки масштаба */
+  @media (max-width: 640px) {
+    .title { display: none; }
+    .road-select { flex: 1 1 0; min-width: 0; }
+    .exit { margin-left: 0; padding: 7px 12px; } .exit span { display: none; }
+    .search { flex: 1 1 100%; order: 5; } .search input { width: 100%; } .search .res { width: 100%; }
+    .info { top: auto; bottom: 120px; }
+    .legend { max-width: calc(100% - 76px); font-size: 12px; padding: 8px 12px; }
+  }
 </style>
 </head>
 <body>
@@ -60,6 +70,7 @@
   <button class="chip on" id="all-roads" style="display:none" onclick="pickRoad('')">← Все дороги</button>
   <select class="chip road-select" id="road" onchange="pickRoad(this.value)" aria-label="Дорога"></select>
   <div class="search"><input id="q" placeholder="Станция или код ЕСР" autocomplete="off"><div class="res" id="res"></div></div>
+  <a class="chip exit" id="exit" href="../#/depots" onclick="return exitMap()" title="Вернуться в Вагонотеку (Esc)" aria-label="Выйти из карты">✕<span> Выйти из карты</span></a>
 </div>
 <div class="info" id="info"><button class="x" onclick="hideInfo()">✕</button><div id="info-body"></div></div>
 <div class="legend" id="legend"></div>
@@ -209,6 +220,19 @@ function showFeature(f) {
   document.getElementById("info").style.display = "block";
 }
 function hideInfo() { document.getElementById("info").style.display = "none"; }
+// выход из полноэкранной карты: назад в Вагонотеку (туда, откуда пришли), иначе — на страницу депо
+function exitMap() {
+  let fromSite = false;
+  try { fromSite = !!document.referrer && new URL(document.referrer).origin === location.origin; } catch (e) {}
+  if (fromSite && history.length > 1) { history.back(); return false; }
+  return true;  // обычный переход по ссылке ../#/depots
+}
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape" || e.target === q) return;
+  if (document.getElementById("info").style.display === "block") hideInfo();
+  else if (!exitMap()) return;
+  else location.href = document.getElementById("exit").href;
+});
 
 const q = document.getElementById("q"), res = document.getElementById("res");
 q.addEventListener("input", () => {

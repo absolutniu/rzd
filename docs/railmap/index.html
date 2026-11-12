@@ -126,7 +126,7 @@ Promise.all(["meta.json", "lines.geojson", "roads.geojson", "stations.geojson", 
       map.on("mousemove", "junctions", e => {
         const p = e.features[0].properties;
         map.getCanvas().style.cursor = "pointer";
-        tip.setLngLat(e.features[0].geometry.coordinates).setHTML(`Переход: <b>${p.to_name} ЖД</b>${p.stations ? `<br><small>${p.stations}</small>` : ""}`).addTo(map);
+        tip.setLngLat(e.features[0].geometry.coordinates).setHTML(`Переход: <b>${p.to_name} ЖД</b>`).addTo(map);
       });
       map.on("mouseleave", "junctions", () => { map.getCanvas().style.cursor = ""; tip.remove(); });
       for (const l of ["stations", "depots", "depot-dia"]) {

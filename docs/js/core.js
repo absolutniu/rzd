@@ -116,8 +116,8 @@ const ICONS = {
   T007: `<svg viewBox="0 0 64 44" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12h44v12l-6 6H16l-6-6z"/><path d="M22 30v4M42 30v4" stroke-width="1.6"/><circle cx="17" cy="37" r="3.4" fill="currentColor" stroke="none"/><circle cx="47" cy="37" r="3.4" fill="currentColor" stroke="none"/></svg>`,
   T008: `<svg viewBox="0 0 64 44" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="13" width="48" height="16" rx="2"/><path d="M8 21h48" stroke-width="1.3" opacity=".55"/><circle cx="17" cy="35" r="3.4" fill="currentColor" stroke="none"/><circle cx="47" cy="35" r="3.4" fill="currentColor" stroke="none"/></svg>`,
 };
-const AXLE_SVG = `<svg viewBox="0 0 32 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5v14M29 5v14M3 15h26"/><text x="16" y="10" text-anchor="middle" font-size="8.5" font-weight="700" fill="currentColor" stroke="none" font-family="Segoe UI,Arial,sans-serif">25</text><text x="16" y="22.5" text-anchor="middle" font-size="5.5" fill="currentColor" stroke="none" font-family="Segoe UI,Arial,sans-serif">тс</text></svg>`;
-const axleBadge = (title = "Повышенная осевая нагрузка 25 тс") => `<span class="axle-badge" title="${esc(title)}">${AXLE_SVG}</span>`;
+// значок «повышенная осевая нагрузка 25 тс» — зелёная рамка с подписью (макет 12.11.2026)
+const axleBadge = (title = "Повышенная осевая нагрузка 25 тс") => `<span class="axle-badge" title="${esc(title)}"><small>осевая нагрузка</small><b>25 тс</b></span>`;
 const SORT_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></svg>`;
 const FILTER_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>`;
 const CHEV_SVG = `<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>`;

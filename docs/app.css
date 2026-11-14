@@ -174,8 +174,13 @@ footer.foot .wrap { padding-top: 22px; padding-bottom: 32px; display: flex; gap:
 /* широкие страницы (каталог, ремонтные депо): больше рабочего поля, левая колонка шире — влезает «Изотермические ✕» */
 .wrap.wide { max-width: 1880px; }
 .layout-3.wide { grid-template-columns: 320px minmax(0,1fr) 250px; gap: 28px; }
-@media (max-width: 1100px) { .layout-3.wide { grid-template-columns: 300px minmax(0,1fr); } }
+/* ноутбук (в т.ч. с масштабом 125–150%): правая колонка уходит вниз — карточкам вагонов нужна ширина */
+@media (max-width: 1300px) { .layout-3.wide { grid-template-columns: 300px minmax(0,1fr); } .layout-3.wide > .rail-right { grid-column: 1 / -1; } }
 @media (max-width: 800px) { .layout-3.wide { grid-template-columns: 1fr; } }
+/* фильтры не применены — правой колонки нет, её место отдаём карточкам */
+.layout-3.wide.no-right { grid-template-columns: 320px minmax(0,1fr); }
+@media (max-width: 1300px) { .layout-3.wide.no-right { grid-template-columns: 300px minmax(0,1fr); } }
+@media (max-width: 800px) { .layout-3.wide.no-right { grid-template-columns: 1fr; } }
 @media (max-width: 800px) { .sticky-side { position: static; } }
 
 .field-label { font-size: 12.5px; font-weight: 700; color: var(--ink-soft); margin: 0 0 6px; display: block; }
@@ -343,8 +348,8 @@ footer.foot .wrap { padding-top: 22px; padding-bottom: 32px; display: flex; gap:
 .type-sel { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
 .type-sel .ic { color: var(--steel); }
 .type-sel .ic svg { width: 76px; height: 46px; }
-.type-sel .nm { font-size: 20px; font-weight: 700; color: var(--accent); }
-.type-sel .x { margin-left: auto; border: none; background: none; color: var(--accent); font-size: 26px; cursor: pointer; line-height: 1; }
+.type-sel .nm { font-size: 20px; font-weight: 700; color: var(--accent); min-width: 0; hyphens: auto; overflow-wrap: break-word; }
+.type-sel .x { flex-shrink: 0; margin-left: auto; border: none; background: none; color: var(--accent); font-size: 26px; cursor: pointer; line-height: 1; }
 .kind-list { display: flex; flex-direction: column; gap: 2px; }
 .kind-row { display: flex; align-items: center; gap: 8px; border: none; background: none; text-align: left; padding: 7px 6px; border-radius: 8px; cursor: pointer; font-size: 15px; color: var(--ink); text-decoration: none; }
 .kind-row:hover { background: var(--panel-sunken); }
@@ -368,10 +373,8 @@ footer.foot .wrap { padding-top: 22px; padding-bottom: 32px; display: flex; gap:
 .kind-group-title:first-child { margin-top: 0; }
 
 .vgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(205px, 1fr)); gap: 18px; }
-.vgrid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; }
-@media (max-width: 1500px) { .vgrid.four { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (max-width: 1150px) { .vgrid.four { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 560px) { .vgrid.four { grid-template-columns: 1fr; } }
+/* число колонок — по ширине, а не по экрану: карточка не уже 285px (ноутбук с масштабом 125–150% — 2 колонки) */
+.vgrid.four { grid-template-columns: repeat(auto-fill, minmax(min(285px, 100%), 1fr)); gap: 22px; }
 .vgrid.four .vcard-media { height: 128px; }
 .vgrid.four .vcard-media img { height: 128px; }
 .vgrid.four .vcard-name { font-size: 19px; }
@@ -397,7 +400,7 @@ footer.foot .wrap { padding-top: 22px; padding-bottom: 32px; display: flex; gap:
 .vcard-name .num { margin-left: 4px; }
 .vcard-mfr { font-size: 13px; color: var(--ink-faint); font-style: italic; margin-top: -6px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
 .vcard-specs { display: flex; flex-direction: column; gap: 6px; margin: 2px 0 0; }
-.vcard-spec { display: flex; justify-content: space-between; align-items: baseline; font-size: 13.5px; gap: 10px; }
+.vcard-spec { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; font-size: 13.5px; gap: 2px 10px; }  /* не влезло — значение переносится под подпись */
 .vcard-spec dt { color: var(--ink-faint); }
 .vcard-spec dd { margin: 0; font-weight: 700; font-size: 15px; white-space: nowrap; }
 .vcard-compare { display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 12.5px; color: var(--ink-faint); border-top: 1px solid var(--line); padding-top: 10px; cursor: pointer; }

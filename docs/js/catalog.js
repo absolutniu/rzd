@@ -189,10 +189,10 @@ function renderCatalog() {
 
   $("view-catalog").innerHTML = bandHTML("Грузовые вагоны") + `<div class="wrap wide">
     ${crumbsHTML(crumbs)}
-    <div class="layout-3 wide">
+    <div class="layout-3 wide${right ? "" : " no-right"}">
       <aside class="sticky-side">${left}</aside>
       <div>${center}</div>
-      <aside class="sticky-side rail-right">${right}</aside>
+      ${right ? `<aside class="sticky-side rail-right">${right}</aside>` : ""}
     </div>
   </div>`;
 }

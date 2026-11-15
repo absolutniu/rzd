@@ -117,7 +117,7 @@ function renderVagon(params) {
         <h1>${esc(fullType)}${kn ? " " + esc(kn) : ""}</h1>
         <div class="model">${esc(v.model)}</div>
         ${v.modelNote ? `<div class="note">(${esc(v.modelNote)})</div>` : ""}
-        <div class="vhero-media">${v.photo ? `<img src="${v.photo}" alt="${esc(meta.name + " " + v.model)}">` : ICONS[v.typeId]}</div>
+        <div class="vhero-media">${wagonPic(v) ? `<img src="${wagonPic(v)}" alt="${esc(meta.name + " " + v.model)}">` : ICONS[v.typeId]}</div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
           ${v.axle25 ? `<span class="axle-line">${axleBadge()} повышенная осевая нагрузка 25 тс</span>` : "<span></span>"}
           <label class="vcard-compare" style="border:none;padding:0"><input type="checkbox" data-cmp="${v.id}" ${compareSet.has(v.id) ? "checked" : ""} onchange="toggleCompare('${v.id}')"> добавить к сравнению</label>

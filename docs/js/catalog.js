@@ -63,7 +63,7 @@ function vagonCardHTML(v, i = 0) {
   ].filter(([, val]) => val != null);
   return `<div class="vcard" style="animation-delay:${Math.min(i, 11) * 22}ms" onclick="nav('#/vagon/${v.id}')" role="link" tabindex="0" aria-label="${esc(meta.name + " " + v.model)}">
     <div class="vcard-top">${kn ? `<span class="vcard-kind">${esc(kn)}</span>` : "<span></span>"}${v.axle25 ? axleBadge() : ""}</div>
-    <div class="vcard-media">${v.photoThumb ? `<img src="${v.photoThumb}" alt="" loading="lazy">` : ICONS[v.typeId]}</div>
+    <div class="vcard-media">${wagonPic(v, true) ? `<img src="${wagonPic(v, true)}" alt="" loading="lazy">` : ICONS[v.typeId]}</div>
     <div class="vcard-name">${esc(meta.name)} <span class="num">${esc(v.model)}</span></div>
     <div class="vcard-mfr">${esc(mfrFull(v.mfrId))}</div>
     <dl class="vcard-specs">${specs.map(([k, val]) => `<div class="vcard-spec"><dt>${k}</dt><dd>${val}</dd></div>`).join("")}</dl>

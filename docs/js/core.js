@@ -126,6 +126,8 @@ function wagonPic(v, thumb = false) {
   const ill = thumb ? v.illustrationThumb : v.illustration, photo = thumb ? v.photoThumb : v.photo;
   return WAGON_PICS === "illustration" ? (ill || photo) : (photo || ill);
 }
+// показывается рисунок (прозрачный фон — без серой подложки), а не фото
+const wagonPicIsIll = v => !!v.illustration && wagonPic(v) === v.illustration;
 const axleBadge = (title = "Повышенная осевая нагрузка 25 тс") => `<span class="axle-badge" title="${esc(title)}"><small>осевая нагрузка</small><b>25 тс</b></span>`;
 const SORT_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></svg>`;
 const FILTER_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>`;
@@ -166,6 +168,14 @@ const VIEWS = {
   nearest: "renderNearest", new: "renderNew", about: "renderAbout", contacts: "renderContacts",
 };
 const VIEW_SECTION = { "": "hub", depot: "depots" };
+// разделы с фильтрами: ушли из раздела в другой — фильтры раздела сбрасываются (замечание 16.11.2026).
+// Карточка вагона и сравнение — часть раздела «Грузовые вагоны»: заглянули в карточку и вернулись — фильтры на месте
+const FILTER_SECTION = { catalog: "catalog", vagon: "catalog", compare: "catalog", depots: "depots", depot: "depots", mfrs: "mfrs", mfr: "mfrs" };
+const FILTER_RESET = {
+  catalog: () => { catState.sort = null; catState.axle.clear(); catState.mfrs.clear(); catState.cert.clear(); },
+  depots: () => { depState.model = null; depState.selected = null; ["railways", "holdings", "repairs", "services"].forEach(k => depState[k].clear()); },
+  mfrs: () => { mfrState.comp.clear(); mfrState.types.clear(); },
+};
 function route() {
   const parts = location.hash.replace(/^#\/?/, "").split("/").map(decodeURIComponent).filter(s => s !== "");
   const name = parts[0] && VIEWS[parts[0]] ? parts[0] : "";
@@ -178,6 +188,9 @@ function route() {
   $("nav-compare").classList.toggle("active", name === "compare");
   const group = VIEW_SECTION[name] || name; // depots и depot — одна страница
   const keepScroll = route.lastGroup === group && ["catalog", "depots", "parts", "cargo"].includes(group);
+  const fsec = FILTER_SECTION[name] || null;
+  if (route.lastFilterSection && route.lastFilterSection !== fsec) FILTER_RESET[route.lastFilterSection]?.();
+  route.lastFilterSection = fsec;
   window[VIEWS[name]](parts.slice(1));
   updateCompareTray();
   if (!keepScroll) window.scrollTo(0, 0);

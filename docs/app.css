@@ -174,8 +174,16 @@ footer.foot .wrap { padding-top: 22px; padding-bottom: 32px; display: flex; gap:
 /* широкие страницы (каталог, ремонтные депо): больше рабочего поля, левая колонка шире — влезает «Изотермические ✕» */
 .wrap.wide { max-width: 1880px; }
 .layout-3.wide { grid-template-columns: 320px minmax(0,1fr) 250px; gap: 28px; }
-/* ноутбук (в т.ч. с масштабом 125–150%): правая колонка уходит вниз — карточкам вагонов нужна ширина */
-@media (max-width: 1300px) { .layout-3.wide { grid-template-columns: 300px minmax(0,1fr); } .layout-3.wide > .rail-right { grid-column: 1 / -1; } }
+/* ноутбук (в т.ч. с масштабом 125–150%): правой колонки нет — карточкам вагонов нужна ширина; применённые
+   фильтры (каталог) — в левой колонке под выбором типа (копия .applied-left), а не внизу страницы */
+.applied-left { display: none; }
+@media (max-width: 1300px) {
+  .layout-3.wide { grid-template-columns: 300px minmax(0,1fr); }
+  .layout-3.wide > .rail-right { grid-column: 1 / -1; }
+  .layout-3.wide.has-right > .rail-right { display: none; }
+  .layout-3.wide .applied-left { display: block; }
+  .layout-3.wide.has-right > .sticky-side { position: static; }  /* левая колонка стала длинной — не «липнет» */
+}
 @media (max-width: 800px) { .layout-3.wide { grid-template-columns: 1fr; } }
 /* фильтры не применены — правой колонки нет, её место отдаём карточкам */
 .layout-3.wide.no-right { grid-template-columns: 320px minmax(0,1fr); }
@@ -471,6 +479,7 @@ table.overhaul .km { color: var(--ink-faint); }
 .vhero-media { margin: 18px 0 14px; border-radius: 12px; overflow: hidden; background: var(--panel-sunken); display: flex; align-items: center; justify-content: center; color: var(--steel); min-height: 180px; }
 .vhero-media img { width: 100%; display: block; max-height: 300px; object-fit: contain; }
 .vhero-media svg { width: 55%; height: auto; padding: 26px 0; }
+.vhero-media.ill { background: none; border-radius: 0; }  /* рисунок вагона на прозрачном фоне — без серой подложки */
 .bogie-line { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 14px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .bogie-line:last-child { border-bottom: none; }
 .bogie-line .m { font-weight: 700; font-size: 15px; }
@@ -689,14 +698,16 @@ table.depot-table tr.sel td.more { color: var(--accent); }
 .cmp-section { margin-top: 28px; }
 .cmp-section > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 800; }
 .cmp-section > summary::-webkit-details-marker { display: none; }
-.cmp-section > summary .chev { color: var(--ink-faint); transition: transform .2s ease; font-size: 20px; transform: rotate(180deg); }
+/* стрелка — по центру строки заголовка (SVG, а не символ «⌄», который сидит на базовой линии) */
+.cmp-section > summary .chev { width: 22px; height: 22px; flex-shrink: 0; color: var(--ink-faint); transition: transform .2s ease; transform: rotate(180deg); }
 .cmp-section[open] > summary .chev { transform: none; } /* как в макете: раскрыто — «V», свёрнуто — «^» */
 .cmp-body { margin-top: 16px; }
 table.compare { border-collapse: collapse; width: 100%; min-width: 560px; }
 table.compare th, table.compare td { padding: 9px 12px; border-bottom: 1px solid var(--line); font-size: 13px; }
 table.compare thead th { text-align: left; vertical-align: bottom; font-weight: 700; }
 table.compare thead .num { color: var(--accent); }
-table.compare thead .rm { float: right; background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: 12.5px; }
+.cmp-th { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }  /* «убрать» — на строке с названием */
+table.compare thead .rm { flex-shrink: 0; white-space: nowrap; background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: 12.5px; padding: 2px 0 0; line-height: 1.4; }
 table.compare thead .rm:hover { color: var(--accent); }
 table.compare tbody th { text-align: left; color: var(--ink-soft); font-weight: 500; background: var(--panel-sunken); width: 190px; }
 table.compare td { font-family: var(--mono); font-variant-numeric: tabular-nums; }
@@ -753,8 +764,8 @@ select.text-input { appearance: none; background-image: linear-gradient(45deg, t
 }
 /* логотип на подложке фиксированного цвета (не из темы): белая — для обычных,
    тёмная — для белых логотипов на прозрачном фоне (build_logos.py, plate=dark) */
-.mfr-logo.img { background: #fff; padding: 8px 10px; border: 1px solid var(--line); }
-.mfr-logo.img.dark { background: #1a1f23; border-color: transparent; }
+.mfr-logo.img { background: #fff; padding: 8px 10px; border: none; }  /* без рамки вокруг логотипа (замечание 16.11.2026) */
+.mfr-logo.img.dark { background: #1a1f23; }
 .mfr-logo.img img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
 .mfr-logo.img { width: 176px; height: 78px; }
 .mfr-logo.img.lg { width: 260px; height: 120px; padding: 12px 16px; }

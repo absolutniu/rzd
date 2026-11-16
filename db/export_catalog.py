@@ -20,6 +20,7 @@ DB_PATH = BASE / "rzd.db"
 OUT_PATH = BASE.parent / "docs" / "data" / "catalog_data.json"
 PHOTOS_DIR = BASE.parent / "docs" / "photos"
 LOGOS_MANIFEST = BASE.parent / "docs" / "logos" / "manifest.json"  # пишет build_logos.py
+ILLUSTRATIONS = BASE.parent / "docs" / "illustrations" / "manifest.json"  # пишет build_illustrations.py
 
 # таблица характеристик -> её "тип семейства" (T00x), для приоритета при разборе конфликтов
 CHAR_TABLES = {
@@ -219,6 +220,7 @@ def main():
 
     # ---- вагоны ----
     vagons = []
+    illustrations = json.loads(ILLUSTRATIONS.read_text(encoding="utf-8")) if ILLUSTRATIONS.exists() else {}
     for v in rows("""
         SELECT id, vagon_type_id, vagon_kind_id, model, model_note, manufacturer_id, kd_number,
                accounting_specialization, europallet_count, requires_authorization, axle_load_25
@@ -227,6 +229,7 @@ def main():
         table, specs = specs_by_vagon.get(v["id"], (None, {}))
         bogie_ids = vagon_bogie.get(v["id"], [])
         has_photo = (PHOTOS_DIR / f"{v['id']}.jpg").exists()
+        illus = illustrations.get(v["id"], {})
         vagons.append({
             "id": v["id"],
             "typeId": v["vagon_type_id"],
@@ -249,6 +252,9 @@ def main():
             "containerIds": platform_containers.get(v["id"]),
             "photo": f"photos/{v['id']}.jpg" if has_photo else None,
             "photoThumb": f"photos/thumb/{v['id']}.jpg" if has_photo else None,
+            # рисунок «тип × предприятие» (вместо фото, если на сайте включён WAGON_PICS = "illustration")
+            "illustration": illus.get("src"),
+            "illustrationThumb": illus.get("thumb"),
         })
 
     vagon_cargo_map = {}

@@ -35,6 +35,10 @@ db/
   export_catalog.py    rzd.db + docs/photos/ -> docs/data/catalog_data.json
   match_photos.py       docs/Photo/ -> photo_match_results.json (сопоставление файла с id вагона)
   build_photos.py       photo_match_results.json + docs/Photo/ -> docs/photos/
+  export_poster_refs.py  каталог + фото -> exports/posters_refs/ (один вагон на «тип × предприятие» для нейросети)
+  cutout_posters.py     сгенерированные постеры (exports/editorial_posters) -> вагоны без фона (cutout/)
+  build_illustrations.py  cutout + список.csv -> docs/illustrations/ (рисунки вагонов на сайте вместо фото;
+                        фото/рисунок — переключатель WAGON_PICS в docs/js/core.js, проверка: ?pics=photo)
   rzd.db               собранная база (пересоздаётся build_db.py)
   fetch_railmap_osm.py  OSM (пути, станции) + Natural Earth (границы) -> db/osm_cache/ (в git не попадает, ~200 МБ)
   build_railmap.py      osm_cache + catalog_data.json -> docs/railmap/*.geojson (карта сети: 16 дорог РЖД + БЧ, КЗХ)

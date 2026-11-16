@@ -337,13 +337,14 @@ function renderDepots() {
   if (depState.holdings.size) applied.push({ k: "Ремонтный холдинг", v: [...depState.holdings].map(id => HOLDING_BY_ID.get(id)?.short_name), remove: "depState.holdings.clear(); renderDepots()" });
   if (depState.repairs.size) applied.push({ k: "Тип ремонта", v: [...depState.repairs].map(id => REPAIR_TYPE_BY_ID.get(id)), remove: "depState.repairs.clear(); renderDepots()" });
   if (depState.services.size) applied.push({ k: "Дополнительные услуги", v: [...depState.services].map(id => SERVICE_BY_ID.get(id)), remove: "depState.services.clear(); renderDepots()" });
+  const appliedBox = appliedHTML(applied, "depState.railways.clear(); depState.holdings.clear(); depState.repairs.clear(); depState.services.clear(); renderDepots()");
   const sel = depState.selected ? DEPOT_BY_ID.get(depState.selected) : null;
   // выбрано депо — остальные убираем из таблицы и с карты, чтобы не заслоняли
   const rows = sel ? [sel] : list.slice().sort((a, b) => (a.railway_id || "").localeCompare(b.railway_id || "") || a.name.localeCompare(b.name, "ru"));
 
   $("view-depots").innerHTML = bandHTML("Ремонтные депо") + `<div class="wrap wide">
     ${crumbsHTML([["Главная", "#/"], ["Ремонтные депо", (v || sel) ? "#/depots" : null], ...(sel ? [[sel.name, null]] : v ? [["модель " + v.model, null]] : [])])}
-    <div class="layout-3 wide">
+    <div class="layout-3 wide${appliedBox ? " has-right" : ""}">
       <aside class="sticky-side">
         <div class="panel"><div class="panel-title center">Поиск депо по<br>модели вагона</div>
           <label class="field-label" for="si-depmodel">Модель вагона</label>
@@ -351,6 +352,7 @@ function renderDepots() {
           ${suggestInputHTML("depmodel", "например, 12-196-02")}
           ${v ? `<p class="caption" style="font-size:12px;margin-top:10px">${depotsForVagon(v).mode === "direct" ? "Депо, авторизованные на ремонт этой модели." : `Депо с компетенцией по роду «${esc(kindName(v) || TYPE_META[v.typeId].name)}».`} <a href="#/vagon/${v.id}">Карточка модели</a></p>` : ""}
         </div>
+        ${appliedBox ? `<div class="applied-left">${appliedBox}</div>` : ""}
       </aside>
       <div>
         ${v ? `<div class="cat-head cargo"><h2>Найдено для модели</h2>${chipHTML(v.model, "depState.model=null; nav('#/depots')", "lg")}</div>` : ""}
@@ -362,7 +364,7 @@ function renderDepots() {
         </div>
         ${depotMapHTML()}
       </div>
-      <aside class="sticky-side rail-right">${appliedHTML(applied, "depState.railways.clear(); depState.holdings.clear(); depState.repairs.clear(); depState.services.clear(); renderDepots()")}</aside>
+      <aside class="sticky-side rail-right">${appliedBox}</aside>
       <div class="span-cr">
         <div class="depot-count">${list.length === DATA.depots.length ? `всего добавлено: <b>${pl(list.length, "депо", "депо", "депо")}</b>` : `найдено: <b>${pl(list.length, "депо", "депо", "депо")}</b>`}</div>
         <div class="depot-split${sel ? " with-panel" : " single"}">

@@ -43,17 +43,17 @@ function renderCompare() {
   const common = cargoLists.reduce((acc, l) => acc.filter(id => l.includes(id)), cargoLists[0] || []);
 
   $("view-compare").innerHTML = head + `
-    <details class="cmp-section" open><summary>Характеристики <span class="chev">⌄</span></summary>
+    <details class="cmp-section" open><summary>Характеристики ${CHEV_SVG}</summary>
       <div class="cmp-body scroll-x"><table class="compare">
-        <thead><tr><th></th>${items.map(v => `<th><a href="#/vagon/${v.id}" style="text-decoration:none">${label(v)}</a><button class="rm" onclick="toggleCompare('${v.id}'); renderCompare()">убрать ✕</button></th>`).join("")}</tr></thead>
+        <thead><tr><th></th>${items.map(v => `<th><div class="cmp-th"><a href="#/vagon/${v.id}" style="text-decoration:none">${label(v)}</a><button class="rm" onclick="toggleCompare('${v.id}'); renderCompare()">убрать ✕</button></div></th>`).join("")}</tr></thead>
         <tbody>${rows.map(([k, vals]) => `<tr class="${items.length > 1 && new Set(vals).size > 1 ? "diff" : ""}"><th>${k}</th>${vals.map(x => `<td>${esc(x)}</td>`).join("")}</tr>`).join("")}</tbody>
       </table>
       <p class="caption" style="font-size:12px">Строки, где значения отличаются, подсвечены.</p></div>
     </details>
-    <details class="cmp-section" open><summary>Межремонтные нормативы <span class="chev">⌄</span></summary>
+    <details class="cmp-section" open><summary>Межремонтные нормативы ${CHEV_SVG}</summary>
       <div class="cmp-body cmp-rows">${items.map(v => `<div class="cmp-row">${label(v)}<div>${overhaulTableHTML(v.overhaul)}</div></div>`).join("")}</div>
     </details>
-    <details class="cmp-section" open><summary>Перевозимые грузы <span class="chev">⌄</span></summary>
+    <details class="cmp-section" open><summary>Перевозимые грузы ${CHEV_SVG}</summary>
       <div class="cmp-body">
         ${items.length > 1 ? `<button class="btn ${cmpState.cargoDiff ? "" : "ghost"} sm" onclick="cmpState.cargoDiff=!cmpState.cargoDiff; renderCompare()">${cmpState.cargoDiff ? "показать все" : "оставить разные"}</button>
           <span class="mfr-sub" style="margin-left:10px">общих грузов у всех моделей: ${common.length}</span>` : ""}

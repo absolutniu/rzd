@@ -61,5 +61,20 @@ with open(LIST, encoding="utf-8-sig") as f:
         used += 1
         if len(hits) != int(row["Моделей в группе"]):
             print(f"{num}: вагонов {len(hits)}, в списке {row['Моделей в группе']}")
+# вручную: вагону без фото — рисунок похожей модели (модель -> модель-образец)
+LIKE = {"25-1236": "19-1272-01"}  # вагон для техуглерода РМ Рейл -> хоппер для цемента (замечание 16.11.2026)
+for v in cat["vagons"]:
+    src = next((x for x in cat["vagons"] if x["model"] == LIKE.get(v["model"]) and x["id"] in manifest), None)
+    if v["id"] not in manifest and src:
+        manifest[v["id"]] = manifest[src["id"]]
+        print(f"{v['model']} ({v['id']}): рисунок как у {src['model']} ({src['id']})")
+# своего рисунка нет, но та же модель того же типа есть у другого завода — берём её рисунок
+# (хоппер ВПМ-770 Трансмаша = ВПМ-770 Синара-ТМ, замечание 16.11.2026)
+for v in cat["vagons"]:
+    if v["id"] not in manifest:
+        twin = next((x for x in cat["vagons"] if x["id"] in manifest and x["typeId"] == v["typeId"] and x["model"] == v["model"]), None)
+        if twin:
+            manifest[v["id"]] = manifest[twin["id"]]
+            print(f"{v['model']} ({v['id']}): рисунок как у {twin['id']}")
 (OUT / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=0), encoding="utf-8")
 print(f"рисунков {used}, вагонов с рисунком {len(manifest)} из {len(cat['vagons'])} -> {OUT}")

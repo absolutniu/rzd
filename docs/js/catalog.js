@@ -189,8 +189,8 @@ function renderCatalog() {
 
   $("view-catalog").innerHTML = bandHTML("Грузовые вагоны") + `<div class="wrap wide">
     ${crumbsHTML(crumbs)}
-    <div class="layout-3 wide${right ? "" : " no-right"}">
-      <aside class="sticky-side">${left}</aside>
+    <div class="layout-3 wide${right ? " has-right" : " no-right"}">
+      <aside class="sticky-side">${left}${right ? `<div class="applied-left">${right}</div>` : ""}</aside>
       <div>${center}</div>
       ${right ? `<aside class="sticky-side rail-right">${right}</aside>` : ""}
     </div>

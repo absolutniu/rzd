@@ -19,6 +19,9 @@ SRC = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "exports" / "editorial_
 OUT = Path(sys.argv[2]) if len(sys.argv) > 2 else SRC / "cutout"
 T0, T1 = 7.0, 16.0   # ΔE от бумаги: ниже T0 — фон, выше T1 — вагон, между — полупрозрачный край
 MARGIN = 24          # поля вокруг вагона в вырезке, px
+# цистерны, у которых светлый котёл почти цвета бумаги и цвет «откусывает» часть корпуса: достраиваем верх котла
+# по выпуклой оболочке (лучше чуть бумаги по краю, чем срезанный вагон). Номер постера = номер референса.
+CONVEX = {"15"}      # 15-6900-04 (НПК ОВК)
 
 
 def paper_model(lab, fg):
@@ -30,7 +33,40 @@ def paper_model(lab, fg):
     return np.where(den > 0.05, num / np.maximum(den, 1e-6), glob)
 
 
-def cutout(path):
+def convex_top(obj):
+    """Котёл цистерны выпуклый: верхнюю половину котла достраиваем по выпуклой оболочке — светлая краска
+    почти цвета бумаги, и цвет может «откусить» кусок корпуса. Тонкие поручни/лестницы в оболочку не входят."""
+    ys = np.nonzero(obj.any(1))[0]
+    if not len(ys):
+        return obj
+    y0, y1 = ys.min(), ys.max()
+    # только массивный корпус: поручни, люки, лестницы, стойки тоньше 31px размыканием убираются
+    body = ndi.binary_opening(obj, structure=cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (31, 31)).astype(bool))
+    upper = y0 + int(0.55 * (y1 - y0))                 # рама с буферами шире котла — её не берём
+    widths = body[:upper].sum(1)
+    ymid = int(np.argmax(widths))                       # самая широкая строка котла — до неё верхняя половина
+    add = np.zeros_like(obj)
+    lbl, n = ndi.label(body[:ymid + 1])                 # каждый котёл отдельно (сцепка двух цистерн)
+    for i in range(1, n + 1):
+        comp = lbl == i
+        if comp.sum() < 0.2 * body[:ymid + 1].sum():   # обрывки — не котёл
+            continue
+        pts = np.column_stack(np.nonzero(comp)[::-1]).astype(np.int32)
+        hull = cv2.convexHull(pts)
+        m = np.zeros(obj.shape, np.uint8)
+        cv2.fillPoly(m, [hull], 1)
+        add |= m.astype(bool)
+    add[ymid + 1:] = False
+    # добавляем только «откусы» котла (толщиной от 24px); тонкие клинья бумаги между люком/поручнями и краем котла — нет
+    add &= ~obj
+    lbl, n = ndi.label(add)
+    if n:
+        thick = ndi.maximum(ndi.distance_transform_edt(add), lbl, range(1, n + 1))
+        add = np.isin(lbl, 1 + np.flatnonzero(np.asarray(thick) >= 12))
+    return obj | add
+
+
+def cutout(path, convex=False):
     bgr = cv2.imread(str(path), cv2.IMREAD_COLOR)
     rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB).astype(np.float32) / 255
     lab = cv2.cvtColor(rgb, cv2.COLOR_RGB2Lab)
@@ -110,6 +146,8 @@ def cutout(path):
     outside = np.unique(np.concatenate([lbl[0], lbl[-1], lbl[:, 0], lbl[:, -1]]))
     obj &= ~(np.isin(lbl, outside[outside > 0]) & paperish)
     obj = ndi.binary_opening(obj, iterations=1) | (obj & (de > T1))
+    if convex:
+        obj = convex_top(obj)
     holes = ndi.binary_fill_holes(obj) & ~obj           # мелкие точки бумаги внутри — заливаем, просветы стоек — нет
     hl, nh = ndi.label(holes)
     if nh:
@@ -141,8 +179,8 @@ if __name__ == "__main__":
     # имена как в наборе референсов (exports/posters_refs: «07_Полувагон_НПК_УВЗ_12-132»), номер постера = номер референса
     refs = {p.name[:2]: p.stem for p in (ROOT / "exports" / "posters_refs").glob("*.jpg")}
     for f in files:
-        img, box = cutout(f)
         name = refs.get(f.stem[-2:], f.stem) + ".png"
+        img, box = cutout(f, convex=name[:2] in CONVEX)
         ok, buf = cv2.imencode(".png", img)  # imwrite не умеет кириллицу в пути на Windows
         (OUT / name).write_bytes(buf.tobytes())
         print(f"{f.name}: {img.shape[1]}×{img.shape[0]} (рамка {box})", flush=True)
